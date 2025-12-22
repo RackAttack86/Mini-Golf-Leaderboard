@@ -1,0 +1,337 @@
+{
+  "courses": [
+    {
+      "id": "8bc7a1e0-c8f4-4a3b-9d2e-1f6a8b9c0d1e",
+      "name": "8-bit Lair",
+      "location": "Walkabout Mini Golf",
+      "holes": 18,
+      "par": 54,
+      "created_at": "2025-12-22T10:00:00Z",
+      "active": true
+    },
+    {
+      "id": "7ac6b2f1-d9e5-5b4c-8e3f-2e7b9c0d2f3a",
+      "name": "20,000 Leagues Under the Sea",
+      "location": "Walkabout Mini Golf",
+      "holes": 18,
+      "par": 54,
+      "created_at": "2025-12-22T10:00:00Z",
+      "active": true
+    },
+    {
+      "id": "6bd5c3g2-e0f6-6c5d-9f4g-3f8c0d3g4b5c",
+      "name": "Alfheim",
+      "location": "Walkabout Mini Golf",
+      "holes": 18,
+      "par": 54,
+      "created_at": "2025-12-22T10:00:00Z",
+      "active": true
+    },
+    {
+      "id": "5ce4d4h3-f1g7-7d6e-0g5h-4g9d1e4h5c6d",
+      "name": "Alice's Adventures in Wonderland",
+      "location": "Walkabout Mini Golf",
+      "holes": 18,
+      "par": 54,
+      "created_at": "2025-12-22T10:00:00Z",
+      "active": true
+    },
+    {
+      "id": "4df3e5i4-g2h8-8e7f-1h6i-5h0e2f5i6d7e",
+      "name": "Arizona Modern",
+      "location": "Walkabout Mini Golf",
+      "holes": 18,
+      "par": 54,
+      "created_at": "2025-12-22T10:00:00Z",
+      "active": true
+    },
+    {
+      "id": "3eg2f6j5-h3i9-9f8g-2i7j-6i1f3g6j7e8f",
+      "name": "Around the World in 80 Days",
+      "location": "Walkabout Mini Golf",
+      "holes": 18,
+      "par": 54,
+      "created_at": "2025-12-22T10:00:00Z",
+      "active": true
+    },
+    {
+      "id": "2fh1g7k6-i4j0-0g9h-3j8k-7j2g4h7k8f9g",
+      "name": "Atlantis",
+      "location": "Walkabout Mini Golf",
+      "holes": 18,
+      "par": 54,
+      "created_at": "2025-12-22T10:00:00Z",
+      "active": true
+    },
+    {
+      "id": "1gi0h8l7-j5k1-1h0i-4k9l-8k3h5i8l9g0h",
+      "name": "Bogey's Bonanza",
+      "location": "Walkabout Mini Golf",
+      "holes": 18,
+      "par": 54,
+      "created_at": "2025-12-22T10:00:00Z",
+      "active": true
+    },
+    {
+      "id": "0hj9i9m8-k6l2-2i1j-5l0m-9l4i6j9m0h1i",
+      "name": "Cherry Blossom",
+      "location": "Walkabout Mini Golf",
+      "holes": 18,
+      "par": 54,
+      "created_at": "2025-12-22T10:00:00Z",
+      "active": true
+    },
+    {
+      "id": "9ik8j0n9-l7m3-3j2k-6m1n-0m5j7k0n1i2j",
+      "name": "Crystal Lair",
+      "location": "Walkabout Mini Golf",
+      "holes": 18,
+      "par": 54,
+      "created_at": "2025-12-22T10:00:00Z",
+      "active": true
+    },
+    {
+      "id": "8jl7k1o0-m8n4-4k3l-7n2o-1n6k8l1o2j3k",
+      "name": "El Dorado",
+      "location": "Walkabout Mini Golf",
+      "holes": 18,
+      "par": 54,
+      "created_at": "2025-12-22T10:00:00Z",
+      "active": true
+    },
+    {
+      "id": "7km6l2p1-n9o5-5l4m-8o3p-2o7l9m2p3k4l",
+      "name": "Forgotten Fairyland",
+      "location": "Walkabout Mini Golf",
+      "holes": 18,
+      "par": 54,
+      "created_at": "2025-12-22T10:00:00Z",
+      "active": true
+    },
+    {
+      "id": "6ln5m3q2-o0p6-6m5n-9p4q-3p8m0n3q4l5m",
+      "name": "Gardens of Babylon",
+      "location": "Walkabout Mini Golf",
+      "holes": 18,
+      "par": 54,
+      "created_at": "2025-12-22T10:00:00Z",
+      "active": true
+    },
+    {
+      "id": "5mo4n4r3-p1q7-7n6o-0q5r-4q9n1o4r5m6n",
+      "name": "Holiday Hideaway",
+      "location": "Walkabout Mini Golf",
+      "holes": 18,
+      "par": 54,
+      "created_at": "2025-12-22T10:00:00Z",
+      "active": true
+    },
+    {
+      "id": "4np3o5s4-q2r8-8o7p-1r6s-5r0o2p5s6n7o",
+      "name": "Ice Lair",
+      "location": "Walkabout Mini Golf",
+      "holes": 18,
+      "par": 54,
+      "created_at": "2025-12-22T10:00:00Z",
+      "active": true
+    },
+    {
+      "id": "3oq2p6t5-r3s9-9p8q-2s7t-6s1p3q6t7o8p",
+      "name": "Journey to the Center of the Earth",
+      "location": "Walkabout Mini Golf",
+      "holes": 18,
+      "par": 54,
+      "created_at": "2025-12-22T10:00:00Z",
+      "active": true
+    },
+    {
+      "id": "2pr1q7u6-s4t0-0q9r-3t8u-7t2q4r7u8p9q",
+      "name": "Labyrinth",
+      "location": "Walkabout Mini Golf",
+      "holes": 18,
+      "par": 54,
+      "created_at": "2025-12-22T10:00:00Z",
+      "active": true
+    },
+    {
+      "id": "1qs0r8v7-t5u1-1r0s-4u9v-8u3r5s8v9q0r",
+      "name": "Laser Lair",
+      "location": "Walkabout Mini Golf",
+      "holes": 18,
+      "par": 54,
+      "created_at": "2025-12-22T10:00:00Z",
+      "active": true
+    },
+    {
+      "id": "0rt9s9w8-u6v2-2s1t-5v0w-9v4s6t9w0r1s",
+      "name": "Mars Garden",
+      "location": "Walkabout Mini Golf",
+      "holes": 18,
+      "par": 54,
+      "created_at": "2025-12-22T10:00:00Z",
+      "active": true
+    },
+    {
+      "id": "9su8t0x9-v7w3-3t2u-6w1x-0w5t7u0x1s2t",
+      "name": "Meow Wolf",
+      "location": "Walkabout Mini Golf",
+      "holes": 18,
+      "par": 54,
+      "created_at": "2025-12-22T10:00:00Z",
+      "active": true
+    },
+    {
+      "id": "8tv7u1y0-w8x4-4u3v-7x2y-1x6u8v1y2t3u",
+      "name": "Mount Olympus",
+      "location": "Walkabout Mini Golf",
+      "holes": 18,
+      "par": 54,
+      "created_at": "2025-12-22T10:00:00Z",
+      "active": true
+    },
+    {
+      "id": "7uw6v2z1-x9y5-5v4w-8y3z-2y7v9w2z3u4v",
+      "name": "Myst",
+      "location": "Walkabout Mini Golf",
+      "holes": 18,
+      "par": 54,
+      "created_at": "2025-12-22T10:00:00Z",
+      "active": true
+    },
+    {
+      "id": "6vx5w3a2-y0z6-6w5x-9z4a-3z8w0x3a4v5w",
+      "name": "Original Gothic",
+      "location": "Walkabout Mini Golf",
+      "holes": 18,
+      "par": 54,
+      "created_at": "2025-12-22T10:00:00Z",
+      "active": true
+    },
+    {
+      "id": "5wy4x4b3-z1a7-7x6y-0a5b-4a9x1y4b5w6x",
+      "name": "Quixote Valley",
+      "location": "Walkabout Mini Golf",
+      "holes": 18,
+      "par": 54,
+      "created_at": "2025-12-22T10:00:00Z",
+      "active": true
+    },
+    {
+      "id": "4xz3y5c4-a2b8-8y7z-1b6c-5b0y2z5c6x7y",
+      "name": "Raptor Cliff's",
+      "location": "Walkabout Mini Golf",
+      "holes": 18,
+      "par": 54,
+      "created_at": "2025-12-22T10:00:00Z",
+      "active": true
+    },
+    {
+      "id": "3ya2z6d5-b3c9-9z8a-2c7d-6c1z3a6d7y8z",
+      "name": "Seagull Stacks",
+      "location": "Walkabout Mini Golf",
+      "holes": 18,
+      "par": 54,
+      "created_at": "2025-12-22T10:00:00Z",
+      "active": true
+    },
+    {
+      "id": "2zb1a7e6-c4d0-0a9b-3d8e-7d2a4b7e8z9a",
+      "name": "Shangri-La",
+      "location": "Walkabout Mini Golf",
+      "holes": 18,
+      "par": 54,
+      "created_at": "2025-12-22T10:00:00Z",
+      "active": true
+    },
+    {
+      "id": "1ac0b8f7-d5e1-1b0c-4e9f-8e3b5c8f9a0b",
+      "name": "Sweetopia",
+      "location": "Walkabout Mini Golf",
+      "holes": 18,
+      "par": 54,
+      "created_at": "2025-12-22T10:00:00Z",
+      "active": true
+    },
+    {
+      "id": "0bd9c9g8-e6f2-2c1d-5f0g-9f4c6d9g0b1c",
+      "name": "Temple at Zerzura",
+      "location": "Walkabout Mini Golf",
+      "holes": 18,
+      "par": 54,
+      "created_at": "2025-12-22T10:00:00Z",
+      "active": true
+    },
+    {
+      "id": "9ce8d0h9-f7g3-3d2e-6g1h-0g5d7e0h1c2d",
+      "name": "Tethys Station",
+      "location": "Walkabout Mini Golf",
+      "holes": 18,
+      "par": 54,
+      "created_at": "2025-12-22T10:00:00Z",
+      "active": true
+    },
+    {
+      "id": "8df7e1i0-g8h4-4e3f-7h2i-1h6e8f1i2d3e",
+      "name": "Tokyo",
+      "location": "Walkabout Mini Golf",
+      "holes": 18,
+      "par": 54,
+      "created_at": "2025-12-22T10:00:00Z",
+      "active": true
+    },
+    {
+      "id": "7eg6f2j1-h9i5-5f4g-8i3j-2i7f9g2j3e4f",
+      "name": "Tourist Trap",
+      "location": "Walkabout Mini Golf",
+      "holes": 18,
+      "par": 54,
+      "created_at": "2025-12-22T10:00:00Z",
+      "active": true
+    },
+    {
+      "id": "6fh5g3k2-i0j6-6g5h-9j4k-3j8g0h3k4f5g",
+      "name": "Upside Town",
+      "location": "Walkabout Mini Golf",
+      "holes": 18,
+      "par": 54,
+      "created_at": "2025-12-22T10:00:00Z",
+      "active": true
+    },
+    {
+      "id": "5gi4h4l3-j1k7-7h6i-0k5l-4k9h1i4l5g6h",
+      "name": "Venice",
+      "location": "Walkabout Mini Golf",
+      "holes": 18,
+      "par": 54,
+      "created_at": "2025-12-22T10:00:00Z",
+      "active": true
+    },
+    {
+      "id": "4hj3i5m4-k2l8-8i7j-1l6m-5l0i2j5m6h7i",
+      "name": "Viva Las Elvis",
+      "location": "Walkabout Mini Golf",
+      "holes": 18,
+      "par": 54,
+      "created_at": "2025-12-22T10:00:00Z",
+      "active": true
+    },
+    {
+      "id": "3ik2j6n5-l3m9-9j8k-2m7n-6m1j3k6n7i8j",
+      "name": "Wallace & Gromit",
+      "location": "Walkabout Mini Golf",
+      "holes": 18,
+      "par": 54,
+      "created_at": "2025-12-22T10:00:00Z",
+      "active": true
+    },
+    {
+      "id": "2jl1k7o6-m4n0-0k9l-3n8o-7n2k4l7o8j9k",
+      "name": "Widow's Walkabout",
+      "location": "Walkabout Mini Golf",
+      "holes": 18,
+      "par": 54,
+      "created_at": "2025-12-22T10:00:00Z",
+      "active": true
+    }
+  ]
+}

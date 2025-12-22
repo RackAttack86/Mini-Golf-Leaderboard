@@ -1,0 +1,178 @@
+{% extends "base.html" %}
+
+{% block title %}Add Round - {{ app_name }}{% endblock %}
+
+{% block extra_head %}
+<style>
+    .player-score-row {
+        margin-bottom: 10px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 mx-auto">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0"><i class="bi bi-plus-circle"></i> Add New Round</h4>
+            </div>
+            <div class="card-body">
+                {% if not players or not courses %}
+                <div class="alert alert-warning">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    {% if not players %}
+                        You need to <a href="{{ url_for('players.add_player') }}">add players</a> before recording rounds.
+                    {% endif %}
+                    {% if not courses %}
+                        You need to <a href="{{ url_for('courses.add_course') }}">add courses</a> before recording rounds.
+                    {% endif %}
+                </div>
+                {% else %}
+                <form method="POST" action="{{ url_for('rounds.add_round') }}" id="addRoundForm">
+                    <div class="mb-3">
+                        <label for="course_id" class="form-label">Course *</label>
+                        <select class="form-select" id="course_id" name="course_id" required>
+                            <option value="">Select a course...</option>
+                            {% for course in courses %}
+                            <option value="{{ course.id }}"
+                                    {% if form_data and form_data.course_id == course.id %}selected{% endif %}>
+                                {{ course.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="date_played" class="form-label">Date *</label>
+                        <input type="date"
+                               class="form-control"
+                               id="date_played"
+                               name="date_played"
+                               value="{{ form_data.date_played if form_data else '' }}"
+                               required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Player Scores *</label>
+                        <div id="playerScores">
+                            {% if form_data and form_data.scores %}
+                                {% for score in form_data.scores %}
+                                <div class="row player-score-row">
+                                    <div class="col-md-6">
+                                        <select class="form-select" name="player_id[]" required>
+                                            <option value="">Select player...</option>
+                                            {% for player in players %}
+                                            <option value="{{ player.id }}" {% if score.player_id == player.id %}selected{% endif %}>
+                                                {{ player.name }}
+                                            </option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <input type="number" class="form-control" name="score[]"
+                                               placeholder="Score" min="-50" max="500"
+                                               value="{{ score.score }}" required>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <button type="button" class="btn btn-danger btn-sm remove-player" onclick="removePlayer(this)">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            {% else %}
+                                <div class="row player-score-row">
+                                    <div class="col-md-6">
+                                        <select class="form-select" name="player_id[]" required>
+                                            <option value="">Select player...</option>
+                                            {% for player in players %}
+                                            <option value="{{ player.id }}">{{ player.name }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <input type="number" class="form-control" name="score[]"
+                                               placeholder="Score" min="-50" max="500" required>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <button type="button" class="btn btn-danger btn-sm remove-player" onclick="removePlayer(this)">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            {% endif %}
+                        </div>
+                        <button type="button" class="btn btn-sm btn-outline-primary mt-2" onclick="addPlayer()">
+                            <i class="bi bi-plus"></i> Add Player
+                        </button>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="notes" class="form-label">Notes (Optional)</label>
+                        <textarea class="form-control" id="notes" name="notes" rows="3">{{ form_data.notes if form_data else '' }}</textarea>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-circle"></i> Save Round
+                        </button>
+                        <a href="{{ url_for('rounds.list_rounds') }}" class="btn btn-outline-secondary">
+                            Cancel
+                        </a>
+                    </div>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+function addPlayer() {
+    const container = document.getElementById('playerScores');
+    const newRow = document.createElement('div');
+    newRow.className = 'row player-score-row';
+    newRow.innerHTML = `
+        <div class="col-md-6">
+            <select class="form-select" name="player_id[]" required>
+                <option value="">Select player...</option>
+                {% for player in players %}
+                <option value="{{ player.id }}">{{ player.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-4">
+            <input type="number" class="form-control" name="score[]"
+                   placeholder="Score" min="-50" max="500" required>
+        </div>
+        <div class="col-md-2">
+            <button type="button" class="btn btn-danger btn-sm remove-player" onclick="removePlayer(this)">
+                <i class="bi bi-trash"></i>
+            </button>
+        </div>
+    `;
+    container.appendChild(newRow);
+}
+
+function removePlayer(button) {
+    const rows = document.querySelectorAll('.player-score-row');
+    if (rows.length > 1) {
+        button.closest('.player-score-row').remove();
+    } else {
+        alert('You must have at least one player.');
+    }
+}
+
+// Set default date to today
+document.addEventListener('DOMContentLoaded', function() {
+    const dateInput = document.getElementById('date_played');
+    if (!dateInput.value) {
+        const today = new Date().toISOString().split('T')[0];
+        dateInput.value = today;
+    }
+});
+</script>
+{% endblock %}

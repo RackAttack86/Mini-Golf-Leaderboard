@@ -1,0 +1,199 @@
+/* Mini Golf Leaderboard - Custom Styles */
+
+:root {
+    --golf-green: #2e7d32;
+    --golf-light-green: #66bb6a;
+    --golf-sand: #f4e4c1;
+    --bronze: #cd7f32;
+}
+
+body {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+main {
+    flex: 1;
+}
+
+/* Navigation */
+.navbar-brand {
+    font-weight: bold;
+    font-size: 1.5rem;
+}
+
+.navbar {
+    box-shadow: 0 2px 4px rgba(0,0,0,.1);
+}
+
+/* Cards */
+.card {
+    box-shadow: 0 2px 4px rgba(0,0,0,.1);
+    margin-bottom: 1.5rem;
+}
+
+.card:hover {
+    box-shadow: 0 4px 8px rgba(0,0,0,.15);
+    transition: box-shadow 0.3s ease;
+}
+
+/* Summary card links */
+.summary-card-link {
+    display: block;
+    color: inherit;
+    cursor: pointer;
+}
+
+.summary-card-link:hover {
+    background-color: rgba(0,0,0,.02);
+    transition: background-color 0.2s ease;
+}
+
+.summary-card-link h3 {
+    color: #000;
+}
+
+.summary-card-link .text-muted {
+    color: #6c757d !important;
+}
+
+/* Tables */
+.table-hover tbody tr:hover {
+    cursor: pointer;
+    background-color: rgba(0,0,0,.02);
+}
+
+/* Trophy styling */
+.text-bronze {
+    color: var(--bronze);
+}
+
+/* Dashboard cards */
+.card .display-4 {
+    margin-bottom: 1rem;
+}
+
+/* Forms */
+.form-control:focus, .form-select:focus {
+    border-color: var(--golf-green);
+    box-shadow: 0 0 0 0.2rem rgba(46, 125, 50, 0.25);
+}
+
+/* Buttons */
+.btn-primary {
+    background-color: var(--golf-green);
+    border-color: var(--golf-green);
+}
+
+.btn-primary:hover {
+    background-color: #1b5e20;
+    border-color: #1b5e20;
+}
+
+.btn-outline-primary {
+    color: var(--golf-green);
+    border-color: var(--golf-green);
+}
+
+.btn-outline-primary:hover {
+    background-color: var(--golf-green);
+    border-color: var(--golf-green);
+}
+
+/* Alerts */
+.alert {
+    border-left: 4px solid;
+}
+
+.alert-success {
+    border-left-color: var(--golf-green);
+}
+
+/* Footer */
+footer {
+    margin-top: auto;
+    border-top: 1px solid #dee2e6;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .navbar-brand {
+        font-size: 1.2rem;
+    }
+
+    .card-body .display-4 {
+        font-size: 2.5rem;
+    }
+
+    h1 {
+        font-size: 1.75rem;
+    }
+}
+
+/* Player score rows */
+.player-score-row {
+    align-items: center;
+}
+
+.player-score-row .btn {
+    width: 100%;
+}
+
+/* Statistics */
+.table-striped tbody tr:first-child {
+    font-weight: bold;
+}
+
+/* Charts */
+canvas {
+    max-height: 400px;
+}
+
+/* Loading state */
+.loading {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+/* Success animations */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.alert {
+    animation: fadeIn 0.3s ease;
+}
+
+/* Links */
+a {
+    color: var(--golf-green);
+}
+
+a:hover {
+    color: var(--golf-light-green);
+}
+
+/* Badges */
+.badge {
+    font-weight: 500;
+}
+
+/* Card header colors - light theme */
+.card-header.bg-success {
+    background-color: rgba(46, 125, 50, 0.1) !important;
+    border-bottom: 1px solid var(--golf-green);
+}
+
+.card-header.bg-primary {
+    background-color: var(--golf-green) !important;
+    border-bottom: 1px solid var(--golf-green);
+    color: white !important;
+}

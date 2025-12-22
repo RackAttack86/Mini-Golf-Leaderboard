@@ -1,0 +1,174 @@
+{% extends "base.html" %}
+
+{% block title %}Head-to-Head Comparison - {{ app_name }}{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h1><i class="bi bi-arrows-angle-contract"></i> Head-to-Head Comparison</h1>
+        <p class="lead">Compare two players directly</p>
+    </div>
+</div>
+
+<!-- Player Selection -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0"><i class="bi bi-people"></i> Select Players</h5>
+    </div>
+    <div class="card-body">
+        <form method="GET" action="{{ url_for('stats.comparison') }}">
+            <div class="row">
+                <div class="col-md-5 mb-3">
+                    <label for="player1_id" class="form-label">Player 1</label>
+                    <select class="form-select" id="player1_id" name="player1_id" required>
+                        <option value="">Select first player...</option>
+                        {% for player in players %}
+                        <option value="{{ player.id }}" {% if player1 and player1.id == player.id %}selected{% endif %}>
+                            {{ player.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-md-2 mb-3 text-center">
+                    <label class="form-label">&nbsp;</label>
+                    <div class="display-6 text-muted">VS</div>
+                </div>
+
+                <div class="col-md-5 mb-3">
+                    <label for="player2_id" class="form-label">Player 2</label>
+                    <select class="form-select" id="player2_id" name="player2_id" required>
+                        <option value="">Select second player...</option>
+                        {% for player in players %}
+                        <option value="{{ player.id }}" {% if player2 and player2.id == player.id %}selected{% endif %}>
+                            {{ player.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div class="d-grid">
+                <button type="submit" class="btn btn-primary">Compare Players</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Comparison Results -->
+{% if comparison %}
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card {% if comparison.overall_winner == player1.id %}border-success{% endif %}">
+            <div class="card-header {% if comparison.overall_winner == player1.id %}bg-success text-white{% else %}bg-light{% endif %}">
+                <h5 class="mb-0">
+                    {{ player1.name }}
+                    {% if comparison.overall_winner == player1.id %}
+                        <i class="bi bi-trophy-fill float-end"></i>
+                    {% endif %}
+                </h5>
+            </div>
+            <div class="card-body">
+                <p><strong>Total Rounds:</strong> {{ comparison.player1_stats.total_rounds }}</p>
+                <p><strong>Average Score:</strong> {{ "%.2f"|format(comparison.player1_stats.average_score) }}</p>
+                <p><strong>Best Score:</strong> {{ comparison.player1_stats.best_score }}</p>
+                <p><strong>Win Rate:</strong> {{ "%.1f"|format(comparison.player1_stats.win_rate * 100) }}%</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card {% if comparison.overall_winner == player2.id %}border-success{% endif %}">
+            <div class="card-header {% if comparison.overall_winner == player2.id %}bg-success text-white{% else %}bg-light{% endif %}">
+                <h5 class="mb-0">
+                    {{ player2.name }}
+                    {% if comparison.overall_winner == player2.id %}
+                        <i class="bi bi-trophy-fill float-end"></i>
+                    {% endif %}
+                </h5>
+            </div>
+            <div class="card-body">
+                <p><strong>Total Rounds:</strong> {{ comparison.player2_stats.total_rounds }}</p>
+                <p><strong>Average Score:</strong> {{ "%.2f"|format(comparison.player2_stats.average_score) }}</p>
+                <p><strong>Best Score:</strong> {{ comparison.player2_stats.best_score }}</p>
+                <p><strong>Win Rate:</strong> {{ "%.1f"|format(comparison.player2_stats.win_rate * 100) }}%</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Direct Matchups -->
+{% if comparison.head_to_head.total_matchups > 0 %}
+<div class="card mb-4">
+    <div class="card-header bg-primary text-white">
+        <h5 class="mb-0">Direct Matchups ({{ comparison.head_to_head.total_matchups }} rounds)</h5>
+    </div>
+    <div class="card-body">
+        <div class="row text-center">
+            <div class="col-md-4">
+                <h2 class="text-primary">{{ comparison.head_to_head.player1_wins }}</h2>
+                <p>{{ player1.name }} Wins</p>
+            </div>
+            <div class="col-md-4">
+                <h2 class="text-muted">{{ comparison.head_to_head.ties }}</h2>
+                <p>Ties</p>
+            </div>
+            <div class="col-md-4">
+                <h2 class="text-primary">{{ comparison.head_to_head.player2_wins }}</h2>
+                <p>{{ player2.name }} Wins</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Matchup History -->
+<div class="card">
+    <div class="card-header bg-info text-white">
+        <h5 class="mb-0">Matchup History</h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-sm table-hover">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Course</th>
+                        <th>{{ player1.name }}</th>
+                        <th>{{ player2.name }}</th>
+                        <th>Winner</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for matchup in comparison.head_to_head.matchups %}
+                    <tr>
+                        <td>{{ matchup.date }}</td>
+                        <td>{{ matchup.course_name }}</td>
+                        <td {% if matchup.winner == player1.id %}class="table-success"{% endif %}>
+                            <strong>{{ matchup.player1_score }}</strong>
+                        </td>
+                        <td {% if matchup.winner == player2.id %}class="table-success"{% endif %}>
+                            <strong>{{ matchup.player2_score }}</strong>
+                        </td>
+                        <td>
+                            {% if matchup.winner == player1.id %}
+                                {{ player1.name }}
+                            {% elif matchup.winner == player2.id %}
+                                {{ player2.name }}
+                            {% else %}
+                                Tie
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="alert alert-info">
+    <i class="bi bi-info-circle"></i> These players have not played together in any rounds yet.
+</div>
+{% endif %}
+{% endif %}
+{% endblock %}

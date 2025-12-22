@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% block title %}Players - {{ app_name }}{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-8">
+        <h1><i class="bi bi-people"></i> Players</h1>
+    </div>
+    <div class="col-md-4 text-end">
+        <a href="{{ url_for('players.add_player') }}" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> Add Player
+        </a>
+    </div>
+</div>
+
+{% if players %}
+<div class="card">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Status</th>
+                        <th>Created</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for player in players %}
+                    <tr {% if not player.active %}class="table-secondary"{% endif %}>
+                        <td>
+                            <a href="{{ url_for('players.player_detail', player_id=player.id) }}">
+                                {{ player.name }}
+                            </a>
+                        </td>
+                        <td>{{ player.email or '-' }}</td>
+                        <td>
+                            {% if player.active %}
+                                <span class="badge bg-success">Active</span>
+                            {% else %}
+                                <span class="badge bg-secondary">Inactive</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ player.created_at[:10] }}</td>
+                        <td class="text-end">
+                            <a href="{{ url_for('players.player_detail', player_id=player.id) }}"
+                               class="btn btn-sm btn-outline-primary">
+                                View
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="alert alert-info">
+    <i class="bi bi-info-circle"></i> No players yet. <a href="{{ url_for('players.add_player') }}">Add your first player!</a>
+</div>
+{% endif %}
+{% endblock %}

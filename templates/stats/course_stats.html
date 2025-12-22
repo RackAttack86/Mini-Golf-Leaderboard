@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block title %}Course Statistics - {{ app_name }}{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h1><i class="bi bi-pin-map"></i> Course Statistics</h1>
+        <p class="lead">Compare difficulty and popularity of different courses</p>
+    </div>
+</div>
+
+{% if course_stats %}
+<div class="card">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Rank</th>
+                        <th>Course</th>
+                        <th>Times Played</th>
+                        <th>Average Score</th>
+                        <th>Best Score</th>
+                        <th>Worst Score</th>
+                        <th>Difficulty</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for stat in course_stats %}
+                    <tr>
+                        <td>#{{ loop.index }}</td>
+                        <td>
+                            <a href="{{ url_for('courses.course_detail', course_id=stat.course.id) }}">
+                                {{ stat.course.name }}
+                            </a>
+                        </td>
+                        <td>{{ stat.stats.times_played }}</td>
+                        <td><strong>{{ "%.2f"|format(stat.stats.average_score) }}</strong></td>
+                        <td>
+                            <strong>{{ stat.stats.best_score }}</strong>
+                            <br>
+                            <small class="text-muted">{{ stat.stats.best_score_player }}</small>
+                        </td>
+                        <td>
+                            <strong>{{ stat.stats.worst_score }}</strong>
+                            <br>
+                            <small class="text-muted">{{ stat.stats.worst_score_player }}</small>
+                        </td>
+                        <td>
+                            {% if stat.stats.difficulty_rank == 1 %}
+                                <span class="badge bg-danger">Hardest</span>
+                            {% elif stat.stats.difficulty_rank == course_stats|length %}
+                                <span class="badge bg-success">Easiest</span>
+                            {% else %}
+                                <span class="badge bg-secondary">{{ stat.stats.difficulty_rank }}/{{ course_stats|length }}</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="alert alert-info">
+    <i class="bi bi-info-circle"></i> No course data available. <a href="{{ url_for('rounds.add_round') }}">Add some rounds to see course statistics!</a>
+</div>
+{% endif %}
+{% endblock %}

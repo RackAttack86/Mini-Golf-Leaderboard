@@ -1,0 +1,176 @@
+{% extends "base.html" %}
+
+{% block title %}Trends - {{ app_name }}{% endblock %}
+
+{% block extra_head %}
+{% if player_trends %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h1><i class="bi bi-graph-up"></i> Historical Trends</h1>
+        <p class="lead">Track player improvement over time</p>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0"><i class="bi bi-funnel"></i> Filters</h5>
+    </div>
+    <div class="card-body">
+        <form method="GET" action="{{ url_for('stats.trends') }}">
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <label for="player_id" class="form-label">Player</label>
+                    <select class="form-select" id="player_id" name="player_id" required>
+                        <option value="">Select a player...</option>
+                        {% for player in players %}
+                        <option value="{{ player.id }}" {% if selected_player and selected_player.id == player.id %}selected{% endif %}>
+                            {{ player.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-md-3 mb-3">
+                    <label for="start_date" class="form-label">Start Date (Optional)</label>
+                    <input type="date" class="form-control" id="start_date" name="start_date"
+                           value="{{ start_date or '' }}">
+                </div>
+
+                <div class="col-md-3 mb-3">
+                    <label for="end_date" class="form-label">End Date (Optional)</label>
+                    <input type="date" class="form-control" id="end_date" name="end_date"
+                           value="{{ end_date or '' }}">
+                </div>
+
+                <div class="col-md-2 mb-3">
+                    <label class="form-label">&nbsp;</label>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary">View Trends</button>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Player Trends -->
+{% if player_trends %}
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Summary</h5>
+            </div>
+            <div class="card-body">
+                <p><strong>Player:</strong> {{ selected_player.name }}</p>
+                <p><strong>Rounds:</strong> {{ player_trends.total_rounds }}</p>
+                <p><strong>Average Score:</strong> {{ "%.2f"|format(player_trends.average_score) }}</p>
+                <p><strong>Improvement:</strong>
+                    {% if player_trends.improvement > 0 %}
+                        <span class="text-success">
+                            <i class="bi bi-arrow-down"></i> {{ "%.1f"|format(player_trends.improvement) }} points better
+                        </span>
+                    {% elif player_trends.improvement < 0 %}
+                        <span class="text-danger">
+                            <i class="bi bi-arrow-up"></i> {{ "%.1f"|format(-player_trends.improvement) }} points worse
+                        </span>
+                    {% else %}
+                        <span class="text-muted">No change</span>
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0">Score Over Time</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="trendsChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Round History Table -->
+<div class="card">
+    <div class="card-header bg-info text-white">
+        <h5 class="mb-0">Round History</h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-sm table-hover">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Course</th>
+                        <th>Score</th>
+                        <th>Result</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for round in player_trends.rounds %}
+                    <tr>
+                        <td>{{ round.date }}</td>
+                        <td>{{ round.course_name }}</td>
+                        <td>{{ round.score }}</td>
+                        <td>
+                            {% if round.won %}
+                                <span class="badge bg-success">Won</span>
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Chart.js Script -->
+<script>
+const ctx = document.getElementById('trendsChart').getContext('2d');
+const chart = new Chart(ctx, {
+    type: 'line',
+    data: {
+        labels: {{ player_trends.dates|tojson }},
+        datasets: [{
+            label: 'Score',
+            data: {{ player_trends.scores|tojson }},
+            borderColor: 'rgb(75, 192, 192)',
+            backgroundColor: 'rgba(75, 192, 192, 0.2)',
+            tension: 0.1
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            legend: {
+                display: false
+            },
+            title: {
+                display: true,
+                text: 'Lower is Better'
+            }
+        },
+        scales: {
+            y: {
+                reverse: true,
+                beginAtZero: false
+            }
+        }
+    }
+});
+</script>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,190 @@
+{% extends "base.html" %}
+
+{% block title %}{{ player.name }} - {{ app_name }}{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-8">
+        <h1><i class="bi bi-person"></i> {{ player.name }}</h1>
+        {% if not player.active %}
+            <span class="badge bg-secondary">Inactive</span>
+        {% endif %}
+    </div>
+    <div class="col-md-4 text-end">
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#editModal">
+            <i class="bi bi-pencil"></i> Edit
+        </button>
+        <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteModal">
+            <i class="bi bi-trash"></i> Delete
+        </button>
+    </div>
+</div>
+
+<!-- Player Info -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0">Player Information</h5>
+            </div>
+            <div class="card-body">
+                <p><strong>Email:</strong> {{ player.email or 'Not provided' }}</p>
+                <p><strong>Member Since:</strong> {{ player.created_at[:10] }}</p>
+                <p><strong>Status:</strong>
+                    {% if player.active %}
+                        <span class="badge bg-success">Active</span>
+                    {% else %}
+                        <span class="badge bg-secondary">Inactive</span>
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0">Statistics</h5>
+            </div>
+            <div class="card-body">
+                <p><strong>Total Rounds:</strong> {{ stats.total_rounds }}</p>
+                <p><strong>Average Score:</strong> {{ stats.average_score if stats.average_score else 'N/A' }}</p>
+                <p><strong>Best Score:</strong> {{ stats.best_score if stats.best_score else 'N/A' }}</p>
+                <p><strong>Worst Score:</strong> {{ stats.worst_score if stats.worst_score else 'N/A' }}</p>
+                <p><strong>Wins:</strong> {{ stats.wins }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Rounds -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-list-ol"></i> Round History</h5>
+            </div>
+            <div class="card-body">
+                {% if rounds %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Course</th>
+                                <th>Score</th>
+                                <th>Result</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for round in rounds %}
+                            <tr>
+                                <td>{{ round.date_played }}</td>
+                                <td>{{ round.course_name }}</td>
+                                <td>
+                                    {% for score in round.scores %}
+                                        {% if score.player_id == player.id %}
+                                            {{ score.score }}
+                                        {% endif %}
+                                    {% endfor %}
+                                </td>
+                                <td>
+                                    {% set player_score = namespace(value=0) %}
+                                    {% for score in round.scores %}
+                                        {% if score.player_id == player.id %}
+                                            {% set player_score.value = score.score %}
+                                        {% endif %}
+                                    {% endfor %}
+                                    {% set min_score = round.scores|map(attribute='score')|min %}
+                                    {% if player_score.value == min_score %}
+                                        <span class="badge bg-success">Won</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">-</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-end">
+                                    <a href="{{ url_for('rounds.round_detail', round_id=round.id) }}"
+                                       class="btn btn-sm btn-outline-primary">
+                                        View
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted">No rounds played yet.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Modal -->
+<div class="modal fade" id="editModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Edit Player</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('players.edit_player', player_id=player.id) }}">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="edit_name" class="form-label">Name *</label>
+                        <input type="text"
+                               class="form-control"
+                               id="edit_name"
+                               name="name"
+                               value="{{ player.name }}"
+                               required
+                               maxlength="100">
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_email" class="form-label">Email</label>
+                        <input type="email"
+                               class="form-control"
+                               id="edit_email"
+                               name="email"
+                               value="{{ player.email or '' }}"
+                               maxlength="100">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Confirm Delete</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete <strong>{{ player.name }}</strong>?</p>
+                {% if stats.total_rounds > 0 %}
+                <p class="text-warning">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    This player has {{ stats.total_rounds }} round(s). The player will be deactivated instead of deleted.
+                </p>
+                {% endif %}
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form method="POST" action="{{ url_for('players.delete_player', player_id=player.id) }}" style="display: inline;">
+                    <button type="submit" class="btn btn-danger">Delete</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

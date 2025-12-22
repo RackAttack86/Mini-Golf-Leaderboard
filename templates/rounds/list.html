@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+
+{% block title %}Rounds - {{ app_name }}{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-8">
+        <h1><i class="bi bi-list-ol"></i> Rounds</h1>
+    </div>
+    <div class="col-md-4 text-end">
+        <a href="{{ url_for('rounds.add_round') }}" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> Add Round
+        </a>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0"><i class="bi bi-funnel"></i> Filters</h5>
+    </div>
+    <div class="card-body">
+        <form method="GET" action="{{ url_for('rounds.list_rounds') }}">
+            <div class="row">
+                <div class="col-md-3 mb-3">
+                    <label for="player_id" class="form-label">Player</label>
+                    <select class="form-select" id="player_id" name="player_id">
+                        <option value="">All Players</option>
+                        {% for player in players %}
+                        <option value="{{ player.id }}" {% if filters.player_id == player.id %}selected{% endif %}>
+                            {{ player.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-md-3 mb-3">
+                    <label for="course_id" class="form-label">Course</label>
+                    <select class="form-select" id="course_id" name="course_id">
+                        <option value="">All Courses</option>
+                        {% for course in courses %}
+                        <option value="{{ course.id }}" {% if filters.course_id == course.id %}selected{% endif %}>
+                            {{ course.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-md-2 mb-3">
+                    <label for="start_date" class="form-label">Start Date</label>
+                    <input type="date" class="form-control" id="start_date" name="start_date"
+                           value="{{ filters.start_date or '' }}">
+                </div>
+
+                <div class="col-md-2 mb-3">
+                    <label for="end_date" class="form-label">End Date</label>
+                    <input type="date" class="form-control" id="end_date" name="end_date"
+                           value="{{ filters.end_date or '' }}">
+                </div>
+
+                <div class="col-md-2 mb-3">
+                    <label class="form-label">&nbsp;</label>
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary">Apply</button>
+                        <a href="{{ url_for('rounds.list_rounds') }}" class="btn btn-outline-secondary btn-sm">Clear</a>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Rounds List -->
+{% if rounds %}
+<div class="card">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Course</th>
+                        <th>Players</th>
+                        <th>Winner</th>
+                        <th>Winning Score</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for round in rounds %}
+                    <tr>
+                        <td>{{ round.date_played }}</td>
+                        <td>{{ round.course_name }}</td>
+                        <td>{{ round.scores|length }}</td>
+                        <td>
+                            {% set winner = round.scores|sort(attribute='score')|first %}
+                            {{ winner.player_name }}
+                        </td>
+                        <td>
+                            {% set winner = round.scores|sort(attribute='score')|first %}
+                            {{ winner.score }}
+                        </td>
+                        <td class="text-end">
+                            <a href="{{ url_for('rounds.round_detail', round_id=round.id) }}"
+                               class="btn btn-sm btn-outline-primary">
+                                View
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="alert alert-info">
+    <i class="bi bi-info-circle"></i> No rounds found. <a href="{{ url_for('rounds.add_round') }}">Add your first round!</a>
+</div>
+{% endif %}
+{% endblock %}

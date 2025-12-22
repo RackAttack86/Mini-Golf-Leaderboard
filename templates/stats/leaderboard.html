@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+
+{% block title %}Leaderboard - {{ app_name }}{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-8">
+        <h1><i class="bi bi-trophy"></i> Leaderboard</h1>
+    </div>
+    <div class="col-md-4 text-end">
+        <div class="btn-group" role="group">
+            <a href="{{ url_for('stats.leaderboard', sort_by='average') }}"
+               class="btn btn-sm {% if sort_by == 'average' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                By Average
+            </a>
+            <a href="{{ url_for('stats.leaderboard', sort_by='wins') }}"
+               class="btn btn-sm {% if sort_by == 'wins' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                By Wins
+            </a>
+            <a href="{{ url_for('stats.leaderboard', sort_by='rounds') }}"
+               class="btn btn-sm {% if sort_by == 'rounds' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                By Rounds
+            </a>
+        </div>
+    </div>
+</div>
+
+{% if rankings %}
+<div class="card">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Rank</th>
+                        <th>Player</th>
+                        <th>Rounds Played</th>
+                        <th>Average Score</th>
+                        <th>Best Score</th>
+                        <th>Worst Score</th>
+                        <th>Wins</th>
+                        <th>Win Rate</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for rank in rankings %}
+                    <tr {% if loop.index <= 3 %}class="table-warning"{% endif %}>
+                        <td>
+                            {% if loop.index == 1 %}
+                                <i class="bi bi-trophy-fill text-warning"></i>
+                            {% elif loop.index == 2 %}
+                                <i class="bi bi-trophy-fill text-secondary"></i>
+                            {% elif loop.index == 3 %}
+                                <i class="bi bi-trophy-fill" style="color: #cd7f32;"></i>
+                            {% endif %}
+                            #{{ loop.index }}
+                        </td>
+                        <td>
+                            <a href="{{ url_for('players.player_detail', player_id=rank.player.id) }}">
+                                {{ rank.player.name }}
+                            </a>
+                        </td>
+                        <td>{{ rank.stats.total_rounds }}</td>
+                        <td><strong>{{ "%.2f"|format(rank.stats.average_score) }}</strong></td>
+                        <td>{{ rank.stats.best_score }}</td>
+                        <td>{{ rank.stats.worst_score }}</td>
+                        <td>{{ rank.stats.wins }}</td>
+                        <td>{{ "%.1f"|format(rank.stats.win_rate * 100) }}%</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="alert alert-info">
+    <i class="bi bi-info-circle"></i> No player data available. <a href="{{ url_for('rounds.add_round') }}">Add some rounds to see the leaderboard!</a>
+</div>
+{% endif %}
+{% endblock %}
