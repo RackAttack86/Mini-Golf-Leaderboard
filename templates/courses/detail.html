@@ -20,6 +20,23 @@
     </div>
 </div>
 
+<!-- Course Image -->
+{% if course.image_url %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body text-center">
+                {% if course.image_url.startswith('http') %}
+                <img src="{{ course.image_url }}" alt="{{ course.name }}" class="course-detail-image">
+                {% else %}
+                <img src="{{ url_for('static', filename='uploads/courses/' + course.image_url) }}" alt="{{ course.name }}" class="course-detail-image">
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
 <!-- Course Info -->
 <div class="row mb-4">
     <div class="col-md-6">
@@ -129,7 +146,7 @@
                 <h5 class="modal-title">Edit Course</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <form method="POST" action="{{ url_for('courses.edit_course', course_id=course.id) }}">
+            <form method="POST" action="{{ url_for('courses.edit_course', course_id=course.id) }}" enctype="multipart/form-data">
                 <div class="modal-body">
                     <div class="mb-3">
                         <label for="edit_name" class="form-label">Course Name *</label>
@@ -172,6 +189,45 @@
                                    max="500">
                         </div>
                     </div>
+
+                    <div class="mb-3">
+                        <label for="edit_course_image" class="form-label">Course Image</label>
+                        <input type="file"
+                               class="form-control"
+                               id="edit_course_image"
+                               name="course_image"
+                               accept="image/png,image/jpeg,image/jpg,image/gif"
+                               onchange="previewEditCourseImage(this)">
+                        <small class="text-muted">Upload new image or enter URL below</small>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="edit_image_url" class="form-label">Or Image URL</label>
+                        <input type="url"
+                               class="form-control"
+                               id="edit_image_url"
+                               name="image_url"
+                               value="{{ course.image_url or '' }}"
+                               placeholder="https://example.com/course-image.jpg">
+                    </div>
+
+                    {% if course.image_url %}
+                    <div class="mb-3">
+                        <label class="form-label">Current Image</label>
+                        <div>
+                            {% if course.image_url.startswith('http') %}
+                            <img src="{{ course.image_url }}" alt="Current course image" class="course-preview-image">
+                            {% else %}
+                            <img src="{{ url_for('static', filename='uploads/courses/' + course.image_url) }}" alt="Current course image" class="course-preview-image">
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <div id="editCourseImagePreview" class="mb-3" style="display: none;">
+                        <label class="form-label">New Image Preview</label>
+                        <img id="editCourseImagePreviewImg" src="" alt="Course preview" class="course-preview-image">
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
@@ -208,4 +264,26 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+function previewEditCourseImage(input) {
+    const preview = document.getElementById('editCourseImagePreview');
+    const previewImg = document.getElementById('editCourseImagePreviewImg');
+
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+
+        reader.onload = function(e) {
+            previewImg.src = e.target.result;
+            preview.style.display = 'block';
+        };
+
+        reader.readAsDataURL(input.files[0]);
+    } else {
+        preview.style.display = 'none';
+    }
+}
+</script>
 {% endblock %}

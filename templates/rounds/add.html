@@ -32,15 +32,19 @@
                 <form method="POST" action="{{ url_for('rounds.add_round') }}" id="addRoundForm">
                     <div class="mb-3">
                         <label for="course_id" class="form-label">Course *</label>
-                        <select class="form-select" id="course_id" name="course_id" required>
+                        <select class="form-select" id="course_id" name="course_id" required onchange="updateCoursePreview(this)">
                             <option value="">Select a course...</option>
                             {% for course in courses %}
                             <option value="{{ course.id }}"
+                                    data-image-url="{{ course.image_url or '' }}"
                                     {% if form_data and form_data.course_id == course.id %}selected{% endif %}>
                                 {{ course.name }}
                             </option>
                             {% endfor %}
                         </select>
+                        <div id="coursePreview" class="mt-2" style="display: none;">
+                            <img id="coursePreviewImage" src="" alt="Course preview" class="course-preview-image">
+                        </div>
                     </div>
 
                     <div class="mb-3">
@@ -131,6 +135,25 @@
 
 {% block extra_scripts %}
 <script>
+function updateCoursePreview(selectElement) {
+    const selectedOption = selectElement.options[selectElement.selectedIndex];
+    const imageUrl = selectedOption.getAttribute('data-image-url');
+    const previewDiv = document.getElementById('coursePreview');
+    const previewImage = document.getElementById('coursePreviewImage');
+
+    if (imageUrl && imageUrl !== '') {
+        // Check if URL starts with http (external URL) or is a filename (uploaded file)
+        if (imageUrl.startsWith('http')) {
+            previewImage.src = imageUrl;
+        } else {
+            previewImage.src = "{{ url_for('static', filename='uploads/courses/') }}" + imageUrl;
+        }
+        previewDiv.style.display = 'block';
+    } else {
+        previewDiv.style.display = 'none';
+    }
+}
+
 function addPlayer() {
     const container = document.getElementById('playerScores');
     const newRow = document.createElement('div');
@@ -172,6 +195,12 @@ document.addEventListener('DOMContentLoaded', function() {
     if (!dateInput.value) {
         const today = new Date().toISOString().split('T')[0];
         dateInput.value = today;
+    }
+
+    // Show course preview if a course is already selected
+    const courseSelect = document.getElementById('course_id');
+    if (courseSelect && courseSelect.value) {
+        updateCoursePreview(courseSelect);
     }
 });
 </script>

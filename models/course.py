@@ -10,7 +10,7 @@ class Course:
 
     @staticmethod
     def create(name: str, location: Optional[str] = None, holes: Optional[int] = None,
-               par: Optional[int] = None) -> Tuple[bool, str, Optional[Dict[str, Any]]]:
+               par: Optional[int] = None, image_url: Optional[str] = None) -> Tuple[bool, str, Optional[Dict[str, Any]]]:
         """
         Create a new course
 
@@ -19,6 +19,7 @@ class Course:
             location: Course location (optional)
             holes: Number of holes (optional)
             par: Par score (optional)
+            image_url: Course image URL or filename (optional)
 
         Returns:
             Tuple of (success, message, course_dict)
@@ -50,6 +51,7 @@ class Course:
             'location': location.strip() if location else '',
             'holes': int(holes) if holes else None,
             'par': int(par) if par else None,
+            'image_url': image_url or '',
             'created_at': datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
             'active': True
         }
@@ -100,7 +102,7 @@ class Course:
 
     @staticmethod
     def update(course_id: str, name: Optional[str] = None, location: Optional[str] = None,
-               holes: Optional[int] = None, par: Optional[int] = None) -> Tuple[bool, str]:
+               holes: Optional[int] = None, par: Optional[int] = None, image_url: Optional[str] = None) -> Tuple[bool, str]:
         """
         Update course
 
@@ -110,6 +112,7 @@ class Course:
             location: New location (optional)
             holes: New number of holes (optional)
             par: New par (optional)
+            image_url: New image URL or filename (optional)
 
         Returns:
             Tuple of (success, message)
@@ -157,6 +160,10 @@ class Course:
             if not is_valid:
                 return False, error
             course['par'] = int(par) if par else None
+
+        # Update image URL
+        if image_url is not None:
+            course['image_url'] = image_url
 
         store.write_courses(data)
         return True, "Course updated successfully"

@@ -53,11 +53,18 @@ class TrendsService:
                 min_score = min(s['score'] for s in round_data['scores'])
                 won = (player_score == min_score)
 
+                # Calculate position
+                sorted_scores = sorted([s['score'] for s in round_data['scores']])
+                position = sorted_scores.index(player_score) + 1
+                total_players = len(round_data['scores'])
+
                 trends['rounds'].append({
                     'date': round_data['date_played'],
                     'course_name': round_data['course_name'],
                     'score': player_score,
-                    'won': won
+                    'won': won,
+                    'position': position,
+                    'total_players': total_players
                 })
 
                 trends['dates'].append(round_data['date_played'])
@@ -120,3 +127,80 @@ class TrendsService:
             trends['average_score'] = sum(all_scores) / len(all_scores)
 
         return trends
+
+    @staticmethod
+    def get_all_players_trends(start_date: Optional[str] = None,
+                               end_date: Optional[str] = None) -> Dict[str, Any]:
+        """
+        Get trend data for all players for comparison
+
+        Args:
+            start_date: Optional start date filter
+            end_date: Optional end date filter
+
+        Returns:
+            Dictionary with player trends for comparison charts
+        """
+        from models.player import Player
+
+        # Build filters
+        filters = {}
+        if start_date:
+            filters['start_date'] = start_date
+        if end_date:
+            filters['end_date'] = end_date
+
+        rounds = Round.get_all(filters if filters else None)
+        players = Player.get_all()
+
+        # Organize data by player
+        player_data = {}
+        course_data = {}
+        win_counts = {}
+
+        for player in players:
+            player_data[player['id']] = {
+                'name': player['name'],
+                'color': player.get('favorite_color', '#2e7d32'),
+                'rounds': []
+            }
+            win_counts[player['id']] = 0
+
+        # Process rounds
+        for round_info in rounds:
+            # Track course difficulty
+            course_name = round_info['course_name']
+            if course_name not in course_data:
+                course_data[course_name] = []
+
+            # Find winner
+            if round_info['scores']:
+                min_score = min(s['score'] for s in round_info['scores'])
+
+                for score in round_info['scores']:
+                    player_id = score['player_id']
+                    if player_id in player_data:
+                        player_data[player_id]['rounds'].append({
+                            'date': round_info['date_played'],
+                            'score': score['score'],
+                            'course': course_name,
+                            'won': score['score'] == min_score
+                        })
+
+                        if score['score'] == min_score:
+                            win_counts[player_id] += 1
+
+                        course_data[course_name].append(score['score'])
+
+        # Calculate course averages
+        course_averages = {
+            course: sum(scores) / len(scores)
+            for course, scores in course_data.items()
+            if scores
+        }
+
+        return {
+            'players': player_data,
+            'courses': course_averages,
+            'win_counts': win_counts
+        }

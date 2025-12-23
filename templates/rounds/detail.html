@@ -71,6 +71,7 @@
                         <thead>
                             <tr>
                                 <th>Position</th>
+                                <th style="width: 45px;"></th>
                                 <th>Player</th>
                                 <th>Score</th>
                                 <th>Behind Leader</th>
@@ -98,6 +99,19 @@
                                         <i class="bi bi-emoji-frown-fill text-danger" title="4th Place - Better luck next time!"></i>
                                     {% endif %}
                                     #{{ ns.position }}
+                                </td>
+                                <td>
+                                    {% if score.player_data and score.player_data.profile_picture %}
+                                    <img src="{{ url_for('static', filename='uploads/profiles/' + score.player_data.profile_picture) }}"
+                                         alt="{{ score.player_name }}"
+                                         class="profile-picture-xs"
+                                         style="border-color: {{ score.player_data.favorite_color or '#2e7d32' }};">
+                                    {% else %}
+                                    <div class="profile-picture-placeholder-xs"
+                                         style="border-color: {{ score.player_data.favorite_color if score.player_data and score.player_data.favorite_color else '#2e7d32' }};">
+                                        <i class="bi bi-person-fill"></i>
+                                    </div>
+                                    {% endif %}
                                 </td>
                                 <td>
                                     <a href="{{ url_for('players.player_detail', player_id=score.player_id) }}">
@@ -137,14 +151,19 @@
                 <div class="modal-body">
                     <div class="mb-3">
                         <label for="edit_course_id" class="form-label">Course *</label>
-                        <select class="form-select" id="edit_course_id" name="course_id" required>
+                        <select class="form-select" id="edit_course_id" name="course_id" required onchange="updateEditCoursePreview(this)">
                             <option value="">Select a course...</option>
                             {% for course in courses %}
-                            <option value="{{ course.id }}" {% if course.id == round.course_id %}selected{% endif %}>
+                            <option value="{{ course.id }}"
+                                    data-image-url="{{ course.image_url or '' }}"
+                                    {% if course.id == round.course_id %}selected{% endif %}>
                                 {{ course.name }}
                             </option>
                             {% endfor %}
                         </select>
+                        <div id="editCoursePreview" class="mt-2" style="display: none;">
+                            <img id="editCoursePreviewImage" src="" alt="Course preview" class="course-preview-image">
+                        </div>
                     </div>
 
                     <div class="mb-3">
@@ -221,4 +240,40 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+function updateEditCoursePreview(selectElement) {
+    const selectedOption = selectElement.options[selectElement.selectedIndex];
+    const imageUrl = selectedOption.getAttribute('data-image-url');
+    const previewDiv = document.getElementById('editCoursePreview');
+    const previewImage = document.getElementById('editCoursePreviewImage');
+
+    if (imageUrl && imageUrl !== '') {
+        // Check if URL starts with http (external URL) or is a filename (uploaded file)
+        if (imageUrl.startsWith('http')) {
+            previewImage.src = imageUrl;
+        } else {
+            previewImage.src = "{{ url_for('static', filename='uploads/courses/') }}" + imageUrl;
+        }
+        previewDiv.style.display = 'block';
+    } else {
+        previewDiv.style.display = 'none';
+    }
+}
+
+// Show course preview when edit modal is opened
+document.addEventListener('DOMContentLoaded', function() {
+    const editModal = document.getElementById('editModal');
+    if (editModal) {
+        editModal.addEventListener('shown.bs.modal', function() {
+            const courseSelect = document.getElementById('edit_course_id');
+            if (courseSelect && courseSelect.value) {
+                updateEditCoursePreview(courseSelect);
+            }
+        });
+    }
+});
+</script>
 {% endblock %}

@@ -10,7 +10,7 @@
                 <h4 class="mb-0"><i class="bi bi-person-plus"></i> Add New Player</h4>
             </div>
             <div class="card-body">
-                <form method="POST" action="{{ url_for('players.add_player') }}">
+                <form method="POST" action="{{ url_for('players.add_player') }}" enctype="multipart/form-data">
                     <div class="mb-3">
                         <label for="name" class="form-label">Name *</label>
                         <input type="text"
@@ -30,6 +30,26 @@
                                name="email"
                                value="{{ email or '' }}"
                                maxlength="100">
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="profile_picture" class="form-label">Profile Picture (Optional)</label>
+                        <input type="file"
+                               class="form-control"
+                               id="profile_picture"
+                               name="profile_picture"
+                               accept="image/png,image/jpeg,image/jpg,image/gif">
+                        <small class="text-muted">Accepted formats: JPG, PNG, GIF (max 5MB)</small>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="favorite_color" class="form-label">Favorite Color</label>
+                        <input type="color"
+                               class="form-control form-control-color"
+                               id="favorite_color"
+                               name="favorite_color"
+                               value="{{ favorite_color or '#2e7d32' }}"
+                               title="Choose your favorite color">
                     </div>
 
                     <div class="d-grid gap-2">

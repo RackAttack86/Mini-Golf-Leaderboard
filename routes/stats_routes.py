@@ -22,9 +22,34 @@ def course_stats():
     """Course statistics"""
     from services.course_service import CourseService
 
+    # Get sort parameter
+    sort_by = request.args.get('sort', 'difficulty')  # Default to difficulty (avg score)
+    sort_order = request.args.get('order', 'asc')  # asc or desc
+
     course_stats = CourseService.get_course_stats()
 
-    return render_template('stats/course_stats.html', course_stats=course_stats)
+    # Apply sorting
+    if course_stats:
+        if sort_by == 'name':
+            course_stats.sort(key=lambda x: x['course']['name'].lower(),
+                            reverse=(sort_order == 'desc'))
+        elif sort_by == 'popularity':
+            course_stats.sort(key=lambda x: x['stats']['times_played'],
+                            reverse=(sort_order == 'desc'))
+        elif sort_by == 'difficulty':
+            course_stats.sort(key=lambda x: x['stats']['average_score'],
+                            reverse=(sort_order == 'desc'))
+        elif sort_by == 'best':
+            course_stats.sort(key=lambda x: x['stats']['best_score'],
+                            reverse=(sort_order == 'desc'))
+        elif sort_by == 'worst':
+            course_stats.sort(key=lambda x: x['stats']['worst_score'],
+                            reverse=(sort_order == 'desc'))
+
+    return render_template('stats/course_stats.html',
+                          course_stats=course_stats,
+                          sort_by=sort_by,
+                          sort_order=sort_order)
 
 
 @bp.route('/trends')
@@ -49,11 +74,17 @@ def trends():
     # Get overall trends
     overall_trends = TrendsService.get_overall_trends(start_date, end_date)
 
+    # Get all players trends for comparison (when no player selected)
+    all_players_trends = None
+    if not player_id:
+        all_players_trends = TrendsService.get_all_players_trends(start_date, end_date)
+
     return render_template('stats/trends.html',
                            players=players,
                            selected_player=selected_player,
                            player_trends=player_trends,
                            overall_trends=overall_trends,
+                           all_players_trends=all_players_trends,
                            start_date=start_date,
                            end_date=end_date)
 

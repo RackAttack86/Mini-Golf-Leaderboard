@@ -28,6 +28,13 @@ def list_rounds():
 
     rounds = Round.get_all(filters if filters else None)
 
+    # Add winner player data to each round
+    for round_data in rounds:
+        if round_data['scores']:
+            winner_score = min(round_data['scores'], key=lambda x: x['score'])
+            winner_player = Player.get_by_id(winner_score['player_id'])
+            round_data['winner_player'] = winner_player
+
     # Get all players and courses for filter dropdowns
     players = Player.get_all()
     courses = Course.get_all()
@@ -103,6 +110,11 @@ def round_detail(round_id):
 
     # Sort scores by score (lowest first - winner first)
     round_data['scores'] = sorted(round_data['scores'], key=lambda x: x['score'])
+
+    # Add player data to each score
+    for score in round_data['scores']:
+        player = Player.get_by_id(score['player_id'])
+        score['player_data'] = player
 
     # Get all courses for edit modal
     courses = Course.get_all()

@@ -5,10 +5,25 @@
 {% block content %}
 <div class="row mb-4">
     <div class="col-md-8">
-        <h1><i class="bi bi-person"></i> {{ player.name }}</h1>
-        {% if not player.active %}
-            <span class="badge bg-secondary">Inactive</span>
-        {% endif %}
+        <div class="d-flex align-items-center">
+            {% if player.profile_picture %}
+            <img src="{{ url_for('static', filename='uploads/profiles/' + player.profile_picture) }}"
+                 alt="{{ player.name }}"
+                 class="profile-picture-lg me-3"
+                 style="border-color: {{ player.favorite_color or '#2e7d32' }};">
+            {% else %}
+            <div class="profile-picture-placeholder-lg me-3"
+                 style="border-color: {{ player.favorite_color or '#2e7d32' }};">
+                <i class="bi bi-person-fill"></i>
+            </div>
+            {% endif %}
+            <div>
+                <h1 class="mb-1"><i class="bi bi-person"></i> {{ player.name }}</h1>
+                {% if not player.active %}
+                    <span class="badge bg-secondary">Inactive</span>
+                {% endif %}
+            </div>
+        </div>
     </div>
     <div class="col-md-4 text-end">
         <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#editModal">
@@ -30,6 +45,10 @@
             <div class="card-body">
                 <p><strong>Email:</strong> {{ player.email or 'Not provided' }}</p>
                 <p><strong>Member Since:</strong> {{ player.created_at[:10] }}</p>
+                <p><strong>Favorite Color:</strong>
+                    <span class="color-swatch" style="background-color: {{ player.favorite_color or '#2e7d32' }};"></span>
+                    {{ player.favorite_color or '#2e7d32' }}
+                </p>
                 <p><strong>Status:</strong>
                     {% if player.active %}
                         <span class="badge bg-success">Active</span>
@@ -56,6 +75,37 @@
         </div>
     </div>
 </div>
+
+<!-- Performance Trends Charts -->
+{% if rounds %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="mb-0"><i class="bi bi-graph-up"></i> Performance Trends</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-lg-6 mb-4">
+                        <h6 class="text-center mb-3">Score Progression Over Time</h6>
+                        <canvas id="scoreProgressionChart"></canvas>
+                    </div>
+                    <div class="col-lg-6 mb-4">
+                        <h6 class="text-center mb-3">Average Score by Course</h6>
+                        <canvas id="avgScoreByCourseChart"></canvas>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-lg-6 mx-auto mb-4">
+                        <h6 class="text-center mb-3">Finishing Position Distribution</h6>
+                        <canvas id="positionDistributionChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
 
 <!-- Recent Rounds -->
 <div class="row">
@@ -100,7 +150,14 @@
                                     {% if player_score.value == min_score %}
                                         <span class="badge bg-success">Won</span>
                                     {% else %}
-                                        <span class="badge bg-secondary">-</span>
+                                        {# Calculate player's position #}
+                                        {% set position = namespace(value=1) %}
+                                        {% for score in round.scores %}
+                                            {% if score.score < player_score.value %}
+                                                {% set position.value = position.value + 1 %}
+                                            {% endif %}
+                                        {% endfor %}
+                                        <span class="badge bg-secondary">{{ position.value }}/{{ round.scores|length }}</span>
                                     {% endif %}
                                 </td>
                                 <td class="text-end">
@@ -130,7 +187,7 @@
                 <h5 class="modal-title">Edit Player</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <form method="POST" action="{{ url_for('players.edit_player', player_id=player.id) }}">
+            <form method="POST" action="{{ url_for('players.edit_player', player_id=player.id) }}" enctype="multipart/form-data">
                 <div class="modal-body">
                     <div class="mb-3">
                         <label for="edit_name" class="form-label">Name *</label>
@@ -150,6 +207,37 @@
                                name="email"
                                value="{{ player.email or '' }}"
                                maxlength="100">
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_profile_picture" class="form-label">Profile Picture</label>
+                        {% if player.profile_picture %}
+                        <div class="mb-2">
+                            <img src="{{ url_for('static', filename='uploads/profiles/' + player.profile_picture) }}"
+                                 alt="{{ player.name }}"
+                                 class="profile-picture-preview">
+                            <div class="form-check mt-2">
+                                <input class="form-check-input" type="checkbox" name="remove_picture" id="remove_picture">
+                                <label class="form-check-label" for="remove_picture">
+                                    Remove current picture
+                                </label>
+                            </div>
+                        </div>
+                        {% endif %}
+                        <input type="file"
+                               class="form-control"
+                               id="edit_profile_picture"
+                               name="profile_picture"
+                               accept="image/png,image/jpeg,image/jpg,image/gif">
+                        <small class="text-muted">Accepted formats: JPG, PNG, GIF (max 5MB)</small>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_favorite_color" class="form-label">Favorite Color</label>
+                        <input type="color"
+                               class="form-control form-control-color"
+                               id="edit_favorite_color"
+                               name="favorite_color"
+                               value="{{ player.favorite_color or '#2e7d32' }}"
+                               title="Choose your favorite color">
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -187,4 +275,190 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_scripts %}
+{% if rounds %}
+<script>
+// Prepare data from rounds
+const rounds = {{ rounds | tojson }};
+const playerId = "{{ player.id }}";
+const playerColor = "{{ player.favorite_color or '#2e7d32' }}";
+
+// Parse round data for charts
+const chartData = {
+    dates: [],
+    scores: [],
+    courseScores: {},  // {courseName: [scores]}
+    positions: {1: 0, 2: 0, 3: 0, 4: 0}  // Count of 1st, 2nd, 3rd, 4th+ places
+};
+
+rounds.forEach(round => {
+    // Find player's score in this round
+    const playerScore = round.scores.find(s => s.player_id === playerId);
+    if (!playerScore) return;
+
+    // Score progression data
+    chartData.dates.push(round.date_played);
+    chartData.scores.push(playerScore.score);
+
+    // Course average data
+    if (!chartData.courseScores[round.course_name]) {
+        chartData.courseScores[round.course_name] = [];
+    }
+    chartData.courseScores[round.course_name].push(playerScore.score);
+
+    // Position distribution data
+    const sortedScores = round.scores.map(s => s.score).sort((a, b) => a - b);
+    const position = sortedScores.indexOf(playerScore.score) + 1;
+
+    if (position === 1) chartData.positions[1]++;
+    else if (position === 2) chartData.positions[2]++;
+    else if (position === 3) chartData.positions[3]++;
+    else chartData.positions[4]++;
+});
+
+// Calculate average scores by course
+const courseNames = Object.keys(chartData.courseScores);
+const courseAverages = courseNames.map(courseName => {
+    const scores = chartData.courseScores[courseName];
+    return (scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(2);
+});
+
+// Chart 1: Score Progression Over Time
+const ctx1 = document.getElementById('scoreProgressionChart').getContext('2d');
+new Chart(ctx1, {
+    type: 'line',
+    data: {
+        labels: chartData.dates,
+        datasets: [{
+            label: 'Score',
+            data: chartData.scores,
+            borderColor: playerColor,
+            backgroundColor: playerColor + '33',
+            tension: 0.3,
+            fill: true,
+            pointRadius: 5,
+            pointHoverRadius: 7
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+            legend: {
+                display: false
+            },
+            tooltip: {
+                callbacks: {
+                    title: (items) => 'Date: ' + items[0].label,
+                    label: (item) => 'Score: ' + item.formattedValue
+                }
+            }
+        },
+        scales: {
+            y: {
+                reverse: true,  // Lower scores are better in golf
+                beginAtZero: false,
+                title: {
+                    display: true,
+                    text: 'Score (lower is better)'
+                }
+            },
+            x: {
+                title: {
+                    display: true,
+                    text: 'Date'
+                }
+            }
+        }
+    }
+});
+
+// Chart 2: Average Score by Course
+const ctx2 = document.getElementById('avgScoreByCourseChart').getContext('2d');
+new Chart(ctx2, {
+    type: 'bar',
+    data: {
+        labels: courseNames,
+        datasets: [{
+            label: 'Average Score',
+            data: courseAverages,
+            backgroundColor: playerColor + '99',
+            borderColor: playerColor,
+            borderWidth: 2
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+            legend: {
+                display: false
+            },
+            tooltip: {
+                callbacks: {
+                    label: (item) => 'Avg Score: ' + item.formattedValue
+                }
+            }
+        },
+        scales: {
+            y: {
+                reverse: true,
+                beginAtZero: false,
+                title: {
+                    display: true,
+                    text: 'Average Score (lower is better)'
+                }
+            },
+            x: {
+                title: {
+                    display: true,
+                    text: 'Course'
+                }
+            }
+        }
+    }
+});
+
+// Chart 3: Position Distribution
+const ctx3 = document.getElementById('positionDistributionChart').getContext('2d');
+new Chart(ctx3, {
+    type: 'doughnut',
+    data: {
+        labels: ['1st Place', '2nd Place', '3rd Place', '4th+ Place'],
+        datasets: [{
+            data: [
+                chartData.positions[1],
+                chartData.positions[2],
+                chartData.positions[3],
+                chartData.positions[4]
+            ],
+            backgroundColor: [
+                '#ffc107',  // Gold for 1st
+                '#c0c0c0',  // Silver for 2nd
+                '#cd7f32',  // Bronze for 3rd
+                '#6c757d'   // Gray for 4th+
+            ],
+            borderWidth: 2,
+            borderColor: '#fff'
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+            legend: {
+                position: 'bottom'
+            },
+            tooltip: {
+                callbacks: {
+                    label: (item) => item.label + ': ' + item.formattedValue + ' times'
+                }
+            }
+        }
+    }
+});
+</script>
+{% endif %}
 {% endblock %}

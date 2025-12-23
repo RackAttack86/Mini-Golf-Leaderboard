@@ -2,6 +2,28 @@
 
 {% block title %}Course Statistics - {{ app_name }}{% endblock %}
 
+{% block extra_head %}
+<style>
+    .table thead th a {
+        display: block;
+        color: inherit;
+        text-decoration: none;
+        cursor: pointer;
+        user-select: none;
+    }
+    .table thead th a:hover {
+        background-color: rgba(0, 0, 0, 0.05);
+        color: #2e7d32;
+    }
+    .table thead th {
+        padding: 0;
+    }
+    .table thead th a {
+        padding: 0.5rem;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="row mb-4">
     <div class="col-12">
@@ -12,17 +34,71 @@
 
 {% if course_stats %}
 <div class="card">
+    <div class="card-header bg-light">
+        <div class="d-flex justify-content-between align-items-center">
+            <span>
+                Sorted by:
+                <strong>
+                    {% if sort_by == 'name' %}Course Name
+                    {% elif sort_by == 'popularity' %}Popularity (Times Played)
+                    {% elif sort_by == 'difficulty' %}Difficulty (Average Score)
+                    {% elif sort_by == 'best' %}Best Score
+                    {% elif sort_by == 'worst' %}Worst Score
+                    {% endif %}
+                </strong>
+                ({{ sort_order|upper }})
+            </span>
+            <small class="text-muted">
+                <i class="bi bi-info-circle"></i> Click column headers to sort
+            </small>
+        </div>
+    </div>
     <div class="card-body">
         <div class="table-responsive">
             <table class="table table-hover">
                 <thead>
                     <tr>
                         <th>Rank</th>
-                        <th>Course</th>
-                        <th>Times Played</th>
-                        <th>Average Score</th>
-                        <th>Best Score</th>
-                        <th>Worst Score</th>
+                        <th>
+                            <a href="{{ url_for('stats.course_stats', sort='name', order='asc' if sort_by == 'name' and sort_order == 'desc' else 'desc') }}" class="text-decoration-none text-dark">
+                                Course
+                                {% if sort_by == 'name' %}
+                                    <i class="bi bi-arrow-{{ 'up' if sort_order == 'asc' else 'down' }}"></i>
+                                {% endif %}
+                            </a>
+                        </th>
+                        <th>
+                            <a href="{{ url_for('stats.course_stats', sort='popularity', order='asc' if sort_by == 'popularity' and sort_order == 'desc' else 'desc') }}" class="text-decoration-none text-dark">
+                                Times Played
+                                {% if sort_by == 'popularity' %}
+                                    <i class="bi bi-arrow-{{ 'up' if sort_order == 'asc' else 'down' }}"></i>
+                                {% endif %}
+                            </a>
+                        </th>
+                        <th>
+                            <a href="{{ url_for('stats.course_stats', sort='difficulty', order='asc' if sort_by == 'difficulty' and sort_order == 'desc' else 'desc') }}" class="text-decoration-none text-dark">
+                                Average Score
+                                {% if sort_by == 'difficulty' %}
+                                    <i class="bi bi-arrow-{{ 'up' if sort_order == 'asc' else 'down' }}"></i>
+                                {% endif %}
+                            </a>
+                        </th>
+                        <th>
+                            <a href="{{ url_for('stats.course_stats', sort='best', order='asc' if sort_by == 'best' and sort_order == 'desc' else 'desc') }}" class="text-decoration-none text-dark">
+                                Best Score
+                                {% if sort_by == 'best' %}
+                                    <i class="bi bi-arrow-{{ 'up' if sort_order == 'asc' else 'down' }}"></i>
+                                {% endif %}
+                            </a>
+                        </th>
+                        <th>
+                            <a href="{{ url_for('stats.course_stats', sort='worst', order='asc' if sort_by == 'worst' and sort_order == 'desc' else 'desc') }}" class="text-decoration-none text-dark">
+                                Worst Score
+                                {% if sort_by == 'worst' %}
+                                    <i class="bi bi-arrow-{{ 'up' if sort_order == 'asc' else 'down' }}"></i>
+                                {% endif %}
+                            </a>
+                        </th>
                         <th>Difficulty</th>
                     </tr>
                 </thead>

@@ -59,6 +59,45 @@
     </div>
 </div>
 
+<!-- All Players Comparison (when no player selected) -->
+{% if not player_trends and players %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="bi bi-people"></i> All Players Performance Comparison</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="allPlayersChart" style="max-height: 400px;"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="mb-0"><i class="bi bi-graph-down"></i> Course Difficulty Trends</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="courseDifficultyChart"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="bi bi-trophy"></i> Win Distribution</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="winDistributionChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
 <!-- Player Trends -->
 {% if player_trends %}
 <div class="row mb-4">
@@ -91,7 +130,7 @@
     <div class="col-md-8">
         <div class="card">
             <div class="card-header bg-success text-white">
-                <h5 class="mb-0">Score Over Time</h5>
+                <h5 class="mb-0">Score Over Time with Trend</h5>
             </div>
             <div class="card-body">
                 <canvas id="trendsChart"></canvas>
@@ -99,6 +138,31 @@
         </div>
     </div>
 </div>
+
+<!-- Additional Player Charts -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="mb-0"><i class="bi bi-pin-map"></i> Performance by Course</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="playerCourseChart"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="bi bi-calendar-week"></i> Recent Form (Last 10 Rounds)</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="recentFormChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
 
 <!-- Round History Table -->
 <div class="card">
@@ -126,7 +190,7 @@
                             {% if round.won %}
                                 <span class="badge bg-success">Won</span>
                             {% else %}
-                                -
+                                <span class="badge bg-secondary">{{ round.position }}/{{ round.total_players }}</span>
                             {% endif %}
                         </td>
                     </tr>
@@ -137,40 +201,365 @@
     </div>
 </div>
 
-<!-- Chart.js Script -->
+<!-- Chart.js Scripts -->
 <script>
-const ctx = document.getElementById('trendsChart').getContext('2d');
-const chart = new Chart(ctx, {
+{% if all_players_trends %}
+const allPlayersData = {{ all_players_trends | tojson }};
+
+// 1. All Players Performance Comparison Chart
+const allPlayersCtx = document.getElementById('allPlayersChart').getContext('2d');
+
+// Prepare datasets for each player
+const datasets = [];
+const allDates = new Set();
+
+Object.keys(allPlayersData.players).forEach(playerId => {
+    const player = allPlayersData.players[playerId];
+    if (player.rounds.length === 0) return;
+
+    // Collect all dates
+    player.rounds.forEach(round => allDates.add(round.date));
+
+    // Sort rounds by date
+    const sortedRounds = player.rounds.sort((a, b) => a.date.localeCompare(b.date));
+
+    datasets.push({
+        label: player.name,
+        data: sortedRounds.map(r => r.score),
+        borderColor: player.color,
+        backgroundColor: player.color + '33',
+        tension: 0.3,
+        fill: false,
+        pointRadius: 4,
+        pointHoverRadius: 6
+    });
+});
+
+// Sort dates
+const sortedDates = Array.from(allDates).sort();
+
+// Align all players' data to the same date labels
+const alignedDatasets = datasets.map(dataset => {
+    const player = Object.values(allPlayersData.players).find(p => p.name === dataset.label);
+    const dateScoreMap = {};
+    player.rounds.forEach(round => {
+        dateScoreMap[round.date] = round.score;
+    });
+
+    return {
+        ...dataset,
+        data: sortedDates.map(date => dateScoreMap[date] || null)
+    };
+});
+
+new Chart(allPlayersCtx, {
     type: 'line',
     data: {
-        labels: {{ player_trends.dates|tojson }},
-        datasets: [{
-            label: 'Score',
-            data: {{ player_trends.scores|tojson }},
-            borderColor: 'rgb(75, 192, 192)',
-            backgroundColor: 'rgba(75, 192, 192, 0.2)',
-            tension: 0.1
-        }]
+        labels: sortedDates,
+        datasets: alignedDatasets
     },
     options: {
         responsive: true,
+        maintainAspectRatio: true,
         plugins: {
             legend: {
-                display: false
-            },
-            title: {
                 display: true,
-                text: 'Lower is Better'
+                position: 'top'
             }
         },
         scales: {
             y: {
                 reverse: true,
-                beginAtZero: false
+                beginAtZero: false,
+                title: {
+                    display: true,
+                    text: 'Score (lower is better)'
+                }
+            },
+            x: {
+                title: {
+                    display: true,
+                    text: 'Date'
+                }
             }
         }
     }
 });
-</script>
+
+// 2. Course Difficulty Chart
+const courseDiffCtx = document.getElementById('courseDifficultyChart').getContext('2d');
+const courseNames = Object.keys(allPlayersData.courses);
+const courseAvgs = courseNames.map(course => allPlayersData.courses[course].toFixed(2));
+
+new Chart(courseDiffCtx, {
+    type: 'bar',
+    data: {
+        labels: courseNames,
+        datasets: [{
+            label: 'Average Score',
+            data: courseAvgs,
+            backgroundColor: '#f4e4c199',
+            borderColor: '#2e7d32',
+            borderWidth: 2
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        indexAxis: 'y',
+        plugins: {
+            legend: {
+                display: false
+            },
+            tooltip: {
+                callbacks: {
+                    label: (item) => 'Avg: ' + item.formattedValue + ' (lower = harder)'
+                }
+            }
+        },
+        scales: {
+            x: {
+                beginAtZero: false,
+                title: {
+                    display: true,
+                    text: 'Average Score'
+                }
+            }
+        }
+    }
+});
+
+// 3. Win Distribution Chart
+const winDistCtx = document.getElementById('winDistributionChart').getContext('2d');
+const playerNames = [];
+const winCounts = [];
+const colors = [];
+
+Object.keys(allPlayersData.players).forEach(playerId => {
+    const player = allPlayersData.players[playerId];
+    const wins = allPlayersData.win_counts[playerId];
+    if (player.rounds.length > 0) {
+        playerNames.push(player.name);
+        winCounts.push(wins);
+        colors.push(player.color + '99');
+    }
+});
+
+new Chart(winDistCtx, {
+    type: 'doughnut',
+    data: {
+        labels: playerNames,
+        datasets: [{
+            data: winCounts,
+            backgroundColor: colors,
+            borderWidth: 2,
+            borderColor: '#fff'
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+            legend: {
+                position: 'bottom'
+            },
+            tooltip: {
+                callbacks: {
+                    label: (item) => item.label + ': ' + item.formattedValue + ' wins'
+                }
+            }
+        }
+    }
+});
+
 {% endif %}
+
+{% if player_trends %}
+// Helper function to calculate moving average
+function calculateMovingAverage(data, windowSize = 3) {
+    const result = [];
+    for (let i = 0; i < data.length; i++) {
+        if (i < windowSize - 1) {
+            result.push(null);
+        } else {
+            const window = data.slice(i - windowSize + 1, i + 1);
+            const avg = window.reduce((a, b) => a + b, 0) / windowSize;
+            result.push(avg);
+        }
+    }
+    return result;
+}
+
+// 1. Enhanced Score Over Time Chart with Moving Average
+const trendsCtx = document.getElementById('trendsChart').getContext('2d');
+const scores = {{ player_trends.scores|tojson }};
+const dates = {{ player_trends.dates|tojson }};
+const movingAvg = calculateMovingAverage(scores, 3);
+
+new Chart(trendsCtx, {
+    type: 'line',
+    data: {
+        labels: dates,
+        datasets: [
+            {
+                label: 'Actual Score',
+                data: scores,
+                borderColor: '#2e7d32',
+                backgroundColor: '#2e7d3233',
+                tension: 0.1,
+                fill: false,
+                pointRadius: 5,
+                pointHoverRadius: 7
+            },
+            {
+                label: '3-Round Moving Average',
+                data: movingAvg,
+                borderColor: '#ffc107',
+                backgroundColor: 'transparent',
+                borderWidth: 3,
+                tension: 0.3,
+                fill: false,
+                pointRadius: 0
+            }
+        ]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+            legend: {
+                display: true,
+                position: 'top'
+            },
+            tooltip: {
+                callbacks: {
+                    title: (items) => 'Date: ' + items[0].label
+                }
+            }
+        },
+        scales: {
+            y: {
+                reverse: true,
+                beginAtZero: false,
+                title: {
+                    display: true,
+                    text: 'Score (lower is better)'
+                }
+            },
+            x: {
+                title: {
+                    display: true,
+                    text: 'Date'
+                }
+            }
+        }
+    }
+});
+
+// 2. Performance by Course Chart
+const rounds = {{ player_trends.rounds|tojson }};
+const coursesData = {};
+
+rounds.forEach(round => {
+    if (!coursesData[round.course_name]) {
+        coursesData[round.course_name] = [];
+    }
+    coursesData[round.course_name].push(round.score);
+});
+
+const courseNames = Object.keys(coursesData);
+const courseAverages = courseNames.map(course => {
+    const scores = coursesData[course];
+    return (scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(2);
+});
+
+const courseCtx = document.getElementById('playerCourseChart').getContext('2d');
+new Chart(courseCtx, {
+    type: 'bar',
+    data: {
+        labels: courseNames,
+        datasets: [{
+            label: 'Average Score',
+            data: courseAverages,
+            backgroundColor: '#66bb6a99',
+            borderColor: '#2e7d32',
+            borderWidth: 2
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+            legend: {
+                display: false
+            }
+        },
+        scales: {
+            y: {
+                reverse: true,
+                beginAtZero: false,
+                title: {
+                    display: true,
+                    text: 'Average Score (lower is better)'
+                }
+            }
+        }
+    }
+});
+
+// 3. Recent Form Chart (Last 10 rounds)
+const recentRounds = rounds.slice(-10);
+const recentDates = recentRounds.map(r => r.date);
+const recentScores = recentRounds.map(r => r.score);
+const recentColors = recentRounds.map(r => r.won ? '#ffc107' : '#2e7d32');
+
+const recentCtx = document.getElementById('recentFormChart').getContext('2d');
+new Chart(recentCtx, {
+    type: 'line',
+    data: {
+        labels: recentDates,
+        datasets: [{
+            label: 'Score',
+            data: recentScores,
+            borderColor: '#2e7d32',
+            backgroundColor: '#2e7d3233',
+            tension: 0.3,
+            fill: true,
+            pointBackgroundColor: recentColors,
+            pointBorderColor: recentColors,
+            pointRadius: 7,
+            pointHoverRadius: 9
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+            legend: {
+                display: false
+            },
+            tooltip: {
+                callbacks: {
+                    label: (item) => {
+                        const won = recentRounds[item.dataIndex].won;
+                        return 'Score: ' + item.formattedValue + (won ? ' (Won!)' : '');
+                    }
+                }
+            }
+        },
+        scales: {
+            y: {
+                reverse: true,
+                beginAtZero: false,
+                title: {
+                    display: true,
+                    text: 'Score'
+                }
+            }
+        }
+    }
+});
+
+{% endif %}
+</script>
 {% endblock %}

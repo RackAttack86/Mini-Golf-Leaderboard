@@ -21,6 +21,7 @@
             <table class="table table-hover">
                 <thead>
                     <tr>
+                        <th style="width: 80px;"></th>
                         <th>Name</th>
                         <th>Email</th>
                         <th>Status</th>
@@ -31,6 +32,19 @@
                 <tbody>
                     {% for player in players %}
                     <tr {% if not player.active %}class="table-secondary"{% endif %}>
+                        <td>
+                            {% if player.profile_picture %}
+                            <img src="{{ url_for('static', filename='uploads/profiles/' + player.profile_picture) }}"
+                                 alt="{{ player.name }}"
+                                 class="profile-picture-sm"
+                                 style="border-color: {{ player.favorite_color or '#2e7d32' }};">
+                            {% else %}
+                            <div class="profile-picture-placeholder"
+                                 style="border-color: {{ player.favorite_color or '#2e7d32' }};">
+                                <i class="bi bi-person-fill"></i>
+                            </div>
+                            {% endif %}
+                        </td>
                         <td>
                             <a href="{{ url_for('players.player_detail', player_id=player.id) }}">
                                 {{ player.name }}

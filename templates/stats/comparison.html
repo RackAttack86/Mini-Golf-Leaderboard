@@ -97,6 +97,53 @@
     </div>
 </div>
 
+<!-- Comparison Charts -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="bi bi-graph-up"></i> Score Comparison Over Time</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="scoreComparisonChart"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="mb-0"><i class="bi bi-bar-chart"></i> Performance by Course</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="courseComparisonChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="bi bi-pie-chart"></i> Head-to-Head Record</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="headToHeadChart"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-speedometer"></i> Recent Form (Last 10 Rounds)</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="recentFormComparisonChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Direct Matchups -->
 {% if comparison.head_to_head.total_matchups > 0 %}
 <div class="card mb-4">
@@ -170,5 +217,267 @@
     <i class="bi bi-info-circle"></i> These players have not played together in any rounds yet.
 </div>
 {% endif %}
+{% endif %}
+{% endblock %}
+
+{% block extra_scripts %}
+{% if comparison %}
+<script>
+const player1Color = "{{ player1.favorite_color or '#2e7d32' }}";
+const player2Color = "{{ player2.favorite_color or '#1976d2' }}";
+const player1Name = "{{ player1.name }}";
+const player2Name = "{{ player2.name }}";
+
+// 1. Score Comparison Over Time Chart
+const player1Rounds = {{ comparison.player1_rounds | tojson }};
+const player2Rounds = {{ comparison.player2_rounds | tojson }};
+
+// Combine all dates from both players
+const allDates = new Set();
+player1Rounds.forEach(r => allDates.add(r.date));
+player2Rounds.forEach(r => allDates.add(r.date));
+const sortedDates = Array.from(allDates).sort();
+
+// Create data maps
+const player1DateMap = {};
+const player2DateMap = {};
+player1Rounds.forEach(r => player1DateMap[r.date] = r.score);
+player2Rounds.forEach(r => player2DateMap[r.date] = r.score);
+
+// Align data to dates
+const player1Data = sortedDates.map(date => player1DateMap[date] || null);
+const player2Data = sortedDates.map(date => player2DateMap[date] || null);
+
+const scoreCompCtx = document.getElementById('scoreComparisonChart').getContext('2d');
+new Chart(scoreCompCtx, {
+    type: 'line',
+    data: {
+        labels: sortedDates,
+        datasets: [
+            {
+                label: player1Name,
+                data: player1Data,
+                borderColor: player1Color,
+                backgroundColor: player1Color + '33',
+                tension: 0.3,
+                fill: false,
+                pointRadius: 5,
+                pointHoverRadius: 7
+            },
+            {
+                label: player2Name,
+                data: player2Data,
+                borderColor: player2Color,
+                backgroundColor: player2Color + '33',
+                tension: 0.3,
+                fill: false,
+                pointRadius: 5,
+                pointHoverRadius: 7
+            }
+        ]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+            legend: {
+                display: true,
+                position: 'top'
+            }
+        },
+        scales: {
+            y: {
+                reverse: true,
+                beginAtZero: false,
+                title: {
+                    display: true,
+                    text: 'Score (lower is better)'
+                }
+            },
+            x: {
+                title: {
+                    display: true,
+                    text: 'Date'
+                }
+            }
+        }
+    }
+});
+
+// 2. Performance by Course Chart
+const player1Courses = {{ comparison.player1_courses | tojson }};
+const player2Courses = {{ comparison.player2_courses | tojson }};
+
+// Get all unique courses
+const allCourses = new Set([...Object.keys(player1Courses), ...Object.keys(player2Courses)]);
+const courseNames = Array.from(allCourses);
+
+const player1CourseData = courseNames.map(course => player1Courses[course] || null);
+const player2CourseData = courseNames.map(course => player2Courses[course] || null);
+
+const courseCompCtx = document.getElementById('courseComparisonChart').getContext('2d');
+new Chart(courseCompCtx, {
+    type: 'bar',
+    data: {
+        labels: courseNames,
+        datasets: [
+            {
+                label: player1Name,
+                data: player1CourseData,
+                backgroundColor: player1Color + '99',
+                borderColor: player1Color,
+                borderWidth: 2
+            },
+            {
+                label: player2Name,
+                data: player2CourseData,
+                backgroundColor: player2Color + '99',
+                borderColor: player2Color,
+                borderWidth: 2
+            }
+        ]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+            legend: {
+                display: true,
+                position: 'top'
+            }
+        },
+        scales: {
+            y: {
+                reverse: true,
+                beginAtZero: false,
+                title: {
+                    display: true,
+                    text: 'Average Score (lower is better)'
+                }
+            },
+            x: {
+                title: {
+                    display: true,
+                    text: 'Course'
+                }
+            }
+        }
+    }
+});
+
+// 3. Head-to-Head Record Chart
+{% if comparison.head_to_head.total_matchups > 0 %}
+const h2hData = {{ comparison.head_to_head | tojson }};
+
+const h2hCtx = document.getElementById('headToHeadChart').getContext('2d');
+new Chart(h2hCtx, {
+    type: 'doughnut',
+    data: {
+        labels: [player1Name + ' Wins', 'Ties', player2Name + ' Wins'],
+        datasets: [{
+            data: [h2hData.player1_wins, h2hData.ties, h2hData.player2_wins],
+            backgroundColor: [
+                player1Color + '99',
+                '#95a5a6',
+                player2Color + '99'
+            ],
+            borderColor: [player1Color, '#7f8c8d', player2Color],
+            borderWidth: 2
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+            legend: {
+                position: 'bottom'
+            },
+            tooltip: {
+                callbacks: {
+                    label: (item) => item.label + ': ' + item.formattedValue
+                }
+            }
+        }
+    }
+});
+{% else %}
+// No head-to-head data - show message
+const h2hCtx = document.getElementById('headToHeadChart').getContext('2d');
+h2hCtx.font = '16px Arial';
+h2hCtx.fillStyle = '#6c757d';
+h2hCtx.textAlign = 'center';
+h2hCtx.fillText('No direct matchups yet', h2hCtx.canvas.width / 2, h2hCtx.canvas.height / 2);
+{% endif %}
+
+// 4. Recent Form Comparison (Last 10 rounds)
+const player1Recent = player1Rounds.slice(-10);
+const player2Recent = player2Rounds.slice(-10);
+
+// Use indices for x-axis (last 10 rounds)
+const recentIndices = Array.from({length: 10}, (_, i) => i + 1);
+
+const player1RecentScores = player1Recent.map(r => r.score);
+const player2RecentScores = player2Recent.map(r => r.score);
+
+// Pad with nulls if less than 10 rounds
+while (player1RecentScores.length < 10) player1RecentScores.unshift(null);
+while (player2RecentScores.length < 10) player2RecentScores.unshift(null);
+
+const recentFormCtx = document.getElementById('recentFormComparisonChart').getContext('2d');
+new Chart(recentFormCtx, {
+    type: 'line',
+    data: {
+        labels: recentIndices.map(i => 'Round ' + i),
+        datasets: [
+            {
+                label: player1Name,
+                data: player1RecentScores,
+                borderColor: player1Color,
+                backgroundColor: player1Color + '33',
+                tension: 0.3,
+                fill: true,
+                pointRadius: 6,
+                pointHoverRadius: 8
+            },
+            {
+                label: player2Name,
+                data: player2RecentScores,
+                borderColor: player2Color,
+                backgroundColor: player2Color + '33',
+                tension: 0.3,
+                fill: true,
+                pointRadius: 6,
+                pointHoverRadius: 8
+            }
+        ]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+            legend: {
+                display: true,
+                position: 'top'
+            }
+        },
+        scales: {
+            y: {
+                reverse: true,
+                beginAtZero: false,
+                title: {
+                    display: true,
+                    text: 'Score'
+                }
+            },
+            x: {
+                title: {
+                    display: true,
+                    text: 'Recent Rounds'
+                }
+            }
+        }
+    }
+});
+</script>
 {% endif %}
 {% endblock %}

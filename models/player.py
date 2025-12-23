@@ -9,13 +9,16 @@ class Player:
     """Player model with CRUD operations"""
 
     @staticmethod
-    def create(name: str, email: Optional[str] = None) -> Tuple[bool, str, Optional[Dict[str, Any]]]:
+    def create(name: str, email: Optional[str] = None, profile_picture: Optional[str] = None,
+               favorite_color: Optional[str] = None) -> Tuple[bool, str, Optional[Dict[str, Any]]]:
         """
         Create a new player
 
         Args:
             name: Player name
             email: Player email (optional)
+            profile_picture: Profile picture filename (optional)
+            favorite_color: Favorite color hex code (optional)
 
         Returns:
             Tuple of (success, message, player_dict)
@@ -38,6 +41,8 @@ class Player:
             'id': str(uuid.uuid4()),
             'name': name.strip(),
             'email': email.strip() if email else '',
+            'profile_picture': profile_picture or '',
+            'favorite_color': favorite_color or '#2e7d32',
             'created_at': datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
             'active': True
         }
@@ -87,7 +92,8 @@ class Player:
         return None
 
     @staticmethod
-    def update(player_id: str, name: Optional[str] = None, email: Optional[str] = None) -> Tuple[bool, str]:
+    def update(player_id: str, name: Optional[str] = None, email: Optional[str] = None,
+               profile_picture: Optional[str] = None, favorite_color: Optional[str] = None) -> Tuple[bool, str]:
         """
         Update player
 
@@ -95,6 +101,8 @@ class Player:
             player_id: Player ID
             name: New name (optional)
             email: New email (optional)
+            profile_picture: Profile picture filename (optional)
+            favorite_color: Favorite color hex code (optional)
 
         Returns:
             Tuple of (success, message)
@@ -131,6 +139,14 @@ class Player:
             if not is_valid:
                 return False, error
             player['email'] = email.strip()
+
+        # Update profile picture
+        if profile_picture is not None:
+            player['profile_picture'] = profile_picture
+
+        # Update favorite color
+        if favorite_color is not None:
+            player['favorite_color'] = favorite_color
 
         store.write_players(data)
         return True, "Player updated successfully"

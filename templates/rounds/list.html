@@ -81,6 +81,7 @@
                         <th>Date</th>
                         <th>Course</th>
                         <th>Players</th>
+                        <th style="width: 60px;"></th>
                         <th>Winner</th>
                         <th>Winning Score</th>
                         <th></th>
@@ -88,19 +89,32 @@
                 </thead>
                 <tbody>
                     {% for round in rounds %}
-                    <tr>
-                        <td>{{ round.date_played }}</td>
-                        <td>{{ round.course_name | format_course_name | safe }}</td>
-                        <td>{{ round.scores|length }}</td>
-                        <td>
-                            {% set winner = round.scores|sort(attribute='score')|first %}
+                    {% set winner = round.scores|sort(attribute='score')|first %}
+                    {% set winner_color = round.winner_player.favorite_color if round.winner_player and round.winner_player.favorite_color else '#2e7d32' %}
+                    <tr class="winner-color-row">
+                        <td style="background-color: {{ winner_color }}33 !important;">{{ round.date_played }}</td>
+                        <td style="background-color: {{ winner_color }}33 !important;">{{ round.course_name | format_course_name | safe }}</td>
+                        <td style="background-color: {{ winner_color }}33 !important;">{{ round.scores|length }}</td>
+                        <td style="background-color: {{ winner_color }}33 !important;">
+                            {% if round.winner_player and round.winner_player.profile_picture %}
+                            <img src="{{ url_for('static', filename='uploads/profiles/' + round.winner_player.profile_picture) }}"
+                                 alt="{{ winner.player_name }}"
+                                 class="profile-picture-sm"
+                                 style="border-color: {{ winner_color }};">
+                            {% else %}
+                            <div class="profile-picture-placeholder"
+                                 style="border-color: {{ winner_color }};">
+                                <i class="bi bi-person-fill"></i>
+                            </div>
+                            {% endif %}
+                        </td>
+                        <td style="background-color: {{ winner_color }}33 !important;">
                             {{ winner.player_name }}
                         </td>
-                        <td>
-                            {% set winner = round.scores|sort(attribute='score')|first %}
+                        <td style="background-color: {{ winner_color }}33 !important;">
                             {{ winner.score }}
                         </td>
-                        <td class="text-end">
+                        <td class="text-end" style="background-color: {{ winner_color }}33 !important;">
                             <a href="{{ url_for('rounds.round_detail', round_id=round.id) }}"
                                class="btn btn-sm btn-outline-primary">
                                 View

@@ -3,145 +3,313 @@
 {% block title %}Dashboard - {{ app_name }}{% endblock %}
 
 {% block content %}
-<div class="row mb-4">
-    <div class="col-12">
-        <h1><i class="bi bi-house"></i> Dashboard</h1>
-        <p class="lead">Welcome to Mini Golf Leaderboard - Track your mini golf scores and compete with friends!</p>
-    </div>
-</div>
+</main>
+<!-- Custom layout for dashboard with sidebar -->
+<div class="container-fluid px-0">
+    <div class="row g-0">
+        <!-- Sidebar -->
+        <div class="col-lg-2 pe-3" style="background-color: #f8f9fa; min-height: calc(100vh - 200px);">
+            <div class="p-3">
+                <!-- Summary Cards -->
+        <div class="card border-primary mb-3">
+            <a href="{{ url_for('players.list_players') }}" class="card-body text-decoration-none summary-card-link p-3">
+                <div class="d-flex align-items-center">
+                    <i class="bi bi-people display-5 text-primary me-3"></i>
+                    <div>
+                        <h4 class="mb-0">{{ total_players }}</h4>
+                        <small class="text-muted">Total Players</small>
+                    </div>
+                </div>
+            </a>
+            <div class="card-footer bg-transparent border-0 p-2">
+                <a href="{{ url_for('players.add_player') }}" class="btn btn-sm btn-outline-primary w-100">Add Player</a>
+            </div>
+        </div>
 
-<!-- Summary Cards -->
-<div class="row mb-4">
-    <div class="col-md-4 mb-3">
-        <div class="card border-primary">
-            <a href="{{ url_for('players.list_players') }}" class="card-body text-center text-decoration-none summary-card-link">
-                <i class="bi bi-people display-4 text-primary"></i>
-                <h3 class="mt-2">{{ total_players }}</h3>
-                <p class="text-muted">Total Players</p>
+        <div class="card border-success mb-3">
+            <a href="{{ url_for('courses.list_courses') }}" class="card-body text-decoration-none summary-card-link p-3">
+                <div class="d-flex align-items-center">
+                    <i class="bi bi-pin-map display-5 text-success me-3"></i>
+                    <div>
+                        <h4 class="mb-0">{{ total_courses }}</h4>
+                        <small class="text-muted">Total Courses</small>
+                    </div>
+                </div>
             </a>
-            <div class="card-footer bg-transparent border-0 text-center pb-3">
-                <a href="{{ url_for('players.add_player') }}" class="btn btn-sm btn-outline-primary">Add Player</a>
+            <div class="card-footer bg-transparent border-0 p-2">
+                <a href="{{ url_for('courses.add_course') }}" class="btn btn-sm btn-outline-success w-100">Add Course</a>
             </div>
         </div>
-    </div>
-    <div class="col-md-4 mb-3">
-        <div class="card border-success">
-            <a href="{{ url_for('courses.list_courses') }}" class="card-body text-center text-decoration-none summary-card-link">
-                <i class="bi bi-pin-map display-4 text-success"></i>
-                <h3 class="mt-2">{{ total_courses }}</h3>
-                <p class="text-muted">Total Courses</p>
-            </a>
-            <div class="card-footer bg-transparent border-0 text-center pb-3">
-                <a href="{{ url_for('courses.add_course') }}" class="btn btn-sm btn-outline-success">Add Course</a>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-4 mb-3">
-        <div class="card border-info">
-            <a href="{{ url_for('rounds.list_rounds') }}" class="card-body text-center text-decoration-none summary-card-link">
-                <i class="bi bi-list-ol display-4 text-info"></i>
-                <h3 class="mt-2">{{ total_rounds }}</h3>
-                <p class="text-muted">Total Rounds</p>
-            </a>
-            <div class="card-footer bg-transparent border-0 text-center pb-3">
-                <a href="{{ url_for('rounds.add_round') }}" class="btn btn-sm btn-outline-info">Add Round</a>
-            </div>
-        </div>
-    </div>
-</div>
 
-<!-- Top Players -->
-{% if top_players %}
-<div class="row mb-4">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header bg-warning text-dark">
-                <h5 class="mb-0"><i class="bi bi-trophy"></i> Top Players</h5>
+        <div class="card border-info mb-3">
+            <a href="{{ url_for('rounds.list_rounds') }}" class="card-body text-decoration-none summary-card-link p-3">
+                <div class="d-flex align-items-center">
+                    <i class="bi bi-list-ol display-5 text-info me-3"></i>
+                    <div>
+                        <h4 class="mb-0">{{ total_rounds }}</h4>
+                        <small class="text-muted">Total Rounds</small>
+                    </div>
+                </div>
+            </a>
+            <div class="card-footer bg-transparent border-0 p-2">
+                <a href="{{ url_for('rounds.add_round') }}" class="btn btn-sm btn-outline-info w-100">Add Round</a>
             </div>
-            <div class="card-body">
-                <div class="row">
-                    {% for item in top_players %}
-                    <div class="col-md-4 mb-3">
-                        <div class="text-center">
-                            {% if loop.index == 1 %}
-                                <i class="bi bi-trophy-fill display-1 text-warning"></i>
-                            {% elif loop.index == 2 %}
-                                <i class="bi bi-trophy-fill display-1 text-secondary"></i>
-                            {% else %}
-                                <i class="bi bi-trophy-fill display-1 text-bronze"></i>
-                            {% endif %}
-                            <h4 class="mt-2">
-                                <a href="{{ url_for('players.player_detail', player_id=item.player.id) }}">
-                                    {{ item.player.name }}
-                                </a>
-                            </h4>
-                            <p class="mb-0">Average Finish: <strong>{{ "%.2f"|format(item.avg_position) }}</strong></p>
-                            <p class="text-muted small">{{ item.rounds_played }} rounds played</p>
+        </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="col-lg-10">
+            <div class="container py-4">
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <h1><i class="bi bi-house"></i> Dashboard</h1>
+                        <p class="lead">Welcome to Mini Golf Leaderboard - Track your mini golf scores and compete with friends!</p>
+                    </div>
+                </div>
+
+                <!-- Top Players -->
+                {% if top_players %}
+                <div class="card mb-4">
+                    <div class="card-header bg-warning text-dark">
+                        <h5 class="mb-0"><i class="bi bi-trophy"></i> Top Players</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            {% for item in top_players %}
+                            <div class="col-md-4 mb-3">
+                                <div class="text-center">
+                                    {% if loop.index == 1 %}
+                                        <img src="{{ url_for('static', filename='images/trophies/masters.png') }}" alt="Masters Trophy" style="height: 180px; object-fit: contain;">
+                                    {% elif loop.index == 2 %}
+                                        <img src="{{ url_for('static', filename='images/trophies/usopen.png') }}" alt="US Open Trophy" style="height: 180px; object-fit: contain;">
+                                    {% else %}
+                                        <img src="{{ url_for('static', filename='images/trophies/rydercup.png') }}" alt="Ryder Cup Trophy" style="height: 180px; object-fit: contain;">
+                                    {% endif %}
+                                    <div class="mt-3 mb-2">
+                                        {% if item.player.profile_picture %}
+                                        <img src="{{ url_for('static', filename='uploads/profiles/' + item.player.profile_picture) }}"
+                                             alt="{{ item.player.name }}"
+                                             class="profile-picture-lg"
+                                             style="border-color: {{ item.player.favorite_color or '#2e7d32' }};">
+                                        {% else %}
+                                        <div class="profile-picture-placeholder-lg d-inline-flex"
+                                             style="border-color: {{ item.player.favorite_color or '#2e7d32' }};">
+                                            <i class="bi bi-person-fill"></i>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                    <h4 class="mt-2">
+                                        <a href="{{ url_for('players.player_detail', player_id=item.player.id) }}">
+                                            {{ item.player.name }}
+                                        </a>
+                                    </h4>
+                                    <p class="mb-0">Average Finish: <strong>{{ "%.2f"|format(item.avg_position) }}</strong></p>
+                                    <p class="text-muted small">{{ item.rounds_played }} rounds played</p>
+                                </div>
+                            </div>
+                            {% endfor %}
                         </div>
                     </div>
-                    {% endfor %}
                 </div>
-            </div>
-        </div>
-    </div>
-</div>
-{% endif %}
+                {% endif %}
 
-<!-- Recent Rounds -->
-{% if recent_rounds %}
-<div class="row">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header bg-primary text-white">
-                <h5 class="mb-0"><i class="bi bi-clock-history"></i> Recent Rounds</h5>
-            </div>
-            <div class="card-body">
-                <div class="table-responsive">
-                    <table class="table table-hover">
-                        <thead>
-                            <tr>
-                                <th>Date</th>
-                                <th>Course</th>
-                                <th>Players</th>
-                                <th>Winner</th>
-                                <th></th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for round in recent_rounds %}
-                            <tr>
-                                <td>{{ round.date_played }}</td>
-                                <td>{{ round.course_name | format_course_name | safe }}</td>
-                                <td>{{ round.scores|length }}</td>
-                                <td>
+                <!-- Activity Trends Chart -->
+                {% if recent_rounds %}
+                <div class="card mb-4">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="mb-0"><i class="bi bi-activity"></i> Activity Trends</h5>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="activityTrendsChart" style="max-height: 300px;"></canvas>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Recent Rounds -->
+                {% if recent_rounds %}
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0"><i class="bi bi-clock-history"></i> Recent Rounds</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Course</th>
+                                        <th>Players</th>
+                                        <th style="width: 45px;"></th>
+                                        <th>Winner</th>
+                                        <th></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for round in recent_rounds %}
                                     {% set winner = round.scores|sort(attribute='score')|first %}
-                                    {{ winner.player_name }} ({{ winner.score }})
-                                </td>
-                                <td class="text-end">
-                                    <a href="{{ url_for('rounds.round_detail', round_id=round.id) }}"
-                                       class="btn btn-sm btn-outline-primary">
-                                        View
-                                    </a>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+                                    {% set winner_color = round.winner_player.favorite_color if round.winner_player and round.winner_player.favorite_color else '#2e7d32' %}
+                                    <tr class="winner-color-row">
+                                        <td style="background-color: {{ winner_color }}33 !important;">{{ round.date_played }}</td>
+                                        <td style="background-color: {{ winner_color }}33 !important;">{{ round.course_name | format_course_name | safe }}</td>
+                                        <td style="background-color: {{ winner_color }}33 !important;">{{ round.scores|length }}</td>
+                                        <td style="background-color: {{ winner_color }}33 !important;">
+                                            {% if round.winner_player and round.winner_player.profile_picture %}
+                                            <img src="{{ url_for('static', filename='uploads/profiles/' + round.winner_player.profile_picture) }}"
+                                                 alt="{{ winner.player_name }}"
+                                                 class="profile-picture-xs"
+                                                 style="border-color: {{ winner_color }};">
+                                            {% else %}
+                                            <div class="profile-picture-placeholder-xs"
+                                                 style="border-color: {{ winner_color }};">
+                                                <i class="bi bi-person-fill"></i>
+                                            </div>
+                                            {% endif %}
+                                        </td>
+                                        <td style="background-color: {{ winner_color }}33 !important;">
+                                            {{ winner.player_name }} ({{ winner.score }})
+                                        </td>
+                                        <td class="text-end" style="background-color: {{ winner_color }}33 !important;">
+                                            <a href="{{ url_for('rounds.round_detail', round_id=round.id) }}"
+                                               class="btn btn-sm btn-outline-primary">
+                                                View
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="text-center mt-3">
+                            <a href="{{ url_for('rounds.list_rounds') }}" class="btn btn-primary">View All Rounds</a>
+                        </div>
+                    </div>
                 </div>
-                <div class="text-center mt-3">
-                    <a href="{{ url_for('rounds.list_rounds') }}" class="btn btn-primary">View All Rounds</a>
+                {% else %}
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle"></i> No rounds recorded yet. <a href="{{ url_for('rounds.add_round') }}">Add your first round!</a>
                 </div>
+                {% endif %}
             </div>
         </div>
     </div>
 </div>
-{% else %}
-<div class="row">
-    <div class="col-12">
-        <div class="alert alert-info">
-            <i class="bi bi-info-circle"></i> No rounds recorded yet. <a href="{{ url_for('rounds.add_round') }}">Add your first round!</a>
-        </div>
-    </div>
-</div>
+<main class="container my-4" style="display:none;">
+{% endblock %}
+
+{% block extra_scripts %}
+{% if recent_rounds %}
+<script>
+// Parse rounds data for activity trends
+const recentRounds = {{ recent_rounds | tojson }};
+
+// Group rounds by date and count
+const dateGroups = {};
+recentRounds.forEach(round => {
+    const date = round.date_played;
+    if (!dateGroups[date]) {
+        dateGroups[date] = {
+            count: 0,
+            totalPlayers: 0,
+            scores: []
+        };
+    }
+    dateGroups[date].count++;
+    dateGroups[date].totalPlayers += round.scores.length;
+    round.scores.forEach(score => {
+        dateGroups[date].scores.push(score.score);
+    });
+});
+
+// Sort dates chronologically
+const sortedDates = Object.keys(dateGroups).sort();
+
+// Prepare chart data
+const dates = sortedDates;
+const roundCounts = sortedDates.map(date => dateGroups[date].count);
+const avgScores = sortedDates.map(date => {
+    const scores = dateGroups[date].scores;
+    return (scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(2);
+});
+
+// Create Activity Trends Chart
+const ctx = document.getElementById('activityTrendsChart').getContext('2d');
+new Chart(ctx, {
+    type: 'bar',
+    data: {
+        labels: dates,
+        datasets: [
+            {
+                label: 'Rounds Played',
+                data: roundCounts,
+                backgroundColor: '#2e7d3299',
+                borderColor: '#2e7d32',
+                borderWidth: 2,
+                yAxisID: 'y'
+            },
+            {
+                label: 'Average Score',
+                data: avgScores,
+                type: 'line',
+                borderColor: '#ffc107',
+                backgroundColor: '#ffc10733',
+                borderWidth: 3,
+                tension: 0.3,
+                fill: true,
+                yAxisID: 'y1'
+            }
+        ]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        interaction: {
+            mode: 'index',
+            intersect: false
+        },
+        plugins: {
+            legend: {
+                position: 'top'
+            },
+            tooltip: {
+                callbacks: {
+                    title: (items) => 'Date: ' + items[0].label
+                }
+            }
+        },
+        scales: {
+            y: {
+                type: 'linear',
+                display: true,
+                position: 'left',
+                beginAtZero: true,
+                title: {
+                    display: true,
+                    text: 'Number of Rounds'
+                }
+            },
+            y1: {
+                type: 'linear',
+                display: true,
+                position: 'right',
+                beginAtZero: false,
+                title: {
+                    display: true,
+                    text: 'Average Score'
+                },
+                grid: {
+                    drawOnChartArea: false
+                }
+            },
+            x: {
+                title: {
+                    display: true,
+                    text: 'Date'
+                }
+            }
+        }
+    }
+});
+</script>
 {% endif %}
 {% endblock %}

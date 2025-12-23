@@ -1,8 +1,44 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash
+from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app
 from models.course import Course
 from models.round import Round
+import os
+import uuid
+from werkzeug.utils import secure_filename
 
 bp = Blueprint('courses', __name__)
+
+# Allowed image extensions
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
+
+def allowed_file(filename):
+    """Check if file has an allowed extension"""
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+def save_course_image(file, upload_folder):
+    """Save uploaded course image and return filename"""
+    if file and allowed_file(file.filename):
+        # Generate unique filename
+        ext = file.filename.rsplit('.', 1)[1].lower()
+        filename = f"{uuid.uuid4().hex}.{ext}"
+
+        # Ensure upload directory exists
+        filepath = os.path.join(upload_folder, filename)
+        os.makedirs(upload_folder, exist_ok=True)
+
+        # Save file
+        file.save(filepath)
+        return filename
+    return None
+
+def delete_course_image(filename, upload_folder):
+    """Delete a course image file"""
+    if filename:
+        filepath = os.path.join(upload_folder, filename)
+        if os.path.exists(filepath):
+            try:
+                os.remove(filepath)
+            except Exception as e:
+                print(f"Error deleting course image: {e}")
 
 
 @bp.route('/')
@@ -20,6 +56,15 @@ def add_course():
         location = request.form.get('location', '').strip()
         holes = request.form.get('holes', '').strip()
         par = request.form.get('par', '').strip()
+        image_url = request.form.get('image_url', '').strip()
+
+        # Handle image upload
+        uploaded_file = request.files.get('course_image')
+        if uploaded_file and uploaded_file.filename:
+            upload_folder = os.path.join(current_app.root_path, 'static', 'uploads', 'courses')
+            saved_filename = save_course_image(uploaded_file, upload_folder)
+            if saved_filename:
+                image_url = saved_filename
 
         # Convert empty strings to None
         holes_int = int(holes) if holes else None
@@ -29,7 +74,8 @@ def add_course():
             name,
             location if location else None,
             holes_int,
-            par_int
+            par_int,
+            image_url if image_url else None
         )
 
         if success:
@@ -41,7 +87,8 @@ def add_course():
                                    name=name,
                                    location=location,
                                    holes=holes,
-                                   par=par)
+                                   par=par,
+                                   image_url=image_url)
 
     return render_template('courses/add.html')
 
@@ -101,6 +148,22 @@ def edit_course(course_id):
     location = request.form.get('location', '').strip()
     holes = request.form.get('holes', '').strip()
     par = request.form.get('par', '').strip()
+    image_url = request.form.get('image_url', '').strip()
+
+    # Handle image upload
+    uploaded_file = request.files.get('course_image')
+    if uploaded_file and uploaded_file.filename:
+        upload_folder = os.path.join(current_app.root_path, 'static', 'uploads', 'courses')
+
+        # Delete old image if exists
+        course = Course.get_by_id(course_id)
+        if course and course.get('image_url') and not course['image_url'].startswith('http'):
+            delete_course_image(course['image_url'], upload_folder)
+
+        # Save new image
+        saved_filename = save_course_image(uploaded_file, upload_folder)
+        if saved_filename:
+            image_url = saved_filename
 
     # Convert empty strings to None
     holes_int = int(holes) if holes else None
@@ -111,7 +174,8 @@ def edit_course(course_id):
         name=name,
         location=location if location else None,
         holes=holes_int,
-        par=par_int
+        par=par_int,
+        image_url=image_url if image_url else None
     )
 
     if success:

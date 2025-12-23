@@ -36,11 +36,23 @@ class ComparisonService:
             elif player2_stats['average_score'] < player1_stats['average_score']:
                 overall_winner = player2_id
 
+        # Get detailed round history for charts
+        player1_rounds = ComparisonService._get_player_rounds(player1_id, all_rounds)
+        player2_rounds = ComparisonService._get_player_rounds(player2_id, all_rounds)
+
+        # Get course breakdown
+        player1_courses = ComparisonService._get_course_breakdown(player1_id, all_rounds)
+        player2_courses = ComparisonService._get_course_breakdown(player2_id, all_rounds)
+
         return {
             'player1_stats': player1_stats,
             'player2_stats': player2_stats,
             'head_to_head': head_to_head,
-            'overall_winner': overall_winner
+            'overall_winner': overall_winner,
+            'player1_rounds': player1_rounds,
+            'player2_rounds': player2_rounds,
+            'player1_courses': player1_courses,
+            'player2_courses': player2_courses
         }
 
     @staticmethod
@@ -124,3 +136,42 @@ class ComparisonService:
         head_to_head['matchups'].sort(key=lambda m: m['date'], reverse=True)
 
         return head_to_head
+
+    @staticmethod
+    def _get_player_rounds(player_id: str, all_rounds: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """Get all rounds for a player with dates and scores"""
+        player_rounds = []
+
+        for round_data in all_rounds:
+            player_score = Round.get_player_score_in_round(round_data, player_id)
+            if player_score is not None:
+                player_rounds.append({
+                    'date': round_data['date_played'],
+                    'score': player_score,
+                    'course': round_data['course_name']
+                })
+
+        # Sort by date
+        player_rounds.sort(key=lambda r: r['date'])
+        return player_rounds
+
+    @staticmethod
+    def _get_course_breakdown(player_id: str, all_rounds: List[Dict[str, Any]]) -> Dict[str, float]:
+        """Get average score by course for a player"""
+        course_scores = {}
+
+        for round_data in all_rounds:
+            player_score = Round.get_player_score_in_round(round_data, player_id)
+            if player_score is not None:
+                course_name = round_data['course_name']
+                if course_name not in course_scores:
+                    course_scores[course_name] = []
+                course_scores[course_name].append(player_score)
+
+        # Calculate averages
+        course_averages = {
+            course: sum(scores) / len(scores)
+            for course, scores in course_scores.items()
+        }
+
+        return course_averages
