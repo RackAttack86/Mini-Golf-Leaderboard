@@ -111,7 +111,7 @@
                             {% for round in recent_rounds %}
                             <tr>
                                 <td>{{ round.date_played }}</td>
-                                <td>{{ round.course_name }}</td>
+                                <td>{{ round.course_name | format_course_name | safe }}</td>
                                 <td>{{ round.scores|length }}</td>
                                 <td>
                                     {% set winner = round.scores|sort(attribute='score')|first %}

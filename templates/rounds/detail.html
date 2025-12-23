@@ -27,7 +27,7 @@
             <div class="card-body">
                 <p><strong>Course:</strong>
                     <a href="{{ url_for('courses.course_detail', course_id=round.course_id) }}">
-                        {{ round.course_name }}
+                        {{ round.course_name | format_course_name | safe }}
                     </a>
                 </p>
                 <p><strong>Date:</strong> {{ round.date_played }}</p>

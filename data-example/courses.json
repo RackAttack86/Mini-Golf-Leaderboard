@@ -332,6 +332,339 @@
       "par": 54,
       "created_at": "2025-12-22T10:00:00Z",
       "active": true
+    },
+    {
+      "id": "2f12701b-987f-43bc-857b-324a938da035",
+      "name": "8-bit Lair Hard Mode",
+      "location": "Walkabout Mini Golf",
+      "holes": 18,
+      "par": 54,
+      "created_at": "2025-12-22T10:00:00Z",
+      "active": true
+    },
+    {
+      "id": "1c195e84-20c1-425d-8c7f-a45f0461fa50",
+      "name": "20,000 Leagues Under the Sea Hard Mode",
+      "location": "Walkabout Mini Golf",
+      "holes": 18,
+      "par": 54,
+      "created_at": "2025-12-22T10:00:00Z",
+      "active": true
+    },
+    {
+      "id": "68bd5da3-5a08-4a89-8e30-25cee9a54188",
+      "name": "Alfheim Hard Mode",
+      "location": "Walkabout Mini Golf",
+      "holes": 18,
+      "par": 54,
+      "created_at": "2025-12-22T10:00:00Z",
+      "active": true
+    },
+    {
+      "id": "a9ce20b1-563e-47b2-8e9a-b12c8a379f71",
+      "name": "Alice's Adventures in Wonderland Hard Mode",
+      "location": "Walkabout Mini Golf",
+      "holes": 18,
+      "par": 54,
+      "created_at": "2025-12-22T10:00:00Z",
+      "active": true
+    },
+    {
+      "id": "8b0f9659-91bc-40ce-a031-86e922975fc1",
+      "name": "Arizona Modern Hard Mode",
+      "location": "Walkabout Mini Golf",
+      "holes": 18,
+      "par": 54,
+      "created_at": "2025-12-22T10:00:00Z",
+      "active": true
+    },
+    {
+      "id": "cf1d5ca0-3c4a-402a-bf89-08c24a6ec4bf",
+      "name": "Around the World in 80 Days Hard Mode",
+      "location": "Walkabout Mini Golf",
+      "holes": 18,
+      "par": 54,
+      "created_at": "2025-12-22T10:00:00Z",
+      "active": true
+    },
+    {
+      "id": "00d222e3-2b17-4071-ad68-95b132179433",
+      "name": "Atlantis Hard Mode",
+      "location": "Walkabout Mini Golf",
+      "holes": 18,
+      "par": 54,
+      "created_at": "2025-12-22T10:00:00Z",
+      "active": true
+    },
+    {
+      "id": "7bc092db-01ff-4309-8f11-d43c9b79595a",
+      "name": "Bogey's Bonanza Hard Mode",
+      "location": "Walkabout Mini Golf",
+      "holes": 18,
+      "par": 54,
+      "created_at": "2025-12-22T10:00:00Z",
+      "active": true
+    },
+    {
+      "id": "398dda4f-87c6-4543-8c4e-96dbe447fc34",
+      "name": "Cherry Blossom Hard Mode",
+      "location": "Walkabout Mini Golf",
+      "holes": 18,
+      "par": 54,
+      "created_at": "2025-12-22T10:00:00Z",
+      "active": true
+    },
+    {
+      "id": "3e89bdac-b0b7-4271-9963-52669ca488d5",
+      "name": "Crystal Lair Hard Mode",
+      "location": "Walkabout Mini Golf",
+      "holes": 18,
+      "par": 54,
+      "created_at": "2025-12-22T10:00:00Z",
+      "active": true
+    },
+    {
+      "id": "b08ad5a0-baf1-4db0-98a7-ae013e1d9daf",
+      "name": "El Dorado Hard Mode",
+      "location": "Walkabout Mini Golf",
+      "holes": 18,
+      "par": 54,
+      "created_at": "2025-12-22T10:00:00Z",
+      "active": true
+    },
+    {
+      "id": "8825cf7e-c690-4a75-b575-143f4fc38588",
+      "name": "Forgotten Fairyland Hard Mode",
+      "location": "Walkabout Mini Golf",
+      "holes": 18,
+      "par": 54,
+      "created_at": "2025-12-22T10:00:00Z",
+      "active": true
+    },
+    {
+      "id": "0c8ec867-05f5-44f6-ad2f-5d987f13ba45",
+      "name": "Gardens of Babylon Hard Mode",
+      "location": "Walkabout Mini Golf",
+      "holes": 18,
+      "par": 54,
+      "created_at": "2025-12-22T10:00:00Z",
+      "active": true
+    },
+    {
+      "id": "c2f587ad-2527-4774-9654-47bfcc14ccae",
+      "name": "Holiday Hideaway Hard Mode",
+      "location": "Walkabout Mini Golf",
+      "holes": 18,
+      "par": 54,
+      "created_at": "2025-12-22T10:00:00Z",
+      "active": true
+    },
+    {
+      "id": "93bd3ae9-7e6f-4bbd-8222-bb8475a83da9",
+      "name": "Ice Lair Hard Mode",
+      "location": "Walkabout Mini Golf",
+      "holes": 18,
+      "par": 54,
+      "created_at": "2025-12-22T10:00:00Z",
+      "active": true
+    },
+    {
+      "id": "b94246f3-69b0-496a-a485-4ef39ca229fc",
+      "name": "Journey to the Center of the Earth Hard Mode",
+      "location": "Walkabout Mini Golf",
+      "holes": 18,
+      "par": 54,
+      "created_at": "2025-12-22T10:00:00Z",
+      "active": true
+    },
+    {
+      "id": "b75e802d-16db-4094-9ed0-cb89e1caba6f",
+      "name": "Labyrinth Hard Mode",
+      "location": "Walkabout Mini Golf",
+      "holes": 18,
+      "par": 54,
+      "created_at": "2025-12-22T10:00:00Z",
+      "active": true
+    },
+    {
+      "id": "6b47682c-6bc3-44b1-ae48-6fbffdddbb0e",
+      "name": "Laser Lair Hard Mode",
+      "location": "Walkabout Mini Golf",
+      "holes": 18,
+      "par": 54,
+      "created_at": "2025-12-22T10:00:00Z",
+      "active": true
+    },
+    {
+      "id": "3a6960a6-abfb-414b-b729-f65b38ee1c79",
+      "name": "Mars Garden Hard Mode",
+      "location": "Walkabout Mini Golf",
+      "holes": 18,
+      "par": 54,
+      "created_at": "2025-12-22T10:00:00Z",
+      "active": true
+    },
+    {
+      "id": "df38f9aa-d2df-491b-a147-86d42fb56966",
+      "name": "Meow Wolf Hard Mode",
+      "location": "Walkabout Mini Golf",
+      "holes": 18,
+      "par": 54,
+      "created_at": "2025-12-22T10:00:00Z",
+      "active": true
+    },
+    {
+      "id": "cc833f81-084f-434c-86d4-3be987590a92",
+      "name": "Mount Olympus Hard Mode",
+      "location": "Walkabout Mini Golf",
+      "holes": 18,
+      "par": 54,
+      "created_at": "2025-12-22T10:00:00Z",
+      "active": true
+    },
+    {
+      "id": "7a1148fa-1bee-4bc7-bbee-56d36498a671",
+      "name": "Myst Hard Mode",
+      "location": "Walkabout Mini Golf",
+      "holes": 18,
+      "par": 54,
+      "created_at": "2025-12-22T10:00:00Z",
+      "active": true
+    },
+    {
+      "id": "1e193f52-7ff7-4597-8099-7320acc5827e",
+      "name": "Original Gothic Hard Mode",
+      "location": "Walkabout Mini Golf",
+      "holes": 18,
+      "par": 54,
+      "created_at": "2025-12-22T10:00:00Z",
+      "active": true
+    },
+    {
+      "id": "a4d53bdf-211b-4b05-90d3-2fb0d6218eda",
+      "name": "Quixote Valley Hard Mode",
+      "location": "Walkabout Mini Golf",
+      "holes": 18,
+      "par": 54,
+      "created_at": "2025-12-22T10:00:00Z",
+      "active": true
+    },
+    {
+      "id": "198c16e9-cae3-4cc9-be10-12ec83ce5ce7",
+      "name": "Raptor Cliff's Hard Mode",
+      "location": "Walkabout Mini Golf",
+      "holes": 18,
+      "par": 54,
+      "created_at": "2025-12-22T10:00:00Z",
+      "active": true
+    },
+    {
+      "id": "e326e63d-705b-476e-a7ff-03707b223a5b",
+      "name": "Seagull Stacks Hard Mode",
+      "location": "Walkabout Mini Golf",
+      "holes": 18,
+      "par": 54,
+      "created_at": "2025-12-22T10:00:00Z",
+      "active": true
+    },
+    {
+      "id": "596fb997-72c5-471b-b33a-693f316ee1fd",
+      "name": "Shangri-La Hard Mode",
+      "location": "Walkabout Mini Golf",
+      "holes": 18,
+      "par": 54,
+      "created_at": "2025-12-22T10:00:00Z",
+      "active": true
+    },
+    {
+      "id": "056bc85f-0ba8-4bb3-bd81-d010abd0aec3",
+      "name": "Sweetopia Hard Mode",
+      "location": "Walkabout Mini Golf",
+      "holes": 18,
+      "par": 54,
+      "created_at": "2025-12-22T10:00:00Z",
+      "active": true
+    },
+    {
+      "id": "fd972402-965e-4cb1-92fb-a060106479de",
+      "name": "Temple at Zerzura Hard Mode",
+      "location": "Walkabout Mini Golf",
+      "holes": 18,
+      "par": 54,
+      "created_at": "2025-12-22T10:00:00Z",
+      "active": true
+    },
+    {
+      "id": "447c5b54-0974-4430-aa52-d461682de698",
+      "name": "Tethys Station Hard Mode",
+      "location": "Walkabout Mini Golf",
+      "holes": 18,
+      "par": 54,
+      "created_at": "2025-12-22T10:00:00Z",
+      "active": true
+    },
+    {
+      "id": "ab076319-87e1-4645-82f3-f0bdcd6f468e",
+      "name": "Tokyo Hard Mode",
+      "location": "Walkabout Mini Golf",
+      "holes": 18,
+      "par": 54,
+      "created_at": "2025-12-22T10:00:00Z",
+      "active": true
+    },
+    {
+      "id": "4ffc21d7-893b-4d2b-91c8-181bd1f9b6d1",
+      "name": "Tourist Trap Hard Mode",
+      "location": "Walkabout Mini Golf",
+      "holes": 18,
+      "par": 54,
+      "created_at": "2025-12-22T10:00:00Z",
+      "active": true
+    },
+    {
+      "id": "84d79f80-8798-44cc-930a-079af0f2bf84",
+      "name": "Upside Town Hard Mode",
+      "location": "Walkabout Mini Golf",
+      "holes": 18,
+      "par": 54,
+      "created_at": "2025-12-22T10:00:00Z",
+      "active": true
+    },
+    {
+      "id": "20249673-0f3e-4e21-9a1e-4bbdd66829df",
+      "name": "Venice Hard Mode",
+      "location": "Walkabout Mini Golf",
+      "holes": 18,
+      "par": 54,
+      "created_at": "2025-12-22T10:00:00Z",
+      "active": true
+    },
+    {
+      "id": "e83d221c-80f5-403d-9ad9-488c0115a9da",
+      "name": "Viva Las Elvis Hard Mode",
+      "location": "Walkabout Mini Golf",
+      "holes": 18,
+      "par": 54,
+      "created_at": "2025-12-22T10:00:00Z",
+      "active": true
+    },
+    {
+      "id": "d390dc64-ba0e-4fcf-b711-d253094f2bf7",
+      "name": "Wallace & Gromit Hard Mode",
+      "location": "Walkabout Mini Golf",
+      "holes": 18,
+      "par": 54,
+      "created_at": "2025-12-22T10:00:00Z",
+      "active": true
+    },
+    {
+      "id": "c817191c-05d8-445a-bccb-78d2b8dd55eb",
+      "name": "Widow's Walkabout Hard Mode",
+      "location": "Walkabout Mini Golf",
+      "holes": 18,
+      "par": 54,
+      "created_at": "2025-12-22T10:00:00Z",
+      "active": true
     }
   ]
 }

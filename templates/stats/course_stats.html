@@ -32,7 +32,7 @@
                         <td>#{{ loop.index }}</td>
                         <td>
                             <a href="{{ url_for('courses.course_detail', course_id=stat.course.id) }}">
-                                {{ stat.course.name }}
+                                {{ stat.course.name | format_course_name | safe }}
                             </a>
                         </td>
                         <td>{{ stat.stats.times_played }}</td>

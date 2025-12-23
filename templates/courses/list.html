@@ -34,7 +34,7 @@
                     <tr {% if not course.active %}class="table-secondary"{% endif %}>
                         <td>
                             <a href="{{ url_for('courses.course_detail', course_id=course.id) }}">
-                                {{ course.name }}
+                                {{ course.name | format_course_name | safe }}
                             </a>
                         </td>
                         <td>{{ course.location or '-' }}</td>
