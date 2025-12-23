@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+
+{% block title %}Courses Played - {{ app_name }}{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h1><i class="bi bi-pin-map-fill"></i> Courses Played</h1>
+        <p class="lead">See which courses have been played by selected players</p>
+    </div>
+</div>
+
+<!-- Player Selection Form -->
+<div class="card mb-4">
+    <div class="card-header bg-primary text-white">
+        <h5 class="mb-0">Select Players</h5>
+    </div>
+    <div class="card-body">
+        <form method="GET" action="{{ url_for('stats.courses_played') }}" id="playerForm">
+            <div class="row">
+                <div class="col-md-8 mb-3">
+                    <label class="form-label">Players (select one or more)</label>
+                    <div class="row">
+                        {% for player in players %}
+                        <div class="col-md-6 mb-2">
+                            <div class="form-check">
+                                <input class="form-check-input"
+                                       type="checkbox"
+                                       name="player_id"
+                                       value="{{ player.id }}"
+                                       id="player_{{ player.id }}"
+                                       {% if player.id in selected_player_ids %}checked{% endif %}>
+                                <label class="form-check-label" for="player_{{ player.id }}">
+                                    {{ player.name }}
+                                </label>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">Sort By</label>
+                    <select name="sort" class="form-select" id="sortSelect">
+                        <option value="desc" {% if sort_order == 'desc' %}selected{% endif %}>Most Played First</option>
+                        <option value="asc" {% if sort_order == 'asc' %}selected{% endif %}>Least Played First</option>
+                        <option value="name" {% if sort_order == 'name' %}selected{% endif %}>Course Name (A-Z)</option>
+                    </select>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Results -->
+{% if selected_players %}
+<div class="card">
+    <div class="card-header bg-success text-white">
+        <h5 class="mb-0">
+            <i class="bi bi-bar-chart"></i>
+            Courses Played Together by
+            {% for player in selected_players %}
+                {{ player.name }}{% if not loop.last %}, {% endif %}
+            {% endfor %}
+        </h5>
+        {% if selected_players|length > 1 %}
+        <small>Showing only rounds where all selected players participated</small>
+        {% endif %}
+    </div>
+    <div class="card-body">
+        {% if courses_data %}
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th style="width: 30%;">Course</th>
+                        <th style="width: 60%;">Times Played Together</th>
+                        <th style="width: 10%;" class="text-end">Count</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for data in courses_data %}
+                    <tr {% if data.play_count == 0 %}class="text-muted"{% endif %}>
+                        <td>
+                            <a href="{{ url_for('courses.course_detail', course_id=data.course.id) }}">
+                                {{ data.course.name }}
+                            </a>
+                        </td>
+                        <td>
+                            {% if data.play_count > 0 %}
+                            <div class="progress" style="height: 30px;">
+                                <div class="progress-bar bg-success"
+                                     role="progressbar"
+                                     style="width: {{ data.percentage }}%;"
+                                     aria-valuenow="{{ data.play_count }}"
+                                     aria-valuemin="0"
+                                     aria-valuemax="100">
+                                    {% if data.top_winner_name %}
+                                    <span class="fw-bold">{{ data.top_winner_name }}: {{ data.top_winner_wins }}</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% else %}
+                            <div class="progress" style="height: 30px;">
+                                <div class="progress-bar bg-secondary"
+                                     role="progressbar"
+                                     style="width: 0%;">
+                                </div>
+                            </div>
+                            {% endif %}
+                        </td>
+                        <td class="text-end">
+                            <strong>{{ data.play_count }}</strong>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% else %}
+<div class="alert alert-info">
+    <i class="bi bi-info-circle"></i> Select one or more players above to see which courses they've played together.
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    // Auto-submit form when checkboxes or sort dropdown change
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.getElementById('playerForm');
+        const checkboxes = form.querySelectorAll('input[type="checkbox"]');
+        const sortSelect = document.getElementById('sortSelect');
+
+        // Auto-submit on checkbox change
+        checkboxes.forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                form.submit();
+            });
+        });
+
+        // Auto-submit on sort change
+        sortSelect.addEventListener('change', function() {
+            form.submit();
+        });
+    });
+</script>
+{% endblock %}
+

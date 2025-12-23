@@ -6,7 +6,7 @@ class Config:
 
     # Application settings
     SECRET_KEY = os.environ.get('SECRET_KEY') or 'dev-secret-key-change-in-production'
-    DEBUG = True
+    DEBUG = os.environ.get('FLASK_ENV') != 'production'
 
     # Data storage
     BASE_DIR = Path(__file__).parent

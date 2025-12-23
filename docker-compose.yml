@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  minigolf:
+    build: .
+    container_name: mini-golf-leaderboard
+    ports:
+      - "5001:5001"
+    volumes:
+      # Mount data directory to persist data outside container
+      - ./data:/app/data
+    environment:
+      - FLASK_ENV=production
+    restart: unless-stopped

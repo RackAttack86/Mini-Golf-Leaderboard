@@ -7,7 +7,13 @@
       "Bash(python -m pip:*)",
       "Bash(ping:*)",
       "WebFetch(domain:walkabout-mini-golf.fandom.com)",
-      "Bash(python:*)"
+      "Bash(python:*)",
+      "Bash(netstat:*)",
+      "Bash(findstr:*)",
+      "Bash(dir:*)",
+      "Bash(taskkill /F /PID 32564)",
+      "Bash(taskkill:*)",
+      "Bash(git add:*)"
     ]
   }
 }

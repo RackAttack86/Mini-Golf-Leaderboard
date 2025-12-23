@@ -85,3 +85,32 @@ def comparison():
                            player1=player1,
                            player2=player2,
                            comparison=comparison_data)
+
+
+@bp.route('/courses-played')
+def courses_played():
+    """Courses played by selected player(s)"""
+    from services.courses_played_service import CoursesPlayedService
+
+    # Get selected player IDs from query string
+    selected_player_ids = request.args.getlist('player_id')
+
+    # Get sort order
+    sort_order = request.args.get('sort', 'desc')
+
+    players = Player.get_all()
+
+    # Get courses played data if players selected
+    courses_data = None
+    selected_players = []
+
+    if selected_player_ids:
+        selected_players = [Player.get_by_id(pid) for pid in selected_player_ids if Player.get_by_id(pid)]
+        courses_data = CoursesPlayedService.get_courses_played_by_players(selected_player_ids, sort_order)
+
+    return render_template('stats/courses_played.html',
+                           players=players,
+                           selected_players=selected_players,
+                           courses_data=courses_data,
+                           selected_player_ids=selected_player_ids,
+                           sort_order=sort_order)
