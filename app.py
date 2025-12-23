@@ -22,12 +22,12 @@ def create_app():
     app.register_blueprint(round_routes.bp, url_prefix='/rounds')
     app.register_blueprint(stats_routes.bp, url_prefix='/stats')
 
-    # Custom Jinja2 filter to format course names with bold "Hard Mode"
+    # Custom Jinja2 filter to format course names with bold "(HARD)"
     @app.template_filter('format_course_name')
     def format_course_name(name):
-        """Make 'Hard Mode' bold in course names"""
-        if 'Hard Mode' in name:
-            return name.replace('Hard Mode', '<strong>Hard Mode</strong>')
+        """Make '(HARD)' bold in course names"""
+        if '(HARD)' in name:
+            return name.replace('(HARD)', '<strong>(HARD)</strong>')
         return name
 
     # Context processor for global template variables
