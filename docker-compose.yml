@@ -5,7 +5,7 @@ services:
     build: .
     container_name: mini-golf-leaderboard
     ports:
-      - "5001:5001"
+      - "8080:8080"
     volumes:
       # Mount data directory to persist data outside container
       - ./data:/app/data
