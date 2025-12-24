@@ -11,6 +11,13 @@ services:
       - ./data:/app/data
     environment:
       - FLASK_ENV=production
+      # Generate a secure secret key: python -c "import secrets; print(secrets.token_hex(32))"
+      - SECRET_KEY=${SECRET_KEY}
+      # Google OAuth credentials from Google Cloud Console
+      - GOOGLE_OAUTH_CLIENT_ID=${GOOGLE_OAUTH_CLIENT_ID}
+      - GOOGLE_OAUTH_CLIENT_SECRET=${GOOGLE_OAUTH_CLIENT_SECRET}
+    env_file:
+      - .env.production
     restart: unless-stopped
     networks:
       - minigolf-network

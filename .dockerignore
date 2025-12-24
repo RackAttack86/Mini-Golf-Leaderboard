@@ -15,3 +15,7 @@ venv/
 data/
 test_stats.py
 .claude/
+.env
+.env.*
+!.env.production
+.env.production.example

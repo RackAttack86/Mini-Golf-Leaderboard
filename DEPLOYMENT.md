@@ -2,6 +2,46 @@
 
 This guide covers deploying the Mini Golf Leaderboard to your NAS for network access.
 
+## Prerequisites: Google OAuth Setup
+
+The application requires Google OAuth for authentication. Set this up before deployment:
+
+### 1. Create Google OAuth Credentials
+
+1. Go to [Google Cloud Console](https://console.cloud.google.com/)
+2. Create a new project or select existing one
+3. Enable the **Google+ API**:
+   - Navigate to "APIs & Services" → "Library"
+   - Search for "Google+ API" and enable it
+4. Create OAuth 2.0 credentials:
+   - Go to "APIs & Services" → "Credentials"
+   - Click "Create Credentials" → "OAuth 2.0 Client ID"
+   - Application type: "Web application"
+   - Name: "Mini Golf Leaderboard"
+
+### 2. Configure Authorized Redirect URIs
+
+Add these redirect URIs based on your deployment:
+
+**For HTTPS deployment (recommended):**
+```
+https://your-domain.com/login/google/authorized
+```
+
+**For local network (HTTP):**
+```
+http://your-nas-ip:8080/login/google/authorized
+```
+
+**For development/testing:**
+```
+http://localhost:5001/login/google/authorized
+```
+
+### 3. Save Your Credentials
+
+Copy the **Client ID** and **Client Secret** - you'll need these for the `.env.production` file.
+
 ## Option 1: Docker Deployment (Recommended)
 
 ### Prerequisites
@@ -22,19 +62,49 @@ ssh user@nas-ip
 cd /path/to/apps/Mini-Golf-Leaderboard
 ```
 
-3. **Set up data directory:**
+3. **Configure production environment:**
 ```bash
+# Copy the production environment template
+cp .env.production.example .env.production
+
+# Generate a secure secret key
+python3 -c "import secrets; print(secrets.token_hex(32))"
+
+# Edit .env.production with your values
+nano .env.production
+```
+
+Update `.env.production` with:
+- Your generated SECRET_KEY
+- Google OAuth CLIENT_ID
+- Google OAuth CLIENT_SECRET
+
+4. **Set up data directory:**
+```bash
+# If deploying for the first time
 cp -r data-example data
+
+# If you have existing data, ensure it's in the data/ directory
 ```
 
-4. **Build and run with Docker Compose:**
+5. **Build and run with Docker Compose:**
 ```bash
-docker-compose up -d
+docker-compose up -d --build
 ```
 
-5. **Access the app:**
-- Open browser to `http://nas-ip:5001`
-- Your friends can access via `http://your-nas-ip:5001` on your local network
+6. **Set up admin user:**
+```bash
+# Run the admin setup script inside the container
+docker exec -it mini-golf-leaderboard python setup_admin.py
+
+# Follow the prompts to promote a player to admin
+```
+
+7. **Access the app:**
+- Open browser to `http://nas-ip:8080`
+- Click "Login" and sign in with Google
+- Link your Google account to your player profile
+- Your friends can access via `http://your-nas-ip:8080` on your local network
 
 ### Docker Commands
 ```bash
@@ -117,28 +187,35 @@ sudo systemctl start minigolf
 
 ## Security Considerations
 
-### 1. Local Network Only (Recommended for friends)
+### 1. Authentication & Authorization
+- **Google OAuth:** All users must sign in with Google accounts
+- **Account Linking:** Google accounts are linked to player profiles
+- **Role-Based Access:**
+  - Regular players: Can add rounds, edit own profile, view stats
+  - Admins: Can manage all courses, players, and rounds
+- First admin must be set up using `setup_admin.py` script
+
+### 2. Production Security Settings
+The app automatically enforces security in production (`FLASK_ENV=production`):
+- **HTTPS Required:** OAuth will only work over HTTPS (except on local network)
+- **Secure Cookies:** Session cookies set with httponly and secure flags
+- **Open Redirect Protection:** URL validation prevents redirect attacks
+- **Secret Key:** Strong random key required (see setup steps)
+
+### 3. Local Network Only (Recommended)
 - By default, the app is accessible on your local network only
-- Share your NAS's local IP with friends: `http://192.168.x.x:5001`
+- Share your NAS's local IP with friends: `http://192.168.x.x:8080`
 - No port forwarding needed - safer!
+- **Note:** Google OAuth works on local network with proper redirect URI configuration
 
-### 2. Internet Access (if needed)
+### 4. Internet Access (Advanced)
 If you want friends outside your network to access:
-- Set up port forwarding on your router (port 5001)
+- **HTTPS is REQUIRED** for OAuth to work over the internet
+- Set up port forwarding on your router (port 8080)
 - Use dynamic DNS service for a stable URL
-- **Strongly recommended:** Add authentication or use a reverse proxy with HTTPS
-
-### 3. Change Secret Key
-For production, set a secure SECRET_KEY:
-```bash
-# Generate a random key
-python -c "import secrets; print(secrets.token_hex(32))"
-
-# Set it in docker-compose.yml:
-environment:
-  - FLASK_ENV=production
-  - SECRET_KEY=your-generated-key-here
-```
+- **Must have:** Valid SSL certificate (Let's Encrypt recommended)
+- Configure reverse proxy with HTTPS (see Nginx section below)
+- Add your public domain to Google OAuth authorized redirect URIs
 
 ## Reverse Proxy with Nginx (Optional)
 
@@ -217,10 +294,33 @@ tar -czf minigolf-backup-$(date +%Y%m%d).tar.gz data/
 
 ## Troubleshooting
 
+### Authentication Issues
+
+**"OAuth callback error" or "redirect_uri_mismatch":**
+- Check that your redirect URI in Google Cloud Console exactly matches:
+  - `http://your-nas-ip:8080/login/google/authorized` (for local network)
+  - `https://your-domain.com/login/google/authorized` (for HTTPS)
+- Make sure the protocol (http/https) matches
+- Verify the port number is correct (8080 for production, 5001 for dev)
+
+**"Can't sign in" or "Google authentication failed":**
+- Verify Google+ API is enabled in Google Cloud Console
+- Check that GOOGLE_OAUTH_CLIENT_ID and GOOGLE_OAUTH_CLIENT_SECRET are set correctly in `.env.production`
+- View logs: `docker-compose logs -f` to see detailed error messages
+
+**"No players available to link":**
+- All players already have Google accounts linked
+- Create a new player first, then link your Google account
+- Or ask an admin to unlink an account
+
+**"Unauthorized" after login:**
+- Check if you're trying to access an admin-only route
+- Verify your player has the correct role: `docker exec -it mini-golf-leaderboard python setup_admin.py`
+
 ### Can't access from other devices
 - Check firewall on NAS
-- Verify port 5001 is not blocked
-- Try accessing from NAS: `curl http://localhost:5001`
+- Verify port 8080 is not blocked
+- Try accessing from NAS: `curl http://localhost:8080`
 
 ### Permission errors
 ```bash
@@ -235,6 +335,15 @@ docker-compose logs -f
 
 # Direct deployment
 # Logs will be in terminal where gunicorn is running
+```
+
+### Environment variable issues
+```bash
+# Check if variables are loaded in container
+docker exec -it mini-golf-leaderboard env | grep -E 'GOOGLE|SECRET|FLASK'
+
+# Verify .env.production exists and has correct values
+cat .env.production
 ```
 
 ## Performance Tips
