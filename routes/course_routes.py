@@ -1,6 +1,7 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app
 from models.course import Course
 from models.round import Round
+from utils.auth_decorators import admin_required
 import os
 import uuid
 from werkzeug.utils import secure_filename
@@ -49,6 +50,7 @@ def list_courses():
 
 
 @bp.route('/add', methods=['GET', 'POST'])
+@admin_required
 def add_course():
     """Add new course"""
     if request.method == 'POST':
@@ -142,6 +144,7 @@ def course_detail(course_id):
 
 
 @bp.route('/<course_id>/edit', methods=['POST'])
+@admin_required
 def edit_course(course_id):
     """Edit course"""
     name = request.form.get('name', '').strip()
@@ -187,6 +190,7 @@ def edit_course(course_id):
 
 
 @bp.route('/<course_id>/delete', methods=['POST'])
+@admin_required
 def delete_course(course_id):
     """Delete course"""
     success, message = Course.delete(course_id)

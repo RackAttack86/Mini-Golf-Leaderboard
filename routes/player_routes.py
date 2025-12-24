@@ -4,6 +4,7 @@ import os
 import uuid
 from models.player import Player
 from models.round import Round
+from utils.auth_decorators import admin_required, player_or_admin_required
 
 bp = Blueprint('players', __name__)
 
@@ -39,6 +40,7 @@ def list_players():
 
 
 @bp.route('/add', methods=['GET', 'POST'])
+@admin_required
 def add_player():
     """Add new player"""
     if request.method == 'POST':
@@ -119,6 +121,7 @@ def player_detail(player_id):
 
 
 @bp.route('/<player_id>/edit', methods=['POST'])
+@player_or_admin_required
 def edit_player(player_id):
     """Edit player"""
     name = request.form.get('name', '').strip()
@@ -177,6 +180,7 @@ def edit_player(player_id):
 
 
 @bp.route('/<player_id>/delete', methods=['POST'])
+@admin_required
 def delete_player(player_id):
     """Delete player"""
     success, message = Player.delete(player_id)

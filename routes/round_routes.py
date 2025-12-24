@@ -2,6 +2,7 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash
 from models.round import Round
 from models.player import Player
 from models.course import Course
+from utils.auth_decorators import login_required, admin_required
 
 bp = Blueprint('rounds', __name__)
 
@@ -50,6 +51,7 @@ def list_rounds():
 
 
 @bp.route('/add', methods=['GET', 'POST'])
+@login_required
 def add_round():
     """Add new round"""
     # Get active players and courses
@@ -123,6 +125,7 @@ def round_detail(round_id):
 
 
 @bp.route('/<round_id>/edit', methods=['POST'])
+@admin_required
 def edit_round(round_id):
     """Edit round"""
     course_id = request.form.get('course_id')
@@ -159,6 +162,7 @@ def edit_round(round_id):
 
 
 @bp.route('/<round_id>/delete', methods=['POST'])
+@admin_required
 def delete_round(round_id):
     """Delete round"""
     success, message = Round.delete(round_id)

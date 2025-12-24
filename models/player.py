@@ -10,7 +10,7 @@ class Player:
 
     @staticmethod
     def create(name: str, email: Optional[str] = None, profile_picture: Optional[str] = None,
-               favorite_color: Optional[str] = None) -> Tuple[bool, str, Optional[Dict[str, Any]]]:
+               favorite_color: Optional[str] = None, role: str = 'player') -> Tuple[bool, str, Optional[Dict[str, Any]]]:
         """
         Create a new player
 
@@ -19,6 +19,7 @@ class Player:
             email: Player email (optional)
             profile_picture: Profile picture filename (optional)
             favorite_color: Favorite color hex code (optional)
+            role: Player role - 'player' or 'admin' (default: 'player')
 
         Returns:
             Tuple of (success, message, player_dict)
@@ -43,6 +44,9 @@ class Player:
             'email': email.strip() if email else '',
             'profile_picture': profile_picture or '',
             'favorite_color': favorite_color or '#2e7d32',
+            'google_id': None,
+            'role': role if role in ['admin', 'player'] else 'player',
+            'last_login': None,
             'created_at': datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
             'active': True
         }
@@ -93,7 +97,8 @@ class Player:
 
     @staticmethod
     def update(player_id: str, name: Optional[str] = None, email: Optional[str] = None,
-               profile_picture: Optional[str] = None, favorite_color: Optional[str] = None) -> Tuple[bool, str]:
+               profile_picture: Optional[str] = None, favorite_color: Optional[str] = None,
+               role: Optional[str] = None) -> Tuple[bool, str]:
         """
         Update player
 
@@ -103,6 +108,7 @@ class Player:
             email: New email (optional)
             profile_picture: Profile picture filename (optional)
             favorite_color: Favorite color hex code (optional)
+            role: Player role - 'player' or 'admin' (optional)
 
         Returns:
             Tuple of (success, message)
@@ -147,6 +153,10 @@ class Player:
         # Update favorite color
         if favorite_color is not None:
             player['favorite_color'] = favorite_color
+
+        # Update role
+        if role is not None and role in ['admin', 'player']:
+            player['role'] = role
 
         store.write_players(data)
         return True, "Player updated successfully"
@@ -212,3 +222,107 @@ class Player:
 
         if updated:
             store.write_rounds(data)
+
+    @staticmethod
+    def get_by_google_id(google_id: str) -> Optional[Dict[str, Any]]:
+        """
+        Get player by Google ID
+
+        Args:
+            google_id: Google user ID
+
+        Returns:
+            Player dictionary or None
+        """
+        store = get_data_store()
+        data = store.read_players()
+
+        for player in data['players']:
+            if player.get('google_id') == google_id:
+                return player
+
+        return None
+
+    @staticmethod
+    def link_google_account(player_id: str, google_id: str) -> Tuple[bool, str]:
+        """
+        Link Google account to player
+
+        Args:
+            player_id: Player ID
+            google_id: Google user ID
+
+        Returns:
+            Tuple of (success, message)
+        """
+        store = get_data_store()
+        data = store.read_players()
+
+        # Check if Google ID is already linked
+        existing = Player.get_by_google_id(google_id)
+        if existing and existing['id'] != player_id:
+            return False, "This Google account is already linked to another player"
+
+        # Find player
+        player = None
+        for p in data['players']:
+            if p['id'] == player_id:
+                player = p
+                break
+
+        if not player:
+            return False, "Player not found"
+
+        # Link Google account
+        player['google_id'] = google_id
+        player['last_login'] = datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')
+
+        store.write_players(data)
+        return True, "Google account linked successfully"
+
+    @staticmethod
+    def update_last_login(player_id: str) -> bool:
+        """
+        Update player's last login timestamp
+
+        Args:
+            player_id: Player ID
+
+        Returns:
+            True if successful, False otherwise
+        """
+        store = get_data_store()
+        data = store.read_players()
+
+        # Find player
+        player = None
+        for p in data['players']:
+            if p['id'] == player_id:
+                player = p
+                break
+
+        if not player:
+            return False
+
+        # Update last login
+        player['last_login'] = datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')
+
+        store.write_players(data)
+        return True
+
+    @staticmethod
+    def is_admin(player_id: str) -> bool:
+        """
+        Check if player has admin role
+
+        Args:
+            player_id: Player ID
+
+        Returns:
+            True if player is admin, False otherwise
+        """
+        player = Player.get_by_id(player_id)
+        if not player:
+            return False
+
+        return player.get('role', 'player') == 'admin'
