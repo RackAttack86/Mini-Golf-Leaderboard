@@ -123,7 +123,7 @@
                             {% endif %}
                         </td>
                         <td style="background-color: {{ winner_color }}33 !important;">
-                            {{ winner.player_name }}
+                            {{ winner.player_name }} <small class="text-muted">({{ round.winner_player.achievement_score if round.winner_player else 0 }} pts)</small>
                         </td>
                         <td style="background-color: {{ winner_color }}33 !important;">
                             {{ winner.score }}

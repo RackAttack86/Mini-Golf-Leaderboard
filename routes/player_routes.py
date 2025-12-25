@@ -4,6 +4,7 @@ import os
 import uuid
 from models.player import Player
 from models.round import Round
+from services.achievement_service import AchievementService
 from utils.auth_decorators import admin_required, player_or_admin_required
 
 bp = Blueprint('players', __name__)
@@ -117,7 +118,10 @@ def player_detail(player_id):
             stats['best_score'] = min(scores)
             stats['worst_score'] = max(scores)
 
-    return render_template('players/detail.html', player=player, rounds=rounds, stats=stats)
+    # Get player achievements
+    achievements = AchievementService.get_player_achievements(player_id)
+
+    return render_template('players/detail.html', player=player, rounds=rounds, stats=stats, achievements=achievements)
 
 
 @bp.route('/<player_id>/edit', methods=['POST'])

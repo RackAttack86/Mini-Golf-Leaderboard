@@ -101,7 +101,7 @@
                                     </div>
                                     <h4 class="mt-2">
                                         <a href="{{ url_for('players.player_detail', player_id=item.player.id) }}">
-                                            {{ item.player.name }}
+                                            {{ item.player.name }} <small class="text-muted">({{ item.player.achievement_score }} pts)</small>
                                         </a>
                                     </h4>
                                     <p class="mb-0">Average Finish: <strong>{{ "%.2f"|format(item.avg_position) }}</strong></p>
@@ -181,7 +181,7 @@
                                             {% endif %}
                                         </td>
                                         <td style="background-color: {{ winner_color }}33 !important;">
-                                            {{ winner.player_name }} ({{ winner.score }})
+                                            {{ winner.player_name }} ({{ winner.score }}) <small class="text-muted">{{ round.winner_player.achievement_score if round.winner_player else 0 }} pts</small>
                                         </td>
                                         <td class="text-end" style="background-color: {{ winner_color }}33 !important;">
                                             <a href="{{ url_for('rounds.round_detail', round_id=round.id) }}"
