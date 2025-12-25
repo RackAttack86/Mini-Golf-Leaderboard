@@ -29,12 +29,16 @@ def list_rounds():
 
     rounds = Round.get_all(filters if filters else None)
 
-    # Add winner player data to each round
+    # Add winner player data and course image to each round
     for round_data in rounds:
         if round_data['scores']:
             winner_score = min(round_data['scores'], key=lambda x: x['score'])
             winner_player = Player.get_by_id(winner_score['player_id'])
             round_data['winner_player'] = winner_player
+
+        # Add course image data
+        course = Course.get_by_id(round_data['course_id'])
+        round_data['course_image_url'] = course.get('image_url', '') if course else ''
 
     # Get all players and courses for filter dropdowns
     players = Player.get_all()
