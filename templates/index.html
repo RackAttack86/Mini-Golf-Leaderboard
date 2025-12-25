@@ -138,6 +138,7 @@
                                 <thead>
                                     <tr>
                                         <th>Date</th>
+                                        <th style="width: 70px;"></th>
                                         <th>Course</th>
                                         <th>Players</th>
                                         <th style="width: 45px;"></th>
@@ -151,6 +152,19 @@
                                     {% set winner_color = round.winner_player.favorite_color if round.winner_player and round.winner_player.favorite_color else '#2e7d32' %}
                                     <tr class="winner-color-row">
                                         <td style="background-color: {{ winner_color }}33 !important;">{{ round.date_played }}</td>
+                                        <td style="background-color: {{ winner_color }}33 !important;">
+                                            {% if round.course_image_url %}
+                                                {% if round.course_image_url.startswith('http') %}
+                                                <img src="{{ round.course_image_url }}" alt="{{ round.course_name }}" class="course-thumbnail">
+                                                {% else %}
+                                                <img src="{{ url_for('static', filename='uploads/courses/' + round.course_image_url) }}" alt="{{ round.course_name }}" class="course-thumbnail">
+                                                {% endif %}
+                                            {% else %}
+                                            <div class="course-thumbnail-placeholder">
+                                                <i class="bi bi-pin-map"></i>
+                                            </div>
+                                            {% endif %}
+                                        </td>
                                         <td style="background-color: {{ winner_color }}33 !important;">{{ round.course_name | format_course_name | safe }}</td>
                                         <td style="background-color: {{ winner_color }}33 !important;">{{ round.scores|length }}</td>
                                         <td style="background-color: {{ winner_color }}33 !important;">

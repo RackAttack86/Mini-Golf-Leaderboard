@@ -17,12 +17,16 @@ def index():
     # Get recent rounds (last 10) and add winner player data
     recent_rounds = rounds[:10] if len(rounds) > 10 else rounds
 
-    # Add winner player data to each round
+    # Add winner player data and course image to each round
     for round_data in recent_rounds:
         if round_data['scores']:
             winner_score = min(round_data['scores'], key=lambda x: x['score'])
             winner_player = Player.get_by_id(winner_score['player_id'])
             round_data['winner_player'] = winner_player
+
+        # Add course image data
+        course = Course.get_by_id(round_data['course_id'])
+        round_data['course_image_url'] = course.get('image_url', '') if course else ''
 
     # Calculate top 3 players (by average finishing position)
     player_stats = []
