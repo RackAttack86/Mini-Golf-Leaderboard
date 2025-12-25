@@ -18,13 +18,11 @@ def index():
     # Get recent rounds (last 10) and add winner player data
     recent_rounds = rounds[:10] if len(rounds) > 10 else rounds
 
-    # Add winner player data, course image, and achievement scores to each round
+    # Add winner player data and course image to each round
     for round_data in recent_rounds:
         if round_data['scores']:
             winner_score = min(round_data['scores'], key=lambda x: x['score'])
             winner_player = Player.get_by_id(winner_score['player_id'])
-            if winner_player:
-                winner_player['achievement_score'] = AchievementService.get_achievement_score(winner_player['id'])
             round_data['winner_player'] = winner_player
 
         # Add course image data

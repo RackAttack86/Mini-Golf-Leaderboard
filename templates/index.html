@@ -181,7 +181,7 @@
                                             {% endif %}
                                         </td>
                                         <td style="background-color: {{ winner_color }}33 !important;">
-                                            {{ winner.player_name }} ({{ winner.score }}) <small class="text-muted">{{ round.winner_player.achievement_score if round.winner_player else 0 }} pts</small>
+                                            {{ winner.player_name }} ({{ winner.score }})
                                         </td>
                                         <td class="text-end" style="background-color: {{ winner_color }}33 !important;">
                                             <a href="{{ url_for('rounds.round_detail', round_id=round.id) }}"

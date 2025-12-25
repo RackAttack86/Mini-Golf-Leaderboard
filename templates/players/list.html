@@ -46,8 +46,8 @@
                             {% endif %}
                         </td>
                         <td>
-                            <a href="{{ url_for('players.player_detail', player_id=player.id) }}">
-                                {{ player.name }}
+                            <a href="{{ url_for('players.player_detail', player_id=player.id) }}" class="player-name-link">
+                                <strong style="font-size: 1.1rem;">{{ player.name }}</strong> <small class="text-muted">({{ player.achievement_score }} pts)</small>
                             </a>
                         </td>
                         <td>{{ player.email or '-' }}</td>

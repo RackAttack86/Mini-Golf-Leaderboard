@@ -37,6 +37,11 @@ def save_profile_picture(file, upload_folder):
 def list_players():
     """List all players"""
     players = Player.get_all(active_only=False)
+
+    # Add achievement scores to each player
+    for player in players:
+        player['achievement_score'] = AchievementService.get_achievement_score(player['id'])
+
     return render_template('players/list.html', players=players)
 
 

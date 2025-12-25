@@ -454,3 +454,24 @@ a:hover {
         min-height: 35px;
     }
 }
+
+/* Player Name Styling */
+.player-name-link {
+    text-decoration: none;
+    color: inherit;
+    transition: all 0.2s ease;
+}
+
+.player-name-link:hover {
+    color: var(--golf-green);
+    text-decoration: none;
+}
+
+.player-name-link strong {
+    color: #212529;
+    transition: color 0.2s ease;
+}
+
+.player-name-link:hover strong {
+    color: var(--golf-green);
+}
