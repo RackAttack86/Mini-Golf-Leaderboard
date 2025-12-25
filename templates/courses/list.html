@@ -32,7 +32,7 @@
                 </thead>
                 <tbody>
                     {% for course in courses %}
-                    <tr {% if not course.active %}class="table-secondary"{% endif %}>
+                    <tr {% if not course.active %}class="table-secondary"{% endif %} onclick="window.location='{{ url_for('courses.course_detail', course_id=course.id) }}';" style="cursor: pointer;">
                         <td>
                             {% if course.image_url %}
                                 {% if course.image_url.startswith('http') %}
@@ -63,7 +63,8 @@
                         </td>
                         <td class="text-end">
                             <a href="{{ url_for('courses.course_detail', course_id=course.id) }}"
-                               class="btn btn-sm btn-outline-primary">
+                               class="btn btn-sm btn-outline-primary"
+                               onclick="event.stopPropagation();">
                                 View
                             </a>
                         </td>
