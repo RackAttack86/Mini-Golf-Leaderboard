@@ -26,6 +26,7 @@
                         <th>Location</th>
                         <th>Holes</th>
                         <th>Par</th>
+                        <th>Rating</th>
                         <th>Status</th>
                         <th></th>
                     </tr>
@@ -54,6 +55,22 @@
                         <td>{{ course.location or '-' }}</td>
                         <td>{{ course.holes or '-' }}</td>
                         <td>{{ course.par or '-' }}</td>
+                        <td>
+                            {% if course.avg_rating %}
+                                <span class="text-warning">
+                                    {% for i in range(1, 6) %}
+                                        {% if i <= course.avg_rating|round %}
+                                            <i class="bi bi-star-fill"></i>
+                                        {% else %}
+                                            <i class="bi bi-star"></i>
+                                        {% endif %}
+                                    {% endfor %}
+                                </span>
+                                <small class="text-muted">({{ course.avg_rating }}) {{ course.rating_count }}</small>
+                            {% else %}
+                                <span class="text-muted">Not rated</span>
+                            {% endif %}
+                        </td>
                         <td>
                             {% if course.active %}
                                 <span class="badge bg-success">Active</span>

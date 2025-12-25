@@ -1,6 +1,7 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app
+from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app, session, jsonify
 from models.course import Course
 from models.round import Round
+from models.course_rating import CourseRating
 from utils.auth_decorators import admin_required
 import os
 import uuid
@@ -46,6 +47,21 @@ def delete_course_image(filename, upload_folder):
 def list_courses():
     """List all courses"""
     courses = Course.get_all(active_only=False)
+
+    # Get all course ratings
+    all_ratings = CourseRating.get_all_course_ratings()
+
+    # Add rating info to each course
+    for course in courses:
+        course_id = course['id']
+        if course_id in all_ratings:
+            avg_rating, count = all_ratings[course_id]
+            course['avg_rating'] = avg_rating
+            course['rating_count'] = count
+        else:
+            course['avg_rating'] = None
+            course['rating_count'] = 0
+
     return render_template('courses/list.html', courses=courses)
 
 
@@ -140,7 +156,14 @@ def course_detail(course_id):
             stats['best_score_player'] = score_to_player[stats['best_score']]
             stats['worst_score_player'] = score_to_player[stats['worst_score']]
 
-    return render_template('courses/detail.html', course=course, rounds=rounds, stats=stats)
+    # Get course rating info
+    avg_rating, rating_count = CourseRating.get_course_average_rating(course_id)
+    user_rating = None
+    if 'user_id' in session:
+        user_rating = CourseRating.get_player_rating(session['user_id'], course_id)
+
+    return render_template('courses/detail.html', course=course, rounds=rounds, stats=stats,
+                         avg_rating=avg_rating, rating_count=rating_count, user_rating=user_rating)
 
 
 @bp.route('/<course_id>/edit', methods=['POST'])
@@ -201,3 +224,28 @@ def delete_course(course_id):
     else:
         flash(message, 'error')
         return redirect(url_for('courses.course_detail', course_id=course_id))
+
+
+@bp.route('/<course_id>/rate', methods=['POST'])
+def rate_course(course_id):
+    """Rate a course"""
+    if 'user_id' not in session:
+        return jsonify({'success': False, 'message': 'You must be logged in to rate courses'}), 401
+
+    try:
+        rating = int(request.form.get('rating', 0))
+        success, message = CourseRating.rate_course(session['user_id'], course_id, rating)
+
+        if success:
+            # Get updated average rating
+            avg_rating, rating_count = CourseRating.get_course_average_rating(course_id)
+            return jsonify({
+                'success': True,
+                'message': message,
+                'avg_rating': avg_rating,
+                'rating_count': rating_count
+            })
+        else:
+            return jsonify({'success': False, 'message': message}), 400
+    except ValueError:
+        return jsonify({'success': False, 'message': 'Invalid rating value'}), 400

@@ -76,6 +76,49 @@
     </div>
 </div>
 
+<!-- Personal Bests -->
+{% if personal_bests %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="bi bi-star-fill"></i> Personal Bests by Course</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Course</th>
+                                <th>Best Score</th>
+                                <th>Date Achieved</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for pb in personal_bests %}
+                            <tr onclick="window.location='{{ url_for('rounds.round_detail', round_id=pb.round_id) }}';" style="cursor: pointer;">
+                                <td>{{ pb.course_name | format_course_name | safe }}</td>
+                                <td><span class="badge bg-success" style="font-size: 1rem;">{{ pb.score }}</span></td>
+                                <td>{{ pb.date }}</td>
+                                <td class="text-end">
+                                    <a href="{{ url_for('rounds.round_detail', round_id=pb.round_id) }}"
+                                       class="btn btn-sm btn-outline-primary"
+                                       onclick="event.stopPropagation();">
+                                        View Round
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
 <!-- Achievements -->
 <div class="row mb-4">
     <div class="col-12">

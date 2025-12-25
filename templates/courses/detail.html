@@ -86,6 +86,65 @@
     </div>
 </div>
 
+<!-- Course Rating -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="mb-0"><i class="bi bi-star-fill"></i> Course Rating</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Community Rating</h6>
+                        {% if avg_rating %}
+                        <div class="mb-3">
+                            <span class="text-warning" style="font-size: 2rem;">
+                                {% for i in range(1, 6) %}
+                                    {% if i <= avg_rating|round %}
+                                        <i class="bi bi-star-fill"></i>
+                                    {% else %}
+                                        <i class="bi bi-star"></i>
+                                    {% endif %}
+                                {% endfor %}
+                            </span>
+                            <p class="mt-2 mb-0"><strong>{{ avg_rating }}</strong> out of 5 stars</p>
+                            <p class="text-muted">Based on {{ rating_count }} rating{{ 's' if rating_count != 1 else '' }}</p>
+                        </div>
+                        {% else %}
+                        <p class="text-muted">No ratings yet. Be the first to rate this course!</p>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Your Rating</h6>
+                        {% if session.user_id %}
+                        <div id="rating-form">
+                            <div class="star-rating mb-3">
+                                {% for i in range(1, 6) %}
+                                <i class="bi bi-star{{ '-fill' if user_rating and i <= user_rating else '' }} star-btn"
+                                   data-rating="{{ i }}"
+                                   style="cursor: pointer; font-size: 2rem; color: #ffc107;"
+                                   onmouseover="highlightStars({{ i }})"
+                                   onmouseout="resetStars()"
+                                   onclick="rateCourse({{ i }})"></i>
+                                {% endfor %}
+                            </div>
+                            {% if user_rating %}
+                            <p class="text-muted">You rated this course {{ user_rating }} star{{ 's' if user_rating != 1 else '' }}</p>
+                            {% else %}
+                            <p class="text-muted">Click on stars to rate</p>
+                            {% endif %}
+                        </div>
+                        {% else %}
+                        <p class="text-muted">Please <a href="{{ url_for('auth.login') }}">log in</a> to rate this course</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Round History -->
 <div class="row">
     <div class="col-12">
@@ -284,6 +343,58 @@ function previewEditCourseImage(input) {
     } else {
         preview.style.display = 'none';
     }
+}
+
+// Rating functionality
+const currentRating = {{ user_rating or 0 }};
+
+function highlightStars(rating) {
+    const stars = document.querySelectorAll('.star-btn');
+    stars.forEach((star, index) => {
+        if (index < rating) {
+            star.classList.remove('bi-star');
+            star.classList.add('bi-star-fill');
+        } else {
+            star.classList.remove('bi-star-fill');
+            star.classList.add('bi-star');
+        }
+    });
+}
+
+function resetStars() {
+    const stars = document.querySelectorAll('.star-btn');
+    stars.forEach((star, index) => {
+        if (index < currentRating) {
+            star.classList.remove('bi-star');
+            star.classList.add('bi-star-fill');
+        } else {
+            star.classList.remove('bi-star-fill');
+            star.classList.add('bi-star');
+        }
+    });
+}
+
+function rateCourse(rating) {
+    const formData = new FormData();
+    formData.append('rating', rating);
+
+    fetch('{{ url_for("courses.rate_course", course_id=course.id) }}', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Update current rating
+            window.location.reload();
+        } else {
+            alert(data.message || 'Error rating course');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error rating course');
+    });
 }
 </script>
 {% endblock %}

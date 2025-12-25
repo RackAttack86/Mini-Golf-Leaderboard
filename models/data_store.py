@@ -18,11 +18,15 @@ class DataStore:
         self.players_file = self.data_dir / 'players.json'
         self.courses_file = self.data_dir / 'courses.json'
         self.rounds_file = self.data_dir / 'rounds.json'
+        self.course_ratings_file = self.data_dir / 'course_ratings.json'
+        self.tournaments_file = self.data_dir / 'tournaments.json'
 
         # Thread locks for each file
         self._players_lock = threading.Lock()
         self._courses_lock = threading.Lock()
         self._rounds_lock = threading.Lock()
+        self._course_ratings_lock = threading.Lock()
+        self._tournaments_lock = threading.Lock()
 
         # Initialize files if they don't exist
         self._initialize_files()
@@ -37,6 +41,12 @@ class DataStore:
 
         if not self.rounds_file.exists():
             self._write_file(self.rounds_file, {'rounds': []}, self._rounds_lock)
+
+        if not self.course_ratings_file.exists():
+            self._write_file(self.course_ratings_file, {'ratings': []}, self._course_ratings_lock)
+
+        if not self.tournaments_file.exists():
+            self._write_file(self.tournaments_file, {'tournaments': []}, self._tournaments_lock)
 
     def _atomic_write(self, file_path: Path, data: Dict[str, Any]):
         """Write data atomically to prevent corruption"""
@@ -102,6 +112,24 @@ class DataStore:
     def write_rounds(self, data: Dict[str, Any]):
         """Write rounds data"""
         self._write_file(self.rounds_file, data, self._rounds_lock)
+
+    # Course Ratings
+    def read_course_ratings(self) -> Dict[str, Any]:
+        """Read course ratings data"""
+        return self._read_file(self.course_ratings_file, self._course_ratings_lock)
+
+    def write_course_ratings(self, data: Dict[str, Any]):
+        """Write course ratings data"""
+        self._write_file(self.course_ratings_file, data, self._course_ratings_lock)
+
+    # Tournaments
+    def read_tournaments(self) -> Dict[str, Any]:
+        """Read tournaments data"""
+        return self._read_file(self.tournaments_file, self._tournaments_lock)
+
+    def write_tournaments(self, data: Dict[str, Any]):
+        """Write tournaments data"""
+        self._write_file(self.tournaments_file, data, self._tournaments_lock)
 
 
 # Global data store instance (initialized by app.py)

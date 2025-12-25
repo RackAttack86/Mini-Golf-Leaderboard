@@ -104,6 +104,9 @@ def player_detail(player_id):
         'wins': 0
     }
 
+    # Track personal bests per course
+    personal_bests = {}  # {course_id: {'score': X, 'date': 'YYYY-MM-DD', 'course_name': 'Name'}}
+
     if rounds:
         scores = []
         for round_data in rounds:
@@ -116,6 +119,16 @@ def player_detail(player_id):
                 if score == min_score:
                     stats['wins'] += 1
 
+                # Track personal best for this course
+                course_id = round_data['course_id']
+                if course_id not in personal_bests or score < personal_bests[course_id]['score']:
+                    personal_bests[course_id] = {
+                        'score': score,
+                        'date': round_data['date_played'],
+                        'course_name': round_data['course_name'],
+                        'round_id': round_data['id']
+                    }
+
         if scores:
             stats['total_rounds'] = len(scores)
             stats['total_score'] = sum(scores)
@@ -123,10 +136,17 @@ def player_detail(player_id):
             stats['best_score'] = min(scores)
             stats['worst_score'] = max(scores)
 
+    # Convert personal_bests dict to sorted list
+    personal_bests_list = sorted(
+        personal_bests.values(),
+        key=lambda x: x['course_name']
+    )
+
     # Get player achievements
     achievements = AchievementService.get_player_achievements(player_id)
 
-    return render_template('players/detail.html', player=player, rounds=rounds, stats=stats, achievements=achievements)
+    return render_template('players/detail.html', player=player, rounds=rounds, stats=stats,
+                         achievements=achievements, personal_bests=personal_bests_list)
 
 
 @bp.route('/<player_id>/edit', methods=['POST'])
