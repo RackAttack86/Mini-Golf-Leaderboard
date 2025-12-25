@@ -141,14 +141,32 @@ class AchievementService:
             'color': '#8b5cf6',
             'points': 80
         },
+        'standard_explorer': {
+            'name': 'Standard Explorer',
+            'description': 'Play on all non-hard courses',
+            'icon': 'bi-compass-fill',
+            'category': 'Exploration',
+            'requirement': 'all_standard',
+            'color': '#3b82f6',
+            'points': 150
+        },
+        'hardcore_champion': {
+            'name': 'Hardcore Champion',
+            'description': 'Play on all hard courses',
+            'icon': 'bi-fire',
+            'category': 'Exploration',
+            'requirement': 'all_hard',
+            'color': '#dc2626',
+            'points': 200
+        },
         'course_conqueror': {
             'name': 'Course Conqueror',
             'description': 'Win on every course',
             'icon': 'bi-shield-fill-check',
             'category': 'Mastery',
             'requirement': 'all',
-            'color': '#dc2626',
-            'points': 200
+            'color': '#7c2d12',
+            'points': 500
         },
 
         # Social Achievements
@@ -298,6 +316,41 @@ class AchievementService:
             progress['globe_trotter'] = {
                 'current': courses_played,
                 'required': total_active_courses
+            }
+
+        # Check Standard Explorer (play all non-hard courses)
+        hard_courses_played = AchievementService._count_hard_courses_played(rounds)
+        nonhard_courses_played = AchievementService._count_nonhard_courses_played(rounds)
+        total_hard_courses = AchievementService._count_total_hard_courses()
+        total_nonhard_courses = AchievementService._count_total_nonhard_courses()
+
+        achievement = AchievementService.ACHIEVEMENTS['standard_explorer']
+        if total_nonhard_courses > 0 and nonhard_courses_played >= total_nonhard_courses:
+            earned_achievements.append({
+                'id': 'standard_explorer',
+                **achievement,
+                'earned': True
+            })
+            total_points += achievement['points']
+        else:
+            progress['standard_explorer'] = {
+                'current': nonhard_courses_played,
+                'required': total_nonhard_courses
+            }
+
+        # Check Hardcore Champion (play all hard courses)
+        achievement = AchievementService.ACHIEVEMENTS['hardcore_champion']
+        if total_hard_courses > 0 and hard_courses_played >= total_hard_courses:
+            earned_achievements.append({
+                'id': 'hardcore_champion',
+                **achievement,
+                'earned': True
+            })
+            total_points += achievement['points']
+        else:
+            progress['hardcore_champion'] = {
+                'current': hard_courses_played,
+                'required': total_hard_courses
             }
 
         # Check Course Conqueror (win on every course)
@@ -464,3 +517,35 @@ class AchievementService:
                     current_streak = 0
 
         return max_streak
+
+    @staticmethod
+    def _count_hard_courses_played(rounds: List[Dict[str, Any]]) -> int:
+        """Count unique hard courses played"""
+        hard_courses = set()
+        for round_data in rounds:
+            course = Course.get_by_id(round_data['course_id'])
+            if course and '(HARD)' in course['name']:
+                hard_courses.add(round_data['course_id'])
+        return len(hard_courses)
+
+    @staticmethod
+    def _count_nonhard_courses_played(rounds: List[Dict[str, Any]]) -> int:
+        """Count unique non-hard courses played"""
+        nonhard_courses = set()
+        for round_data in rounds:
+            course = Course.get_by_id(round_data['course_id'])
+            if course and '(HARD)' not in course['name']:
+                nonhard_courses.add(round_data['course_id'])
+        return len(nonhard_courses)
+
+    @staticmethod
+    def _count_total_hard_courses() -> int:
+        """Count total active hard courses"""
+        courses = Course.get_all(active_only=True)
+        return len([c for c in courses if '(HARD)' in c['name']])
+
+    @staticmethod
+    def _count_total_nonhard_courses() -> int:
+        """Count total active non-hard courses"""
+        courses = Course.get_all(active_only=True)
+        return len([c for c in courses if '(HARD)' not in c['name']])
