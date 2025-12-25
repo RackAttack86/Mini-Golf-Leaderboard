@@ -150,7 +150,7 @@
                                     {% for round in recent_rounds %}
                                     {% set winner = round.scores|sort(attribute='score')|first %}
                                     {% set winner_color = round.winner_player.favorite_color if round.winner_player and round.winner_player.favorite_color else '#2e7d32' %}
-                                    <tr class="winner-color-row">
+                                    <tr class="winner-color-row" onclick="window.location='{{ url_for('rounds.round_detail', round_id=round.id) }}';" style="cursor: pointer;">
                                         <td style="background-color: {{ winner_color }}33 !important;">{{ round.date_played }}</td>
                                         <td style="background-color: {{ winner_color }}33 !important;">
                                             {% if round.course_image_url %}
@@ -185,7 +185,8 @@
                                         </td>
                                         <td class="text-end" style="background-color: {{ winner_color }}33 !important;">
                                             <a href="{{ url_for('rounds.round_detail', round_id=round.id) }}"
-                                               class="btn btn-sm btn-outline-primary">
+                                               class="btn btn-sm btn-outline-primary"
+                                               onclick="event.stopPropagation();">
                                                 View
                                             </a>
                                         </td>
