@@ -141,7 +141,7 @@
                                         <th style="width: 70px;"></th>
                                         <th>Course</th>
                                         <th>Players</th>
-                                        <th style="width: 45px;"></th>
+                                        <th style="width: 70px;"></th>
                                         <th>Winner</th>
                                         <th></th>
                                     </tr>
@@ -171,10 +171,10 @@
                                             {% if round.winner_player and round.winner_player.profile_picture %}
                                             <img src="{{ url_for('static', filename='uploads/profiles/' + round.winner_player.profile_picture) }}"
                                                  alt="{{ winner.player_name }}"
-                                                 class="profile-picture-xs"
+                                                 class="profile-picture-sm"
                                                  style="border-color: {{ winner_color }};">
                                             {% else %}
-                                            <div class="profile-picture-placeholder-xs"
+                                            <div class="profile-picture-placeholder"
                                                  style="border-color: {{ winner_color }};">
                                                 <i class="bi bi-person-fill"></i>
                                             </div>
