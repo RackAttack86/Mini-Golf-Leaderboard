@@ -14,8 +14,8 @@
             <div class="card-body p-4">
                 <div class="alert alert-info">
                     <i class="bi bi-info-circle"></i>
-                    <strong>Account Linking Required</strong><br>
-                    To complete your sign-in, please link your Google account to an existing player profile.
+                    <strong>Account Setup Required</strong><br>
+                    To complete your sign-in, please link your Google account to a player profile or create a new one.
                 </div>
 
                 <div class="card mb-4">
@@ -30,63 +30,127 @@
                     </div>
                 </div>
 
-                <form method="POST" action="{{ url_for('auth.register') }}">
-                    <div class="mb-4">
-                        <label for="player_id" class="form-label">
-                            <i class="bi bi-people"></i> Select Your Player Profile
-                        </label>
-                        <select class="form-select form-select-lg" id="player_id" name="player_id" required>
-                            <option value="">-- Select a player --</option>
-                            {% for player in unlinked_players %}
-                            <option value="{{ player.id }}"
-                                    {% if player.email == google_email %}selected{% endif %}>
-                                {{ player.name }}
-                                {% if player.email %}
-                                    ({{ player.email }})
-                                    {% if player.email == google_email %}
-                                        <i class="bi bi-check-circle text-success"></i>
+                <!-- Tabs for Link vs Create -->
+                <ul class="nav nav-tabs mb-3" id="registerTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="create-tab" data-bs-toggle="tab" data-bs-target="#create-panel" type="button" role="tab" aria-controls="create-panel" aria-selected="true">
+                            <i class="bi bi-plus-circle"></i> Create New Profile
+                        </button>
+                    </li>
+                    {% if unlinked_players %}
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="link-tab" data-bs-toggle="tab" data-bs-target="#link-panel" type="button" role="tab" aria-controls="link-panel" aria-selected="false">
+                            <i class="bi bi-link-45deg"></i> Link Existing Profile
+                        </button>
+                    </li>
+                    {% endif %}
+                </ul>
+
+                <div class="tab-content" id="registerTabContent">
+                    <!-- Create New Profile Tab -->
+                    <div class="tab-pane fade show active" id="create-panel" role="tabpanel" aria-labelledby="create-tab">
+                        <form method="POST" action="{{ url_for('auth.register') }}">
+                            <input type="hidden" name="action" value="create">
+
+                            <div class="mb-3">
+                                <label for="new_name" class="form-label">
+                                    <i class="bi bi-person"></i> Player Name <span class="text-danger">*</span>
+                                </label>
+                                <input type="text" class="form-control" id="new_name" name="new_name"
+                                       value="{{ google_name }}" required maxlength="100">
+                                <div class="form-text">
+                                    This is the name that will appear on the leaderboard.
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="new_email" class="form-label">
+                                    <i class="bi bi-envelope"></i> Email
+                                </label>
+                                <input type="email" class="form-control" id="new_email" name="new_email"
+                                       value="{{ google_email }}" maxlength="255">
+                                <div class="form-text">
+                                    Optional. Will default to your Google email if left blank.
+                                </div>
+                            </div>
+
+                            <div class="mb-4">
+                                <label for="favorite_color" class="form-label">
+                                    <i class="bi bi-palette"></i> Favorite Color
+                                </label>
+                                <input type="color" class="form-control form-control-color" id="favorite_color"
+                                       name="favorite_color" value="#2e7d32" title="Choose your favorite color">
+                                <div class="form-text">
+                                    This color will be used to represent you in charts and graphs.
+                                </div>
+                            </div>
+
+                            <div class="d-grid gap-2">
+                                <button type="submit" class="btn btn-success btn-lg">
+                                    <i class="bi bi-plus-circle"></i> Create Profile & Sign In
+                                </button>
+                                <a href="{{ url_for('auth.login') }}" class="btn btn-outline-secondary">
+                                    <i class="bi bi-arrow-left"></i> Cancel
+                                </a>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Link Existing Profile Tab -->
+                    {% if unlinked_players %}
+                    <div class="tab-pane fade" id="link-panel" role="tabpanel" aria-labelledby="link-tab">
+                        <form method="POST" action="{{ url_for('auth.register') }}">
+                            <input type="hidden" name="action" value="link">
+
+                            <div class="mb-4">
+                                <label for="player_id" class="form-label">
+                                    <i class="bi bi-people"></i> Select Your Player Profile
+                                </label>
+                                <select class="form-select form-select-lg" id="player_id" name="player_id" required>
+                                    <option value="">-- Select a player --</option>
+                                    {% for player in unlinked_players %}
+                                    <option value="{{ player.id }}"
+                                            {% if player.email == google_email %}selected{% endif %}>
+                                        {{ player.name }}
+                                        {% if player.email %}
+                                            ({{ player.email }})
+                                            {% if player.email == google_email %}
+                                                ✓
+                                            {% endif %}
+                                        {% endif %}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                                <div class="form-text">
+                                    <i class="bi bi-lightbulb"></i>
+                                    {% if unlinked_players|selectattr('email', 'equalto', google_email)|list %}
+                                        We've pre-selected the profile matching your email address.
+                                    {% else %}
+                                        Select the player profile that belongs to you.
                                     {% endif %}
-                                {% endif %}
-                            </option>
-                            {% endfor %}
-                        </select>
-                        <div class="form-text">
-                            <i class="bi bi-lightbulb"></i>
-                            {% if unlinked_players|selectattr('email', 'equalto', google_email)|list %}
-                                We've pre-selected the profile matching your email address.
-                            {% else %}
-                                Select the player profile that belongs to you. If your profile email matches your Google email, it will be highlighted.
-                            {% endif %}
+                                </div>
+                            </div>
+
+                            <div class="d-grid gap-2">
+                                <button type="submit" class="btn btn-success btn-lg">
+                                    <i class="bi bi-link-45deg"></i> Link Account & Sign In
+                                </button>
+                                <a href="{{ url_for('auth.login') }}" class="btn btn-outline-secondary">
+                                    <i class="bi bi-arrow-left"></i> Cancel
+                                </a>
+                            </div>
+                        </form>
+
+                        <hr class="my-4">
+                        <div class="text-muted small">
+                            <p class="mb-0">
+                                <i class="bi bi-shield-check"></i>
+                                <strong>Note:</strong> Once linked, you can only sign in with this Google account. This helps keep your scores and profile secure.
+                            </p>
                         </div>
                     </div>
-
-                    {% if not unlinked_players %}
-                    <div class="alert alert-warning">
-                        <i class="bi bi-exclamation-triangle"></i>
-                        <strong>No Available Profiles</strong><br>
-                        All player profiles are already linked to Google accounts. Please contact an administrator if you need assistance.
-                    </div>
                     {% endif %}
-
-                    <div class="d-grid gap-2">
-                        <button type="submit" class="btn btn-success btn-lg" {% if not unlinked_players %}disabled{% endif %}>
-                            <i class="bi bi-link-45deg"></i> Link Account & Sign In
-                        </button>
-                        <a href="{{ url_for('auth.login') }}" class="btn btn-outline-secondary">
-                            <i class="bi bi-arrow-left"></i> Cancel
-                        </a>
-                    </div>
-                </form>
-
-                {% if unlinked_players %}
-                <hr class="my-4">
-                <div class="text-muted small">
-                    <p class="mb-0">
-                        <i class="bi bi-shield-check"></i>
-                        <strong>Note:</strong> Once linked, you can only sign in with this Google account. This helps keep your scores and profile secure.
-                    </p>
                 </div>
-                {% endif %}
             </div>
         </div>
 

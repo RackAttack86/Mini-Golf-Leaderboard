@@ -104,28 +104,64 @@ def register():
         return redirect(url_for('auth.login'))
 
     if request.method == 'POST':
-        player_id = request.form.get('player_id')
+        action = request.form.get('action', 'link')  # 'link' or 'create'
 
-        if not player_id:
-            flash('Please select a player to link your account to.', 'warning')
-            return redirect(url_for('auth.register'))
+        if action == 'create':
+            # Create new player profile
+            new_name = request.form.get('new_name', '').strip()
+            new_email = request.form.get('new_email', '').strip()
+            favorite_color = request.form.get('favorite_color', '#2e7d32').strip()
 
-        # Link Google account to player
-        success, message, user = AuthService.link_google_to_player(google_id, player_id)
+            if not new_name:
+                flash('Please enter a name for your player profile.', 'warning')
+                return redirect(url_for('auth.register'))
 
-        if success:
-            # Clear session data
-            session.pop('google_id', None)
-            session.pop('google_email', None)
-            session.pop('google_name', None)
+            # Create and link new player
+            success, message, user = AuthService.create_and_link_player(
+                google_id=google_id,
+                name=new_name,
+                email=new_email or google_email,
+                favorite_color=favorite_color
+            )
 
-            # Log user in
-            login_user(user, remember=True)
-            flash(f'Account linked successfully! Welcome, {user.name}!', 'success')
-            return redirect(url_for('main.index'))
-        else:
-            flash(message, 'danger')
-            return redirect(url_for('auth.register'))
+            if success:
+                # Clear session data
+                session.pop('google_id', None)
+                session.pop('google_email', None)
+                session.pop('google_name', None)
+
+                # Log user in
+                login_user(user, remember=True)
+                flash(f'Profile created successfully! Welcome, {user.name}!', 'success')
+                return redirect(url_for('main.index'))
+            else:
+                flash(message, 'danger')
+                return redirect(url_for('auth.register'))
+
+        else:  # action == 'link'
+            # Link to existing player
+            player_id = request.form.get('player_id')
+
+            if not player_id:
+                flash('Please select a player to link your account to.', 'warning')
+                return redirect(url_for('auth.register'))
+
+            # Link Google account to player
+            success, message, user = AuthService.link_google_to_player(google_id, player_id)
+
+            if success:
+                # Clear session data
+                session.pop('google_id', None)
+                session.pop('google_email', None)
+                session.pop('google_name', None)
+
+                # Log user in
+                login_user(user, remember=True)
+                flash(f'Account linked successfully! Welcome, {user.name}!', 'success')
+                return redirect(url_for('main.index'))
+            else:
+                flash(message, 'danger')
+                return redirect(url_for('auth.register'))
 
     # GET request - show registration form
     unlinked_players = AuthService.get_unlinked_players()

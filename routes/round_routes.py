@@ -122,10 +122,16 @@ def round_detail(round_id):
         player = Player.get_by_id(score['player_id'])
         score['player_data'] = player
 
-    # Get all courses for edit modal
+    # Get all courses and players for edit modal
     courses = Course.get_all()
+    players = Player.get_all()
 
-    return render_template('rounds/detail.html', round=round_data, courses=courses)
+    # Filter out players already in this round for the "add player" dropdown
+    existing_player_ids = {score['player_id'] for score in round_data['scores']}
+    available_players = [p for p in players if p['id'] not in existing_player_ids]
+
+    return render_template('rounds/detail.html', round=round_data, courses=courses,
+                         players=players, available_players=available_players)
 
 
 @bp.route('/<round_id>/edit', methods=['POST'])

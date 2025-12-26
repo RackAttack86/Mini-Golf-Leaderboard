@@ -178,27 +178,48 @@
 
                     <div class="mb-3">
                         <label class="form-label">Player Scores *</label>
-                        {% for score in round.scores %}
-                        <div class="row mb-2">
-                            <div class="col-md-6">
-                                <input type="text"
-                                       class="form-control"
-                                       value="{{ score.player_name }}"
-                                       readonly>
-                                <input type="hidden" name="player_ids[]" value="{{ score.player_id }}">
+                        <div id="existingScores">
+                            {% for score in round.scores %}
+                            <div class="row mb-2 existing-player-row" id="existingPlayer{{ loop.index0 }}">
+                                <div class="col-md-5">
+                                    <input type="text"
+                                           class="form-control"
+                                           value="{{ score.player_name }}"
+                                           readonly>
+                                    <input type="hidden" name="player_ids[]" value="{{ score.player_id }}">
+                                </div>
+                                <div class="col-md-5">
+                                    <input type="number"
+                                           class="form-control"
+                                           name="scores[]"
+                                           value="{{ score.score }}"
+                                           min="-50"
+                                           max="500"
+                                           required
+                                           placeholder="Score">
+                                </div>
+                                <div class="col-md-2">
+                                    <button type="button" class="btn btn-outline-danger w-100" onclick="removeExistingPlayer('existingPlayer{{ loop.index0 }}')" title="Remove player from round">
+                                        <i class="bi bi-x-circle"></i>
+                                    </button>
+                                </div>
                             </div>
-                            <div class="col-md-6">
-                                <input type="number"
-                                       class="form-control"
-                                       name="scores[]"
-                                       value="{{ score.score }}"
-                                       min="-50"
-                                       max="500"
-                                       required
-                                       placeholder="Score">
-                            </div>
+                            {% endfor %}
                         </div>
-                        {% endfor %}
+
+                        <!-- Container for new players -->
+                        <div id="newPlayersContainer"></div>
+
+                        <!-- Add Player Button -->
+                        {% if available_players %}
+                        <button type="button" class="btn btn-sm btn-outline-success mt-2" onclick="addNewPlayer()">
+                            <i class="bi bi-plus-circle"></i> Add Player to Round
+                        </button>
+                        {% else %}
+                        <div class="alert alert-info mt-2 mb-0">
+                            <small><i class="bi bi-info-circle"></i> All active players are already in this round.</small>
+                        </div>
+                        {% endif %}
                     </div>
 
                     <div class="mb-3">
@@ -244,6 +265,91 @@
 
 {% block extra_scripts %}
 <script>
+// Available players data for adding new players
+const availablePlayers = [
+    {% for player in available_players %}
+    { id: "{{ player.id }}", name: "{{ player.name }}" }{% if not loop.last %},{% endif %}
+    {% endfor %}
+];
+
+let newPlayerCounter = 0;
+
+function addNewPlayer() {
+    if (availablePlayers.length === 0) {
+        alert('No more players available to add');
+        return;
+    }
+
+    const container = document.getElementById('newPlayersContainer');
+    const newRow = document.createElement('div');
+    newRow.className = 'row mb-2 new-player-row';
+    newRow.id = 'newPlayer' + newPlayerCounter;
+
+    newRow.innerHTML = `
+        <div class="col-md-5">
+            <select class="form-control" name="player_ids[]" required onchange="updatePlayerSelection(this)">
+                <option value="">-- Select Player --</option>
+                ${availablePlayers.map(p => `<option value="${p.id}">${p.name}</option>`).join('')}
+            </select>
+        </div>
+        <div class="col-md-5">
+            <input type="number"
+                   class="form-control"
+                   name="scores[]"
+                   min="-50"
+                   max="500"
+                   required
+                   placeholder="Score">
+        </div>
+        <div class="col-md-2">
+            <button type="button" class="btn btn-outline-danger w-100" onclick="removeNewPlayer('newPlayer${newPlayerCounter}')" title="Remove player">
+                <i class="bi bi-x-circle"></i>
+            </button>
+        </div>
+    `;
+
+    container.appendChild(newRow);
+    newPlayerCounter++;
+}
+
+function removeExistingPlayer(rowId) {
+    // Count remaining players
+    const existingPlayers = document.querySelectorAll('.existing-player-row').length;
+    const newPlayers = document.querySelectorAll('.new-player-row').length;
+    const totalPlayers = existingPlayers + newPlayers;
+
+    if (totalPlayers <= 1) {
+        alert('A round must have at least one player. Cannot remove the last player.');
+        return;
+    }
+
+    if (confirm('Are you sure you want to remove this player from the round?')) {
+        const row = document.getElementById(rowId);
+        if (row) {
+            row.remove();
+        }
+    }
+}
+
+function removeNewPlayer(rowId) {
+    const row = document.getElementById(rowId);
+    if (row) {
+        // Get the selected player ID before removing
+        const select = row.querySelector('select');
+        if (select && select.value) {
+            // Player was selected, make them available again
+            // The availablePlayers array doesn't need to be updated since
+            // we're just removing the UI element
+        }
+        row.remove();
+    }
+}
+
+function updatePlayerSelection(selectElement) {
+    // This function can be used to prevent duplicate selections if needed
+    // For now, the backend validation will handle duplicates
+}
+
 function updateEditCoursePreview(selectElement) {
     const selectedOption = selectElement.options[selectElement.selectedIndex];
     const imageUrl = selectedOption.getAttribute('data-image-url');

@@ -106,6 +106,54 @@ class AuthService:
         )
 
     @staticmethod
+    def create_and_link_player(google_id: str, name: str, email: str,
+                               favorite_color: Optional[str] = None) -> Tuple[bool, str, Optional[User]]:
+        """
+        Create a new player and link it to Google account
+
+        Args:
+            google_id: Google user ID
+            name: Player name
+            email: Player email
+            favorite_color: Favorite color hex code (optional)
+
+        Returns:
+            Tuple of (success, message, user_object)
+        """
+        # Create new player
+        success, message, player = Player.create(
+            name=name,
+            email=email,
+            favorite_color=favorite_color,
+            role='player'
+        )
+
+        if not success:
+            return False, message, None
+
+        # Link Google account to the new player
+        success, link_message = Player.link_google_account(player['id'], google_id)
+
+        if not success:
+            return False, link_message, None
+
+        # Get the updated player
+        player = Player.get_by_id(player['id'])
+        if not player:
+            return False, "Player not found after creation", None
+
+        # Create and return user object
+        user = User(
+            player_id=player['id'],
+            google_id=player['google_id'],
+            email=player['email'],
+            name=player['name'],
+            role=player.get('role', 'player')
+        )
+
+        return True, "Player profile created and linked successfully", user
+
+    @staticmethod
     def get_player_for_user(user: User) -> Optional[Dict[str, Any]]:
         """
         Get full player data for a user
