@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from datetime import datetime, UTC
 from typing import List, Optional, Dict, Any, Tuple
 from models.data_store import get_data_store
 from utils.validators import validate_player_name, validate_email
@@ -47,7 +47,7 @@ class Player:
             'google_id': None,
             'role': role if role in ['admin', 'player'] else 'player',
             'last_login': None,
-            'created_at': datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
+            'created_at': datetime.now(UTC).strftime('%Y-%m-%dT%H:%M:%SZ'),
             'active': True
         }
 
@@ -275,7 +275,7 @@ class Player:
 
         # Link Google account
         player['google_id'] = google_id
-        player['last_login'] = datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')
+        player['last_login'] = datetime.now(UTC).strftime('%Y-%m-%dT%H:%M:%SZ')
 
         store.write_players(data)
         return True, "Google account linked successfully"
@@ -305,7 +305,7 @@ class Player:
             return False
 
         # Update last login
-        player['last_login'] = datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')
+        player['last_login'] = datetime.now(UTC).strftime('%Y-%m-%dT%H:%M:%SZ')
 
         store.write_players(data)
         return True

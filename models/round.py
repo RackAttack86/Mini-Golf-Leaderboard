@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from datetime import datetime, UTC
 from typing import List, Optional, Dict, Any, Tuple
 from models.data_store import get_data_store
 from models.player import Player
@@ -75,7 +75,7 @@ class Round:
             'course_id': course_id,
             'course_name': course['name'],  # Denormalized
             'date_played': date_played,
-            'timestamp': datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
+            'timestamp': datetime.now(UTC).strftime('%Y-%m-%dT%H:%M:%SZ'),
             'scores': validated_scores,
             'notes': notes.strip() if notes else ''
         }

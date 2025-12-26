@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from datetime import datetime, UTC
 from typing import List, Optional, Dict, Any, Tuple
 from models.data_store import get_data_store
 from utils.validators import validate_course_name, validate_holes, validate_par
@@ -52,7 +52,7 @@ class Course:
             'holes': int(holes) if holes else None,
             'par': int(par) if par else None,
             'image_url': image_url or '',
-            'created_at': datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
+            'created_at': datetime.now(UTC).strftime('%Y-%m-%dT%H:%M:%SZ'),
             'active': True
         }
 

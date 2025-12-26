@@ -1,5 +1,5 @@
 """Course rating model for player ratings"""
-from datetime import datetime
+from datetime import datetime, UTC
 from typing import List, Dict, Any, Tuple, Optional
 from models.data_store import get_data_store
 
@@ -37,7 +37,7 @@ class CourseRating:
         if existing_rating is not None:
             # Update existing rating
             data['ratings'][existing_rating]['rating'] = rating
-            data['ratings'][existing_rating]['date_rated'] = datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')
+            data['ratings'][existing_rating]['date_rated'] = datetime.now(UTC).strftime('%Y-%m-%dT%H:%M:%SZ')
             message = "Rating updated successfully"
         else:
             # Create new rating
@@ -45,7 +45,7 @@ class CourseRating:
                 'player_id': player_id,
                 'course_id': course_id,
                 'rating': rating,
-                'date_rated': datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')
+                'date_rated': datetime.now(UTC).strftime('%Y-%m-%dT%H:%M:%SZ')
             }
             data['ratings'].append(new_rating)
             message = "Rating added successfully"

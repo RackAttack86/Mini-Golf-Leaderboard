@@ -9,7 +9,7 @@ import pytest
 import tempfile
 import shutil
 from pathlib import Path
-from datetime import datetime, timedelta
+from datetime import datetime, UTC, timedelta
 from unittest.mock import MagicMock
 
 from app import create_app
@@ -126,7 +126,7 @@ def sample_player_data():
         'google_id': None,
         'role': 'player',
         'last_login': None,
-        'created_at': datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
+        'created_at': datetime.now(UTC).strftime('%Y-%m-%dT%H:%M:%SZ'),
         'active': True
     }
 
@@ -146,7 +146,7 @@ def sample_course_data():
         'holes': 18,
         'par': 54,
         'image_url': '',
-        'created_at': datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
+        'created_at': datetime.now(UTC).strftime('%Y-%m-%dT%H:%M:%SZ'),
         'active': True
     }
 
@@ -164,7 +164,7 @@ def sample_round_data():
         'course_id': 'test-course-1',
         'course_name': 'Sunset Golf',
         'date_played': '2024-01-15',
-        'timestamp': datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
+        'timestamp': datetime.now(UTC).strftime('%Y-%m-%dT%H:%M:%SZ'),
         'scores': [
             {
                 'player_id': 'test-player-1',
@@ -193,7 +193,7 @@ def sample_rating_data():
         'player_id': 'test-player-1',
         'course_id': 'test-course-1',
         'rating': 5,
-        'date_rated': datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')
+        'date_rated': datetime.now(UTC).strftime('%Y-%m-%dT%H:%M:%SZ')
     }
 
 

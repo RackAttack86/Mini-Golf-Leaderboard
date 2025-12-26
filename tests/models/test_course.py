@@ -187,10 +187,24 @@ class TestCourseRetrieval:
 
     def test_get_all_including_inactive(self, data_store):
         """Test getting all courses including inactive ones"""
+        from models.player import Player
+        from models.round import Round
+
+        # Create courses
         Course.create(name='Active Course')
-        success, message, inactive = Course.create(name='Inactive Course')
-        # Deactivate the second course
-        Course.delete(inactive['id'])
+        success, message, inactive_course = Course.create(name='Inactive Course')
+
+        # Create a player and round for the inactive course so it gets soft-deleted
+        Player.create(name='Test Player')
+        players = Player.get_all()
+        Round.create(
+            course_id=inactive_course['id'],
+            date_played='2024-01-01',
+            scores=[{'player_id': players[0]['id'], 'score': 50}]
+        )
+
+        # Deactivate the second course (soft delete because it has rounds)
+        Course.delete(inactive_course['id'])
 
         active_only = Course.get_all(active_only=True)
         all_courses = Course.get_all(active_only=False)
