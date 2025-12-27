@@ -32,3 +32,48 @@ class Config:
     SESSION_COOKIE_SECURE = not DEBUG  # True in production with HTTPS, False in development
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = 'Lax'
+
+    # CSRF Protection
+    WTF_CSRF_ENABLED = True
+    WTF_CSRF_TIME_LIMIT = None  # No expiration (uses session lifetime instead)
+    WTF_CSRF_SSL_STRICT = not DEBUG  # Require Referer header to match in production
+    WTF_CSRF_CHECK_DEFAULT = True
+
+    # Security Headers (Talisman)
+    TALISMAN_FORCE_HTTPS = not DEBUG  # Only force HTTPS in production
+
+    # Content Security Policy
+    CONTENT_SECURITY_POLICY = {
+        'default-src': ['\'self\''],
+        'script-src': [
+            '\'self\'',
+            'https://cdn.jsdelivr.net',  # Bootstrap JS
+        ],
+        'style-src': [
+            '\'self\'',
+            '\'unsafe-inline\'',  # Required for Bootstrap inline styles
+            'https://cdn.jsdelivr.net',  # Bootstrap CSS
+        ],
+        'font-src': [
+            '\'self\'',
+            'https://cdn.jsdelivr.net',  # Bootstrap Icons
+        ],
+        'img-src': [
+            '\'self\'',
+            'data:',  # For data URIs
+            'https:',  # Allow external course images
+        ],
+        'connect-src': ['\'self\''],
+        'object-src': ['\'none\''],
+        'base-uri': ['\'self\''],
+        'form-action': ['\'self\''],
+        'frame-ancestors': ['\'self\''],
+    }
+
+    # Feature Policy (Permissions Policy)
+    FEATURE_POLICY = {
+        'geolocation': '\'none\'',
+        'microphone': '\'none\'',
+        'camera': '\'none\'',
+        'payment': '\'none\'',
+    }

@@ -50,6 +50,7 @@
                     <!-- Create New Profile Tab -->
                     <div class="tab-pane fade show active" id="create-panel" role="tabpanel" aria-labelledby="create-tab">
                         <form method="POST" action="{{ url_for('auth.register') }}">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                             <input type="hidden" name="action" value="create">
 
                             <div class="mb-3">
@@ -100,6 +101,7 @@
                     {% if unlinked_players %}
                     <div class="tab-pane fade" id="link-panel" role="tabpanel" aria-labelledby="link-tab">
                         <form method="POST" action="{{ url_for('auth.register') }}">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                             <input type="hidden" name="action" value="link">
 
                             <div class="mb-4">

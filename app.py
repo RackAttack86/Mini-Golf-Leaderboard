@@ -6,6 +6,8 @@ from flask_login import LoginManager, current_user
 from flask_dance.contrib.google import make_google_blueprint
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
+from flask_wtf.csrf import CSRFProtect
+from flask_talisman import Talisman
 from dotenv import load_dotenv
 import logging
 from logging.handlers import RotatingFileHandler
@@ -22,6 +24,9 @@ limiter = Limiter(
     headers_enabled=True
 )
 
+# Initialize CSRF protection
+csrf = CSRFProtect()
+
 # Import route blueprints
 from routes import main_routes, player_routes, course_routes, round_routes, stats_routes, auth_routes
 from services.auth_service import AuthService
@@ -37,6 +42,24 @@ def create_app():
 
     # Initialize rate limiter
     limiter.init_app(app)
+
+    # Initialize CSRF protection
+    csrf.init_app(app)
+
+    # Initialize security headers (Talisman) - only in non-debug mode
+    if not app.debug:
+        Talisman(
+            app,
+            force_https=app.config['TALISMAN_FORCE_HTTPS'],
+            strict_transport_security=True,
+            strict_transport_security_max_age=31536000,  # 1 year
+            content_security_policy=app.config['CONTENT_SECURITY_POLICY'],
+            feature_policy=app.config['FEATURE_POLICY'],
+            referrer_policy='strict-origin-when-cross-origin',
+            x_content_type_options=True,
+            x_frame_options='SAMEORIGIN',
+            x_xss_protection=True
+        )
 
     # Initialize Flask-Login
     login_manager = LoginManager()
@@ -132,6 +155,15 @@ def setup_logging(app):
 
 def register_error_handlers(app):
     """Register global error handlers"""
+    from flask_wtf.csrf import CSRFError
+    from flask import flash
+
+    @app.errorhandler(CSRFError)
+    def handle_csrf_error(e):
+        """Handle CSRF validation errors"""
+        app.logger.warning(f'CSRF validation failed: {e.description}')
+        flash('Security validation failed. Please try again.', 'danger')
+        return render_template('errors/403.html'), 403
 
     @app.errorhandler(404)
     def not_found_error(error):

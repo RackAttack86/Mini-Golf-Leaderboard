@@ -30,6 +30,7 @@
                 </div>
                 {% else %}
                 <form method="POST" action="{{ url_for('rounds.add_round') }}" id="addRoundForm">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                     <div class="mb-3">
                         <label for="course_id" class="form-label">Course *</label>
                         <select class="form-select" id="course_id" name="course_id" required onchange="updateCoursePreview(this)">

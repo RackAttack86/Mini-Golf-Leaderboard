@@ -3,212 +3,11 @@ from typing import Any, Dict, List
 
 from models.course import Course
 from models.round import Round
+from services.achievements_data import ACHIEVEMENTS
 
 
 class AchievementService:
     """Service for managing player achievements"""
-
-    # Define all achievements
-    ACHIEVEMENTS = {
-        # Rounds Played Achievements
-        'first_round': {
-            'name': 'First Round',
-            'description': 'Play your first round',
-            'icon': 'bi-play-circle',
-            'category': 'Participation',
-            'requirement': 1,
-            'color': '#17a2b8',
-            'points': 10
-        },
-        'getting_started': {
-            'name': 'Getting Started',
-            'description': 'Play 5 rounds',
-            'icon': 'bi-flag',
-            'category': 'Participation',
-            'requirement': 5,
-            'color': '#28a745',
-            'points': 20
-        },
-        'regular': {
-            'name': 'Regular',
-            'description': 'Play 10 rounds',
-            'icon': 'bi-star',
-            'category': 'Participation',
-            'requirement': 10,
-            'color': '#ffc107',
-            'points': 30
-        },
-        'veteran': {
-            'name': 'Veteran',
-            'description': 'Play 25 rounds',
-            'icon': 'bi-award',
-            'category': 'Participation',
-            'requirement': 25,
-            'color': '#fd7e14',
-            'points': 50
-        },
-        'century_club': {
-            'name': 'Century Club',
-            'description': 'Play 100 rounds',
-            'icon': 'bi-trophy',
-            'category': 'Participation',
-            'requirement': 100,
-            'color': '#6f42c1',
-            'points': 100
-        },
-
-        # Winning Achievements
-        'first_victory': {
-            'name': 'First Victory',
-            'description': 'Win your first round',
-            'icon': 'bi-trophy-fill',
-            'category': 'Victory',
-            'requirement': 1,
-            'color': '#ffd700',
-            'points': 10
-        },
-        'hat_trick': {
-            'name': 'Hat Trick',
-            'description': 'Win 3 rounds',
-            'icon': 'bi-gem',
-            'category': 'Victory',
-            'requirement': 3,
-            'color': '#28a745',
-            'points': 30
-        },
-        'champion': {
-            'name': 'Champion',
-            'description': 'Win 10 rounds',
-            'icon': 'bi-award-fill',
-            'category': 'Victory',
-            'requirement': 10,
-            'color': '#dc3545',
-            'points': 60
-        },
-        'dominator': {
-            'name': 'Dominator',
-            'description': 'Win 25 rounds',
-            'icon': 'bi-star-fill',
-            'category': 'Victory',
-            'requirement': 25,
-            'color': '#6f42c1',
-            'points': 100
-        },
-        'legend': {
-            'name': 'Legend',
-            'description': 'Win 50 rounds',
-            'icon': 'bi-lightning-fill',
-            'category': 'Victory',
-            'requirement': 50,
-            'color': '#ff0000',
-            'points': 150
-        },
-
-        # Course Exploration Achievements
-        'explorer': {
-            'name': 'Explorer',
-            'description': 'Play on 3 different courses',
-            'icon': 'bi-compass',
-            'category': 'Exploration',
-            'requirement': 3,
-            'color': '#17a2b8',
-            'points': 20
-        },
-        'world_traveler': {
-            'name': 'World Traveler',
-            'description': 'Play on 5 different courses',
-            'icon': 'bi-globe',
-            'category': 'Exploration',
-            'requirement': 5,
-            'color': '#20c997',
-            'points': 40
-        },
-        'course_master': {
-            'name': 'Course Master',
-            'description': 'Play on 10 different courses',
-            'icon': 'bi-map',
-            'category': 'Exploration',
-            'requirement': 10,
-            'color': '#6610f2',
-            'points': 80
-        },
-        'globe_trotter': {
-            'name': 'Globe Trotter',
-            'description': 'Play on every course',
-            'icon': 'bi-globe2',
-            'category': 'Exploration',
-            'requirement': 'all',
-            'color': '#8b5cf6',
-            'points': 80
-        },
-        'standard_explorer': {
-            'name': 'Standard Explorer',
-            'description': 'Play on all non-hard courses',
-            'icon': 'bi-compass-fill',
-            'category': 'Exploration',
-            'requirement': 'all_standard',
-            'color': '#3b82f6',
-            'points': 150
-        },
-        'hardcore_champion': {
-            'name': 'Hardcore Champion',
-            'description': 'Play on all hard courses',
-            'icon': 'bi-fire',
-            'category': 'Exploration',
-            'requirement': 'all_hard',
-            'color': '#dc2626',
-            'points': 200
-        },
-        'course_conqueror': {
-            'name': 'Course Conqueror',
-            'description': 'Win on every course',
-            'icon': 'bi-shield-fill-check',
-            'category': 'Mastery',
-            'requirement': 'all',
-            'color': '#7c2d12',
-            'points': 500
-        },
-
-        # Social Achievements
-        'social_butterfly': {
-            'name': 'Social Butterfly',
-            'description': 'Play with 5 different players',
-            'icon': 'bi-people-fill',
-            'category': 'Social',
-            'requirement': 5,
-            'color': '#e83e8c',
-            'points': 40
-        },
-        'party_animal': {
-            'name': 'Party Animal',
-            'description': 'Play in a round with 4 or more players',
-            'icon': 'bi-emoji-smile-fill',
-            'category': 'Social',
-            'requirement': 1,
-            'color': '#ff6b6b',
-            'points': 10
-        },
-
-        # Winning Streak Achievements
-        'hot_streak': {
-            'name': 'Hot Streak',
-            'description': 'Win 3 rounds in a row',
-            'icon': 'bi-fire',
-            'category': 'Streak',
-            'requirement': 3,
-            'color': '#ff6b35',
-            'points': 70
-        },
-        'unstoppable': {
-            'name': 'Unstoppable',
-            'description': 'Win 5 rounds in a row',
-            'icon': 'bi-rocket-takeoff-fill',
-            'category': 'Streak',
-            'requirement': 5,
-            'color': '#d90429',
-            'points': 150
-        }
-    }
 
     @staticmethod
     def get_achievement_score(player_id: str) -> int:
@@ -257,7 +56,7 @@ class AchievementService:
 
         # Check Participation Achievements
         for achievement_id in ['first_round', 'getting_started', 'regular', 'veteran', 'century_club']:
-            achievement = AchievementService.ACHIEVEMENTS[achievement_id]
+            achievement = ACHIEVEMENTS[achievement_id]
             if total_rounds >= achievement['requirement']:
                 earned_achievements.append({
                     'id': achievement_id,
@@ -273,7 +72,7 @@ class AchievementService:
 
         # Check Victory Achievements
         for achievement_id in ['first_victory', 'hat_trick', 'champion', 'dominator', 'legend']:
-            achievement = AchievementService.ACHIEVEMENTS[achievement_id]
+            achievement = ACHIEVEMENTS[achievement_id]
             if wins >= achievement['requirement']:
                 earned_achievements.append({
                     'id': achievement_id,
@@ -289,7 +88,7 @@ class AchievementService:
 
         # Check Exploration Achievements
         for achievement_id in ['explorer', 'world_traveler', 'course_master']:
-            achievement = AchievementService.ACHIEVEMENTS[achievement_id]
+            achievement = ACHIEVEMENTS[achievement_id]
             if courses_played >= achievement['requirement']:
                 earned_achievements.append({
                     'id': achievement_id,
@@ -304,7 +103,7 @@ class AchievementService:
                 }
 
         # Check Globe Trotter (play every course)
-        achievement = AchievementService.ACHIEVEMENTS['globe_trotter']
+        achievement = ACHIEVEMENTS['globe_trotter']
         if total_active_courses > 0 and courses_played >= total_active_courses:
             earned_achievements.append({
                 'id': 'globe_trotter',
@@ -324,7 +123,7 @@ class AchievementService:
         total_hard_courses = AchievementService._count_total_hard_courses()
         total_nonhard_courses = AchievementService._count_total_nonhard_courses()
 
-        achievement = AchievementService.ACHIEVEMENTS['standard_explorer']
+        achievement = ACHIEVEMENTS['standard_explorer']
         if total_nonhard_courses > 0 and nonhard_courses_played >= total_nonhard_courses:
             earned_achievements.append({
                 'id': 'standard_explorer',
@@ -339,7 +138,7 @@ class AchievementService:
             }
 
         # Check Hardcore Champion (play all hard courses)
-        achievement = AchievementService.ACHIEVEMENTS['hardcore_champion']
+        achievement = ACHIEVEMENTS['hardcore_champion']
         if total_hard_courses > 0 and hard_courses_played >= total_hard_courses:
             earned_achievements.append({
                 'id': 'hardcore_champion',
@@ -354,7 +153,7 @@ class AchievementService:
             }
 
         # Check Course Conqueror (win on every course)
-        achievement = AchievementService.ACHIEVEMENTS['course_conqueror']
+        achievement = ACHIEVEMENTS['course_conqueror']
         if total_active_courses > 0 and courses_won >= total_active_courses:
             earned_achievements.append({
                 'id': 'course_conqueror',
@@ -369,7 +168,7 @@ class AchievementService:
             }
 
         # Check Social Achievements
-        achievement = AchievementService.ACHIEVEMENTS['social_butterfly']
+        achievement = ACHIEVEMENTS['social_butterfly']
         if players_played_with >= achievement['requirement']:
             earned_achievements.append({
                 'id': 'social_butterfly',
@@ -383,7 +182,7 @@ class AchievementService:
                 'required': achievement['requirement']
             }
 
-        achievement = AchievementService.ACHIEVEMENTS['party_animal']
+        achievement = ACHIEVEMENTS['party_animal']
         if max_party_size >= 4:
             earned_achievements.append({
                 'id': 'party_animal',
@@ -399,7 +198,7 @@ class AchievementService:
 
         # Check Streak Achievements
         for achievement_id in ['hot_streak', 'unstoppable']:
-            achievement = AchievementService.ACHIEVEMENTS[achievement_id]
+            achievement = ACHIEVEMENTS[achievement_id]
             if max_win_streak >= achievement['requirement']:
                 earned_achievements.append({
                     'id': achievement_id,
