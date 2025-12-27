@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime, UTC
 from typing import List, Optional, Dict, Any, Tuple
 from models.data_store import get_data_store
-from utils.validators import validate_player_name, validate_email
+from utils.validators import validate_player_name, validate_email, sanitize_html
 
 
 class Player:
@@ -40,7 +40,7 @@ class Player:
         # Create player
         player = {
             'id': str(uuid.uuid4()),
-            'name': name.strip(),
+            'name': sanitize_html(name),
             'email': email.strip() if email else '',
             'profile_picture': profile_picture or '',
             'favorite_color': favorite_color or '#2e7d32',
@@ -133,7 +133,7 @@ class Player:
                 return False, error
 
             old_name = player['name']
-            player['name'] = name.strip()
+            player['name'] = sanitize_html(name)
 
             # Update denormalized data in rounds
             if old_name != player['name']:

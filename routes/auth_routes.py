@@ -1,8 +1,9 @@
-from flask import Blueprint, render_template, redirect, url_for, flash, request, session
+from flask import Blueprint, render_template, redirect, url_for, flash, request, session, current_app
 from flask_login import login_user, logout_user, current_user
 from flask_dance.contrib.google import google
 from services.auth_service import AuthService
 from urllib.parse import urlparse, urljoin
+from app import limiter
 
 
 auth_bp = Blueprint('auth', __name__, url_prefix='/auth')
@@ -24,6 +25,7 @@ def is_safe_url(target):
 
 
 @auth_bp.route('/login')
+@limiter.limit("10 per minute")
 def login():
     """Login page with Google sign-in button"""
     # If user is already logged in, redirect to dashboard
@@ -42,6 +44,7 @@ def google_login():
 
 
 @auth_bp.route('/google/callback')
+@limiter.limit("5 per minute")
 def google_callback():
     """Handle Google OAuth callback"""
     # Check if OAuth was successful
@@ -92,6 +95,7 @@ def google_callback():
 
 
 @auth_bp.route('/register', methods=['GET', 'POST'])
+@limiter.limit("5 per minute")
 def register():
     """Registration page to link Google account to player"""
     # Check if we have Google info in session

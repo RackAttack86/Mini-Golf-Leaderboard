@@ -1,13 +1,26 @@
-from flask import Flask
+from flask import Flask, render_template, request
 from datetime import datetime
 from config import Config
 from models.data_store import init_data_store
-from flask_login import LoginManager
+from flask_login import LoginManager, current_user
 from flask_dance.contrib.google import make_google_blueprint
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 from dotenv import load_dotenv
+import logging
+from logging.handlers import RotatingFileHandler
+import os
 
 # Load environment variables from .env file
 load_dotenv()
+
+# Initialize rate limiter
+limiter = Limiter(
+    key_func=get_remote_address,
+    default_limits=["200 per day", "50 per hour"],
+    storage_uri="memory://",
+    headers_enabled=True
+)
 
 # Import route blueprints
 from routes import main_routes, player_routes, course_routes, round_routes, stats_routes, auth_routes
@@ -21,6 +34,9 @@ def create_app():
 
     # Initialize data store
     init_data_store(app.config['DATA_DIR'])
+
+    # Initialize rate limiter
+    limiter.init_app(app)
 
     # Initialize Flask-Login
     login_manager = LoginManager()
@@ -67,7 +83,79 @@ def create_app():
             'current_year': datetime.now().year
         }
 
+    # Setup logging
+    setup_logging(app)
+
+    # Register error handlers
+    register_error_handlers(app)
+
     return app
+
+
+def setup_logging(app):
+    """Configure application logging"""
+    if not app.debug and not app.testing:
+        # Ensure logs directory exists
+        if not os.path.exists('logs'):
+            os.mkdir('logs')
+
+        # File handler for general logs
+        file_handler = RotatingFileHandler(
+            'logs/minigolf.log',
+            maxBytes=10485760,  # 10MB
+            backupCount=10
+        )
+        file_handler.setFormatter(logging.Formatter(
+            '[%(asctime)s] %(levelname)s in %(module)s: %(message)s'
+        ))
+        file_handler.setLevel(logging.INFO)
+        app.logger.addHandler(file_handler)
+
+        # File handler for errors
+        error_handler = RotatingFileHandler(
+            'logs/errors.log',
+            maxBytes=10485760,  # 10MB
+            backupCount=10
+        )
+        error_handler.setFormatter(logging.Formatter(
+            '[%(asctime)s] %(levelname)s in %(module)s [%(pathname)s:%(lineno)d]: %(message)s'
+        ))
+        error_handler.setLevel(logging.ERROR)
+        app.logger.addHandler(error_handler)
+
+        app.logger.setLevel(logging.INFO)
+        app.logger.info('Mini Golf Leaderboard startup')
+    else:
+        # In debug/test mode, just use console logging
+        app.logger.setLevel(logging.DEBUG)
+
+
+def register_error_handlers(app):
+    """Register global error handlers"""
+
+    @app.errorhandler(404)
+    def not_found_error(error):
+        """Handle 404 Not Found errors"""
+        app.logger.warning(f'404 error: {request.url} - User: {current_user.id if current_user.is_authenticated else "anonymous"}')
+        return render_template('errors/404.html'), 404
+
+    @app.errorhandler(500)
+    def internal_error(error):
+        """Handle 500 Internal Server errors"""
+        app.logger.error(f'500 error: {error}', exc_info=True)
+        return render_template('errors/500.html'), 500
+
+    @app.errorhandler(403)
+    def forbidden_error(error):
+        """Handle 403 Forbidden errors"""
+        app.logger.warning(f'403 error: User {current_user.id if current_user.is_authenticated else "anonymous"} tried to access {request.url}')
+        return render_template('errors/403.html'), 403
+
+    @app.errorhandler(Exception)
+    def handle_exception(error):
+        """Handle uncaught exceptions"""
+        app.logger.error(f'Unhandled exception: {error}', exc_info=True)
+        return render_template('errors/500.html'), 500
 
 
 if __name__ == '__main__':

@@ -4,7 +4,7 @@ from typing import List, Optional, Dict, Any, Tuple
 from models.data_store import get_data_store
 from models.player import Player
 from models.course import Course
-from utils.validators import validate_date, validate_score
+from utils.validators import validate_date, validate_score, sanitize_html
 
 
 class Round:
@@ -77,7 +77,7 @@ class Round:
             'date_played': date_played,
             'timestamp': datetime.now(UTC).strftime('%Y-%m-%dT%H:%M:%SZ'),
             'scores': validated_scores,
-            'notes': notes.strip() if notes else ''
+            'notes': sanitize_html(notes) if notes else ''
         }
 
         data = store.read_rounds()
@@ -162,7 +162,7 @@ class Round:
         data['rounds'][round_index]['course_name'] = course['name']  # Update denormalized
         data['rounds'][round_index]['date_played'] = date_played
         data['rounds'][round_index]['scores'] = validated_scores
-        data['rounds'][round_index]['notes'] = notes.strip() if notes else ''
+        data['rounds'][round_index]['notes'] = sanitize_html(notes) if notes else ''
 
         store.write_rounds(data)
 

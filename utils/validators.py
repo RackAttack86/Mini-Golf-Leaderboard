@@ -1,5 +1,35 @@
 from datetime import datetime
 from typing import Tuple, List, Optional
+import re
+import html
+
+
+def sanitize_html(text: str) -> str:
+    """
+    Sanitize HTML from user input to prevent XSS attacks
+
+    Args:
+        text: Input text that may contain HTML
+
+    Returns:
+        Sanitized text with HTML entities escaped
+    """
+    if not text:
+        return text
+
+    # Escape HTML entities
+    sanitized = html.escape(text.strip())
+
+    # Remove any potential script tags (defense in depth)
+    sanitized = re.sub(r'<script[^>]*>.*?</script>', '', sanitized, flags=re.IGNORECASE | re.DOTALL)
+
+    # Remove any potential style tags
+    sanitized = re.sub(r'<style[^>]*>.*?</style>', '', sanitized, flags=re.IGNORECASE | re.DOTALL)
+
+    # Remove event handlers (onclick, onload, etc.)
+    sanitized = re.sub(r'\s*on\w+\s*=\s*["\'][^"\']*["\']', '', sanitized, flags=re.IGNORECASE)
+
+    return sanitized
 
 
 def validate_player_name(name: str, existing_players: List[dict], exclude_id: Optional[str] = None) -> Tuple[bool, str]:

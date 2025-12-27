@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime, UTC
 from typing import List, Optional, Dict, Any, Tuple
 from models.data_store import get_data_store
-from utils.validators import validate_course_name, validate_holes, validate_par
+from utils.validators import validate_course_name, validate_holes, validate_par, sanitize_html
 
 
 class Course:
@@ -47,8 +47,8 @@ class Course:
         # Create course
         course = {
             'id': str(uuid.uuid4()),
-            'name': name.strip(),
-            'location': location.strip() if location else '',
+            'name': sanitize_html(name),
+            'location': sanitize_html(location) if location else '',
             'holes': int(holes) if holes else None,
             'par': int(par) if par else None,
             'image_url': image_url or '',
@@ -137,7 +137,7 @@ class Course:
                 return False, error
 
             old_name = course['name']
-            course['name'] = name.strip()
+            course['name'] = sanitize_html(name)
 
             # Update denormalized data in rounds
             if old_name != course['name']:
@@ -145,7 +145,7 @@ class Course:
 
         # Update location
         if location is not None:
-            course['location'] = location.strip()
+            course['location'] = sanitize_html(location)
 
         # Validate and update holes
         if holes is not None:
