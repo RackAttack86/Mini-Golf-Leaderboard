@@ -8,6 +8,7 @@ from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from flask_wtf.csrf import CSRFProtect
 from flask_talisman import Talisman
+from flask_session import Session
 from dotenv import load_dotenv
 import logging
 from logging.handlers import RotatingFileHandler
@@ -39,6 +40,17 @@ def create_app():
 
     # Initialize data store
     init_data_store(app.config['DATA_DIR'])
+
+    # Set max upload size
+    app.config['MAX_CONTENT_LENGTH'] = Config.MAX_CONTENT_LENGTH
+
+    # Ensure session directory exists
+    session_dir = app.config.get('SESSION_FILE_DIR')
+    if session_dir and not os.path.exists(session_dir):
+        os.makedirs(session_dir, exist_ok=True)
+
+    # Initialize server-side sessions
+    Session(app)
 
     # Initialize rate limiter
     limiter.init_app(app)

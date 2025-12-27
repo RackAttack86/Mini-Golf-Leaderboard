@@ -13,6 +13,10 @@ class Config:
     BASE_DIR = Path(__file__).parent
     DATA_DIR = BASE_DIR / 'data'
 
+    # File Upload Security
+    MAX_CONTENT_LENGTH = 5 * 1024 * 1024  # 5MB max file size
+    UPLOAD_EXTENSIONS = {'.png', '.jpg', '.jpeg', '.gif'}
+
     # Pagination
     ROUNDS_PER_PAGE = 20
 
@@ -32,6 +36,13 @@ class Config:
     SESSION_COOKIE_SECURE = not DEBUG  # True in production with HTTPS, False in development
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = 'Lax'
+    SESSION_COOKIE_NAME = 'minigolf_session'
+
+    # Server-side session storage
+    SESSION_TYPE = 'filesystem'
+    SESSION_PERMANENT = True
+    SESSION_USE_SIGNER = True
+    SESSION_FILE_DIR = BASE_DIR / '.flask_session'
 
     # CSRF Protection
     WTF_CSRF_ENABLED = True

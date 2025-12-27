@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash
+from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app
 from werkzeug.utils import secure_filename
 import os
 import uuid
@@ -6,31 +6,28 @@ from models.player import Player
 from models.round import Round
 from services.achievement_service import AchievementService
 from utils.auth_decorators import admin_required, player_or_admin_required
+from utils.file_validators import validate_image_file, sanitize_filename
+from app import limiter
 
 bp = Blueprint('players', __name__)
 
-ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
-MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB
-
-def allowed_file(filename):
-    """Check if file extension is allowed"""
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
-
 def save_profile_picture(file, upload_folder):
-    """Save uploaded profile picture and return filename"""
-    if file and allowed_file(file.filename):
-        # Generate unique filename
-        ext = file.filename.rsplit('.', 1)[1].lower()
-        filename = f"{uuid.uuid4().hex}.{ext}"
-        filepath = os.path.join(upload_folder, filename)
+    """Save uploaded profile picture with validation"""
+    if not file or not file.filename:
+        return None
 
-        # Create directory if it doesn't exist
-        os.makedirs(upload_folder, exist_ok=True)
+    # Generate unique filename
+    safe_name = sanitize_filename(file.filename)
+    ext = safe_name.rsplit('.', 1)[1].lower() if '.' in safe_name else 'jpg'
+    filename = f"{uuid.uuid4().hex}.{ext}"
+    filepath = os.path.join(upload_folder, filename)
 
-        # Save file
-        file.save(filepath)
-        return filename
-    return None
+    # Create directory if it doesn't exist
+    os.makedirs(upload_folder, exist_ok=True)
+
+    # Save file
+    file.save(filepath)
+    return filename
 
 
 @bp.route('/')
@@ -47,6 +44,7 @@ def list_players():
 
 @bp.route('/add', methods=['GET', 'POST'])
 @admin_required
+@limiter.limit("20 per hour")
 def add_player():
     """Add new player"""
     if request.method == 'POST':
@@ -59,11 +57,14 @@ def add_player():
         if 'profile_picture' in request.files:
             file = request.files['profile_picture']
             if file.filename:
+                # Validate file
+                is_valid, error = validate_image_file(file, current_app.config['MAX_CONTENT_LENGTH'])
+                if not is_valid:
+                    flash(error, 'error')
+                    return render_template('players/add.html', name=name, email=email, favorite_color=favorite_color)
+
                 upload_folder = os.path.join('static', 'uploads', 'profiles')
                 profile_picture = save_profile_picture(file, upload_folder)
-                if not profile_picture:
-                    flash('Invalid file type. Please upload a JPG, PNG, or GIF image.', 'error')
-                    return render_template('players/add.html', name=name, email=email, favorite_color=favorite_color)
 
         success, message, player = Player.create(
             name,
@@ -151,6 +152,7 @@ def player_detail(player_id):
 
 @bp.route('/<player_id>/edit', methods=['POST'])
 @player_or_admin_required
+@limiter.limit("30 per hour")
 def edit_player(player_id):
     """Edit player"""
     name = request.form.get('name', '').strip()
@@ -179,6 +181,12 @@ def edit_player(player_id):
     elif 'profile_picture' in request.files:
         file = request.files['profile_picture']
         if file.filename:
+            # Validate file
+            is_valid, error = validate_image_file(file, current_app.config['MAX_CONTENT_LENGTH'])
+            if not is_valid:
+                flash(error, 'error')
+                return redirect(url_for('players.player_detail', player_id=player_id))
+
             upload_folder = os.path.join('static', 'uploads', 'profiles')
             new_picture = save_profile_picture(file, upload_folder)
             if new_picture:
@@ -188,9 +196,6 @@ def edit_player(player_id):
                     if os.path.exists(old_file):
                         os.remove(old_file)
                 profile_picture = new_picture
-            else:
-                flash('Invalid file type. Please upload a JPG, PNG, or GIF image.', 'error')
-                return redirect(url_for('players.player_detail', player_id=player_id))
 
     success, message = Player.update(
         player_id,
