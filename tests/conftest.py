@@ -76,6 +76,10 @@ def app(data_store):
     app.config['TESTING'] = True
     app.config['WTF_CSRF_ENABLED'] = False
 
+    # Re-initialize data store with test directory after create_app()
+    # This ensures tests use isolated test data instead of production data
+    init_data_store(data_store.data_dir)
+
     yield app
 
 
