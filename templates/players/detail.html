@@ -187,7 +187,7 @@
                                 <p class="achievement-description">{{ ach_data.description }}</p>
                                 <div class="progress" style="height: 20px;">
                                     <div class="progress-bar" role="progressbar"
-                                         style="width: {{ (prog.current / prog.required * 100)|int }}%; background-color: {{ ach_data.color }};"
+                                         style="width: {% if prog.required > 0 %}{{ (prog.current / prog.required * 100)|int }}{% else %}0{% endif %}%; background-color: {{ ach_data.color }};"
                                          aria-valuenow="{{ prog.current }}" aria-valuemin="0" aria-valuemax="{{ prog.required }}">
                                         {{ prog.current }}/{{ prog.required }}
                                     </div>

@@ -75,6 +75,7 @@ def app(data_store):
     app = create_app()
     app.config['TESTING'] = True
     app.config['WTF_CSRF_ENABLED'] = False
+    app.config['RATELIMIT_ENABLED'] = False  # Disable rate limiting in tests
 
     # Re-initialize data store with test directory after create_app()
     # This ensures tests use isolated test data instead of production data
