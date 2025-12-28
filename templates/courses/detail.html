@@ -145,12 +145,114 @@
     </div>
 </div>
 
+<!-- User's Rounds (if logged in) -->
+{% if current_user.is_authenticated and user_rounds_total > 0 %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="bi bi-person-check"></i> Your Rounds on This Course</h5>
+            </div>
+            <div class="card-body">
+                <p class="mb-3"><strong>{{ user_rounds_total }}</strong> round{{ 's' if user_rounds_total != 1 else '' }} played</p>
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Your Score</th>
+                                <th>Players</th>
+                                <th>Winner</th>
+                                <th>Winning Score</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for round in user_rounds %}
+                            <tr>
+                                <td>{{ round.date_played }}</td>
+                                <td>
+                                    {% for score_data in round.scores %}
+                                        {% if score_data.player_id == current_user.id %}
+                                            <strong>{{ score_data.score }}</strong>
+                                        {% endif %}
+                                    {% endfor %}
+                                </td>
+                                <td>{{ round.scores|length }}</td>
+                                <td>
+                                    {% set winner = round.scores|sort(attribute='score')|first %}
+                                    {{ winner.player_name }}
+                                    {% if winner.player_id == current_user.id %}
+                                        <i class="bi bi-trophy-fill text-warning"></i>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% set winner = round.scores|sort(attribute='score')|first %}
+                                    {{ winner.score }}
+                                </td>
+                                <td class="text-end">
+                                    <a href="{{ url_for('rounds.round_detail', round_id=round.id) }}"
+                                       class="btn btn-sm btn-outline-primary">
+                                        View
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                {% if user_rounds_total_pages > 1 %}
+                <nav aria-label="User rounds pagination">
+                    <ul class="pagination justify-content-center mb-0">
+                        <!-- Previous -->
+                        <li class="page-item {% if user_rounds_page == 1 %}disabled{% endif %}">
+                            <a class="page-link" href="{{ url_for('courses.course_detail', course_id=course.id, user_page=user_rounds_page-1) }}">
+                                Previous
+                            </a>
+                        </li>
+
+                        <!-- Page numbers -->
+                        {% for page_num in range(1, user_rounds_total_pages + 1) %}
+                            {% if page_num == user_rounds_page %}
+                                <li class="page-item active">
+                                    <span class="page-link">{{ page_num }}</span>
+                                </li>
+                            {% elif page_num == 1 or page_num == user_rounds_total_pages or (page_num >= user_rounds_page - 2 and page_num <= user_rounds_page + 2) %}
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ url_for('courses.course_detail', course_id=course.id, user_page=page_num) }}">
+                                        {{ page_num }}
+                                    </a>
+                                </li>
+                            {% elif page_num == user_rounds_page - 3 or page_num == user_rounds_page + 3 %}
+                                <li class="page-item disabled">
+                                    <span class="page-link">...</span>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+
+                        <!-- Next -->
+                        <li class="page-item {% if user_rounds_page == user_rounds_total_pages %}disabled{% endif %}">
+                            <a class="page-link" href="{{ url_for('courses.course_detail', course_id=course.id, user_page=user_rounds_page+1) }}">
+                                Next
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
 <!-- Round History -->
 <div class="row">
     <div class="col-12">
         <div class="card">
             <div class="card-header bg-primary text-white">
-                <h5 class="mb-0"><i class="bi bi-list-ol"></i> Round History</h5>
+                <h5 class="mb-0"><i class="bi bi-list-ol"></i> All Rounds History</h5>
             </div>
             <div class="card-body">
                 {% if rounds %}

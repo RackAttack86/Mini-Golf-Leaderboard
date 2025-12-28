@@ -163,8 +163,40 @@ def course_detail(course_id):
     if current_user.is_authenticated:
         user_rating = CourseRating.get_player_rating(current_user.google_id, course_id)
 
-    return render_template('courses/detail.html', course=course, rounds=rounds, stats=stats,
-                         avg_rating=avg_rating, rating_count=rating_count, user_rating=user_rating)
+    # Get user's rounds on this course with pagination
+    user_rounds = []
+    user_rounds_page = 1
+    user_rounds_total_pages = 0
+    user_rounds_total = 0
+    if current_user.is_authenticated:
+        # Filter rounds where current user played
+        user_rounds_all = [r for r in rounds if any(s['player_id'] == current_user.id for s in r['scores'])]
+        user_rounds_total = len(user_rounds_all)
+
+        # Pagination
+        page = request.args.get('user_page', 1, type=int)
+        per_page = current_app.config['ROUNDS_PER_PAGE']
+        user_rounds_total_pages = (user_rounds_total + per_page - 1) // per_page
+
+        # Ensure page is within valid range
+        user_rounds_page = max(1, min(page, user_rounds_total_pages)) if user_rounds_total_pages > 0 else 1
+
+        # Get paginated rounds
+        start_idx = (user_rounds_page - 1) * per_page
+        end_idx = start_idx + per_page
+        user_rounds = user_rounds_all[start_idx:end_idx]
+
+    return render_template('courses/detail.html',
+                         course=course,
+                         rounds=rounds,
+                         stats=stats,
+                         avg_rating=avg_rating,
+                         rating_count=rating_count,
+                         user_rating=user_rating,
+                         user_rounds=user_rounds,
+                         user_rounds_page=user_rounds_page,
+                         user_rounds_total_pages=user_rounds_total_pages,
+                         user_rounds_total=user_rounds_total)
 
 
 @bp.route('/<course_id>/edit', methods=['POST'])
