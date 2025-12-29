@@ -194,18 +194,66 @@ class DataStore:
 
 
 # Global data store instance (initialized by app.py)
+# Note: This uses a module-level singleton pattern, which is common in Flask applications.
+# The data store is initialized once per application instance in app.py.
+# For testing, use set_data_store() to inject a test instance.
 _data_store = None
 
 
-def init_data_store(data_dir: Path):
-    """Initialize the global data store"""
+def init_data_store(data_dir: Path) -> DataStore:
+    """
+    Initialize the global data store
+
+    Args:
+        data_dir: Directory path for JSON data files
+
+    Returns:
+        The initialized DataStore instance
+
+    Note:
+        This should be called once during application startup (in app.py).
+        For testing, use set_data_store() instead to inject a test instance.
+    """
     global _data_store
     _data_store = DataStore(data_dir)
     return _data_store
 
 
 def get_data_store() -> DataStore:
-    """Get the global data store instance"""
+    """
+    Get the global data store instance
+
+    Returns:
+        The DataStore instance
+
+    Raises:
+        RuntimeError: If the data store hasn't been initialized
+
+    Note:
+        The data store must be initialized with init_data_store() before use.
+        This is typically done in app.py during application startup.
+    """
     if _data_store is None:
         raise RuntimeError('Data store not initialized. Call init_data_store() first.')
     return _data_store
+
+
+def set_data_store(data_store: DataStore) -> None:
+    """
+    Set the global data store instance (primarily for testing)
+
+    Args:
+        data_store: DataStore instance to set
+
+    Note:
+        This function is provided to support testing scenarios where you need
+        to inject a mock or temporary data store instance. In production,
+        use init_data_store() instead.
+
+    Example:
+        >>> from models.data_store import DataStore, set_data_store
+        >>> test_store = DataStore(Path('/tmp/test_data'))
+        >>> set_data_store(test_store)
+    """
+    global _data_store
+    _data_store = data_store

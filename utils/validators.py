@@ -3,6 +3,27 @@ from typing import Tuple, List, Optional
 import re
 import html
 
+# Validation Constants
+# Score limits: Allow reasonable range for mini golf scores
+# Typical mini golf courses have 18 holes with par 2-4 per hole (total par ~36-72)
+# Max score accounts for worst-case scenario of hitting max strokes per hole
+# Min score allows for hole-in-ones and eagles (significantly under par)
+MIN_SCORE = -50  # Allows for exceptional performance (multiple holes-in-one)
+MAX_SCORE = 500  # Allows for very poor performance across all holes
+
+# Par limits: Reasonable range for total course par
+# Typical mini golf courses: 18 holes * 2-4 par = 36-72 total par
+# Extended courses with more holes could have higher par
+MAX_PAR = 500  # Allows for large courses with many holes
+
+# Holes limit: Maximum number of holes per course
+# Most mini golf courses have 9-18 holes, but some larger venues may have more
+MAX_HOLES = 100  # Allows for very large multi-course facilities
+
+# Name length limits
+MAX_NAME_LENGTH = 100  # Reasonable limit for player/course names
+MAX_EMAIL_LENGTH = 100  # Standard email length limit
+
 
 def sanitize_html(text: str) -> str:
     """
@@ -39,8 +60,8 @@ def validate_player_name(name: str, existing_players: List[dict], exclude_id: Op
     if not name or not name.strip():
         return False, "Name cannot be empty"
 
-    if len(name) > 100:
-        return False, "Name too long (max 100 characters)"
+    if len(name) > MAX_NAME_LENGTH:
+        return False, f"Name too long (max {MAX_NAME_LENGTH} characters)"
 
     # Check for duplicates
     for player in existing_players:
@@ -67,8 +88,8 @@ def validate_course_name(name: str, existing_courses: List[dict], exclude_id: Op
     if not name or not name.strip():
         return False, "Name cannot be empty"
 
-    if len(name) > 100:
-        return False, "Name too long (max 100 characters)"
+    if len(name) > MAX_NAME_LENGTH:
+        return False, f"Name too long (max {MAX_NAME_LENGTH} characters)"
 
     # Check for duplicates
     for course in existing_courses:
@@ -92,10 +113,10 @@ def validate_score(score: any) -> Tuple[bool, str]:
     """
     try:
         score_int = int(score)
-        if score_int < -50:
-            return False, "Score unreasonably low (min -50)"
-        if score_int > 500:
-            return False, "Score unreasonably high (max 500)"
+        if score_int < MIN_SCORE:
+            return False, f"Score unreasonably low (min {MIN_SCORE})"
+        if score_int > MAX_SCORE:
+            return False, f"Score unreasonably high (max {MAX_SCORE})"
         return True, ""
     except (ValueError, TypeError):
         return False, "Score must be a number"
@@ -118,8 +139,8 @@ def validate_holes(holes: any) -> Tuple[bool, str]:
         holes_int = int(holes)
         if holes_int <= 0:
             return False, "Number of holes must be positive"
-        if holes_int > 100:
-            return False, "Number of holes unreasonably high (max 100)"
+        if holes_int > MAX_HOLES:
+            return False, f"Number of holes unreasonably high (max {MAX_HOLES})"
         return True, ""
     except (ValueError, TypeError):
         return False, "Number of holes must be a number"
@@ -142,8 +163,8 @@ def validate_par(par: any) -> Tuple[bool, str]:
         par_int = int(par)
         if par_int <= 0:
             return False, "Par must be positive"
-        if par_int > 500:
-            return False, "Par unreasonably high (max 500)"
+        if par_int > MAX_PAR:
+            return False, f"Par unreasonably high (max {MAX_PAR})"
         return True, ""
     except (ValueError, TypeError):
         return False, "Par must be a number"
@@ -189,8 +210,8 @@ def validate_email(email: str) -> Tuple[bool, str]:
 
     email = email.strip()
 
-    if len(email) > 100:
-        return False, "Email too long (max 100 characters)"
+    if len(email) > MAX_EMAIL_LENGTH:
+        return False, f"Email too long (max {MAX_EMAIL_LENGTH} characters)"
 
     # RFC 5322 simplified email validation pattern
     # Matches: user@domain.com, user.name@sub.domain.com, user+tag@domain.co.uk

@@ -174,8 +174,11 @@ def edit_player(player_id):
         # Delete old file
         if player.get('profile_picture'):
             old_file = os.path.join('static', 'uploads', 'profiles', player['profile_picture'])
-            if os.path.exists(old_file):
+            try:
                 os.remove(old_file)
+            except OSError:
+                # File already deleted or doesn't exist - safe to ignore
+                pass
 
     # Check if new picture is uploaded
     elif 'profile_picture' in request.files:
@@ -193,8 +196,11 @@ def edit_player(player_id):
                 # Delete old file if exists
                 if player.get('profile_picture'):
                     old_file = os.path.join('static', 'uploads', 'profiles', player['profile_picture'])
-                    if os.path.exists(old_file):
+                    try:
                         os.remove(old_file)
+                    except OSError:
+                        # File already deleted or doesn't exist - safe to ignore
+                        pass
                 profile_picture = new_picture
 
     success, message = Player.update(
