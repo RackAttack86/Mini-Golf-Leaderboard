@@ -17,17 +17,9 @@ def sanitize_html(text: str) -> str:
     if not text:
         return text
 
-    # Escape HTML entities
+    # Escape HTML entities - this is sufficient to prevent XSS
+    # Converts < > & " ' to their HTML entity equivalents
     sanitized = html.escape(text.strip())
-
-    # Remove any potential script tags (defense in depth)
-    sanitized = re.sub(r'<script[^>]*>.*?</script>', '', sanitized, flags=re.IGNORECASE | re.DOTALL)
-
-    # Remove any potential style tags
-    sanitized = re.sub(r'<style[^>]*>.*?</style>', '', sanitized, flags=re.IGNORECASE | re.DOTALL)
-
-    # Remove event handlers (onclick, onload, etc.)
-    sanitized = re.sub(r'\s*on\w+\s*=\s*["\'][^"\']*["\']', '', sanitized, flags=re.IGNORECASE)
 
     return sanitized
 

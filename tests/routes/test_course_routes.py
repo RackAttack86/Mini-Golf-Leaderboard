@@ -10,7 +10,7 @@ from models.user import User
 
 
 @pytest.fixture
-def mock_admin_user():
+def mock_admin_user(app):
     """Create a mock admin user for testing"""
     success, message, player = Player.create('Admin User', 'admin@test.com')
     Player.link_google_account(player['id'], 'google_admin')
@@ -30,7 +30,7 @@ def mock_admin_user():
 
 
 @pytest.fixture
-def mock_regular_user():
+def mock_regular_user(app):
     """Create a mock regular user for testing"""
     success, message, player = Player.create('Regular User', 'user@test.com')
     Player.link_google_account(player['id'], 'google_user')
@@ -260,7 +260,7 @@ class TestAddCourse:
     def test_add_course_with_uploaded_image(self, mock_save, mock_current_user, mock_admin_user, client):
         """Test adding course with uploaded image"""
         mock_current_user.return_value = mock_admin_user
-        mock_save.return_value = 'course123.jpg'
+        mock_save.return_value = (True, 'course123.jpg')
 
         data = {
             'name': 'Course with Upload',
@@ -320,7 +320,7 @@ class TestEditCourse:
     def test_edit_course_replace_image(self, mock_delete, mock_save, mock_current_user, mock_admin_user, client):
         """Test replacing course image"""
         mock_current_user.return_value = mock_admin_user
-        mock_save.return_value = 'new_course.jpg'
+        mock_save.return_value = (True, 'new_course.jpg')
 
         # Create course with existing image
         success, message, course = Course.create('Course', 'Location', 18, 54, 'old_course.jpg')
@@ -465,27 +465,41 @@ class TestCourseImageHelpers:
     """Test course image helper functions"""
 
     def test_allowed_file_valid_extensions(self):
-        """Test allowed_file with valid extensions"""
-        from routes.course_routes import allowed_file
+        """Test that allowed_file function was removed (now using validate_image_file)"""
+        # This test is deprecated - allowed_file() was replaced with validate_image_file()
+        # for better security (content-based validation)
+        from utils.file_validators import validate_image_file
+        import io
 
-        assert allowed_file('image.jpg') is True
-        assert allowed_file('image.jpeg') is True
-        assert allowed_file('image.png') is True
-        assert allowed_file('image.gif') is True
-        assert allowed_file('IMAGE.JPG') is True  # Case insensitive
+        # Test that validate_image_file exists and works
+        # Create a minimal valid PNG file
+        png_header = b'\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x06\x00\x00\x00\x1f\x15\xc4\x89'
+        file = Mock()
+        file.filename = 'test.png'
+        file.read = Mock(return_value=png_header)
+        file.seek = Mock()
+        file.tell = Mock(return_value=len(png_header))
+
+        is_valid, _ = validate_image_file(file, 5 * 1024 * 1024)
+        assert is_valid is True
 
     def test_allowed_file_invalid_extensions(self):
-        """Test allowed_file with invalid extensions"""
-        from routes.course_routes import allowed_file
+        """Test that invalid files are rejected by validate_image_file"""
+        from utils.file_validators import validate_image_file
 
-        assert allowed_file('file.txt') is False
-        assert allowed_file('file.pdf') is False
-        assert allowed_file('noextension') is False
-        assert allowed_file('') is False
+        file = Mock()
+        file.filename = 'file.txt'
+        file.read = Mock(return_value=b'not an image')
+        file.seek = Mock()
+        file.tell = Mock(return_value=14)
 
+        is_valid, error = validate_image_file(file, 5 * 1024 * 1024)
+        assert is_valid is False
+
+    @patch('routes.course_routes.validate_image_file', return_value=(True, ''))
     @patch('os.makedirs')
     @patch('os.path.join', return_value='/fake/path/image.jpg')
-    def test_save_course_image_valid(self, mock_join, mock_makedirs):
+    def test_save_course_image_valid(self, mock_join, mock_makedirs, mock_validate):
         """Test saving valid course image"""
         from routes.course_routes import save_course_image
 
@@ -493,27 +507,30 @@ class TestCourseImageHelpers:
         file.filename = 'course.jpg'
         file.save = Mock()
 
-        result = save_course_image(file, '/fake/upload')
-        assert result is not None
+        success, result = save_course_image(file, '/fake/upload', 5 * 1024 * 1024)
+        assert success is True
         assert result.endswith('.jpg')
         file.save.assert_called_once()
 
-    def test_save_course_image_invalid(self):
+    @patch('routes.course_routes.validate_image_file', return_value=(False, 'Invalid file type'))
+    def test_save_course_image_invalid(self, mock_validate):
         """Test saving invalid file"""
         from routes.course_routes import save_course_image
 
         file = Mock()
         file.filename = 'invalid.txt'
 
-        result = save_course_image(file, '/fake/upload')
-        assert result is None
+        success, error = save_course_image(file, '/fake/upload', 5 * 1024 * 1024)
+        assert success is False
+        assert error == 'Invalid file type'
 
     def test_save_course_image_no_file(self):
         """Test saving with no file"""
         from routes.course_routes import save_course_image
 
-        result = save_course_image(None, '/fake/upload')
-        assert result is None
+        success, error = save_course_image(None, '/fake/upload', 5 * 1024 * 1024)
+        assert success is False
+        assert 'No file provided' in error
 
     @patch('os.path.exists', return_value=True)
     @patch('os.remove')
@@ -525,15 +542,15 @@ class TestCourseImageHelpers:
         delete_course_image('image.jpg', '/fake/upload')
         mock_remove.assert_called_once()
 
-    @patch('os.path.exists', return_value=False)
-    @patch('os.remove')
+    @patch('os.remove', side_effect=FileNotFoundError)
     @patch('os.path.join', return_value='/fake/path/image.jpg')
-    def test_delete_course_image_not_exists(self, mock_join, mock_remove, mock_exists):
-        """Test deleting non-existent course image"""
+    def test_delete_course_image_not_exists(self, mock_join, mock_remove):
+        """Test deleting non-existent course image (should handle FileNotFoundError gracefully)"""
         from routes.course_routes import delete_course_image
 
+        # Should not raise an exception even if file doesn't exist
         delete_course_image('image.jpg', '/fake/upload')
-        mock_remove.assert_not_called()
+        mock_remove.assert_called_once()
 
     def test_delete_course_image_no_filename(self):
         """Test delete with no filename"""

@@ -8,7 +8,7 @@ from models.user import User
 
 
 @pytest.fixture
-def mock_admin_user():
+def mock_admin_user(app):
     """Create a mock admin user for testing"""
     success, message, player = Player.create('Admin User', 'admin@test.com')
     Player.link_google_account(player['id'], 'google_admin')

@@ -4,44 +4,56 @@ from models.course import Course
 from models.round import Round
 from models.course_rating import CourseRating
 from utils.auth_decorators import admin_required
+from utils.file_validators import validate_image_file, sanitize_filename
 import os
 import uuid
-from werkzeug.utils import secure_filename
 
 bp = Blueprint('courses', __name__)
 
-# Allowed image extensions
-ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
+def save_course_image(file, upload_folder, max_size):
+    """
+    Save uploaded course image with secure validation
 
-def allowed_file(filename):
-    """Check if file has an allowed extension"""
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+    Args:
+        file: Uploaded file from request.files
+        upload_folder: Directory to save the file
+        max_size: Maximum file size in bytes
 
-def save_course_image(file, upload_folder):
-    """Save uploaded course image and return filename"""
-    if file and allowed_file(file.filename):
-        # Generate unique filename
-        ext = file.filename.rsplit('.', 1)[1].lower()
-        filename = f"{uuid.uuid4().hex}.{ext}"
+    Returns:
+        Tuple of (success, filename_or_error_message)
+    """
+    if not file or not file.filename:
+        return False, "No file provided"
 
-        # Ensure upload directory exists
-        filepath = os.path.join(upload_folder, filename)
-        os.makedirs(upload_folder, exist_ok=True)
+    # Validate file using secure validator
+    is_valid, error = validate_image_file(file, max_size)
+    if not is_valid:
+        return False, error
 
-        # Save file
-        file.save(filepath)
-        return filename
-    return None
+    # Generate unique filename
+    safe_name = sanitize_filename(file.filename)
+    ext = safe_name.rsplit('.', 1)[1].lower() if '.' in safe_name else 'jpg'
+    filename = f"{uuid.uuid4().hex}.{ext}"
+
+    # Ensure upload directory exists
+    filepath = os.path.join(upload_folder, filename)
+    os.makedirs(upload_folder, exist_ok=True)
+
+    # Save file
+    file.save(filepath)
+    return True, filename
 
 def delete_course_image(filename, upload_folder):
     """Delete a course image file"""
     if filename:
         filepath = os.path.join(upload_folder, filename)
-        if os.path.exists(filepath):
-            try:
-                os.remove(filepath)
-            except Exception as e:
-                print(f"Error deleting course image: {e}")
+        try:
+            os.remove(filepath)
+        except FileNotFoundError:
+            # File already deleted, not an error
+            pass
+        except Exception as e:
+            print(f"Error deleting course image: {e}")
 
 
 @bp.route('/')
@@ -81,9 +93,17 @@ def add_course():
         uploaded_file = request.files.get('course_image')
         if uploaded_file and uploaded_file.filename:
             upload_folder = os.path.join(current_app.root_path, 'static', 'uploads', 'courses')
-            saved_filename = save_course_image(uploaded_file, upload_folder)
-            if saved_filename:
-                image_url = saved_filename
+            success, result = save_course_image(uploaded_file, upload_folder, current_app.config['MAX_CONTENT_LENGTH'])
+            if success:
+                image_url = result
+            else:
+                flash(result, 'error')
+                return render_template('courses/add.html',
+                                       name=name,
+                                       location=location,
+                                       holes=holes,
+                                       par=par,
+                                       image_url=image_url)
 
         # Convert empty strings to None
         holes_int = int(holes) if holes else None
@@ -214,15 +234,18 @@ def edit_course(course_id):
     if uploaded_file and uploaded_file.filename:
         upload_folder = os.path.join(current_app.root_path, 'static', 'uploads', 'courses')
 
-        # Delete old image if exists
-        course = Course.get_by_id(course_id)
-        if course and course.get('image_url') and not course['image_url'].startswith('http'):
-            delete_course_image(course['image_url'], upload_folder)
+        # Validate and save new image
+        success, result = save_course_image(uploaded_file, upload_folder, current_app.config['MAX_CONTENT_LENGTH'])
+        if success:
+            # Delete old image if exists
+            course = Course.get_by_id(course_id)
+            if course and course.get('image_url') and not course['image_url'].startswith('http'):
+                delete_course_image(course['image_url'], upload_folder)
 
-        # Save new image
-        saved_filename = save_course_image(uploaded_file, upload_folder)
-        if saved_filename:
-            image_url = saved_filename
+            image_url = result
+        else:
+            flash(result, 'error')
+            return redirect(url_for('courses.course_detail', course_id=course_id))
 
     # Convert empty strings to None
     holes_int = int(holes) if holes else None

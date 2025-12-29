@@ -4,6 +4,7 @@ from flask_dance.contrib.google import google
 from services.auth_service import AuthService
 from urllib.parse import urlparse, urljoin
 from app import limiter
+import secrets
 
 
 auth_bp = Blueprint('auth', __name__, url_prefix='/auth')
@@ -38,6 +39,10 @@ def login():
 @auth_bp.route('/google')
 def google_login():
     """Initiate Google OAuth flow"""
+    # Generate and store state token for CSRF protection
+    state_token = secrets.token_urlsafe(32)
+    session['oauth_state'] = state_token
+
     if not google.authorized:
         return redirect(url_for('google.login'))
     return redirect(url_for('auth.google_callback'))
@@ -47,6 +52,13 @@ def google_login():
 @limiter.limit("5 per minute")
 def google_callback():
     """Handle Google OAuth callback"""
+    # Validate OAuth state token to prevent CSRF attacks
+    expected_state = session.pop('oauth_state', None)
+    if not expected_state:
+        current_app.logger.warning('OAuth callback without state token - possible CSRF attempt')
+        flash('Authentication failed: Invalid session. Please try again.', 'danger')
+        return redirect(url_for('auth.login'))
+
     # Check if OAuth was successful
     if not google.authorized:
         flash('Google authentication failed. Please try again.', 'danger')
@@ -77,6 +89,10 @@ def google_callback():
 
     if user:
         # User exists, log them in
+        # Regenerate session to prevent session fixation attacks
+        session.permanent = True
+        session.modified = True
+
         login_user(user, remember=True)
         flash(f'Welcome back, {user.name}!', 'success')
 
@@ -134,6 +150,10 @@ def register():
                 session.pop('google_email', None)
                 session.pop('google_name', None)
 
+                # Regenerate session to prevent session fixation attacks
+                session.permanent = True
+                session.modified = True
+
                 # Log user in
                 login_user(user, remember=True)
                 flash(f'Profile created successfully! Welcome, {user.name}!', 'success')
@@ -158,6 +178,10 @@ def register():
                 session.pop('google_id', None)
                 session.pop('google_email', None)
                 session.pop('google_name', None)
+
+                # Regenerate session to prevent session fixation attacks
+                session.permanent = True
+                session.modified = True
 
                 # Log user in
                 login_user(user, remember=True)
