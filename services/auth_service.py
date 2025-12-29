@@ -24,7 +24,7 @@ class AuthService:
 
         if player:
             # Update last login and return user
-            Player.update_last_login(player['id'])
+            success, message = Player.update_last_login(player['id'])
             return User(
                 player_id=player['id'],
                 google_id=player['google_id'],

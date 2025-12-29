@@ -438,17 +438,19 @@ class TestPlayerGoogleIntegration:
         success, message, player = Player.create(name='Test User')
         player_id = player['id']
 
-        result = Player.update_last_login(player_id)
+        success, message = Player.update_last_login(player_id)
 
-        assert result is True
+        assert success is True
+        assert message == "Last login updated successfully"
         updated = Player.get_by_id(player_id)
         assert updated['last_login'] is not None
 
     def test_update_last_login_nonexistent(self, data_store):
         """Test updating last login for nonexistent player"""
-        result = Player.update_last_login('nonexistent-id')
+        success, message = Player.update_last_login('nonexistent-id')
 
-        assert result is False
+        assert success is False
+        assert message == "Player not found"
 
 
 @pytest.mark.unit

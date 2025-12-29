@@ -8,7 +8,13 @@ from utils.validators import validate_date, validate_score, sanitize_html
 
 
 class Round:
-    """Round model with CRUD operations and filtering"""
+    """
+    Round model with CRUD operations and filtering
+
+    Note: This model uses denormalized data (player_name, course_name) for performance.
+    The denormalized data is automatically kept in sync when players/courses are updated.
+    See docs/DENORMALIZED_DATA.md for full details.
+    """
 
     @staticmethod
     def _validate_date_and_course(date_played: str, course_id: str) -> Tuple[bool, str, Optional[Dict[str, Any]]]:

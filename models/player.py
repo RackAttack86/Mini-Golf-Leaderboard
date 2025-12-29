@@ -281,7 +281,7 @@ class Player:
         return True, "Google account linked successfully"
 
     @staticmethod
-    def update_last_login(player_id: str) -> bool:
+    def update_last_login(player_id: str) -> Tuple[bool, str]:
         """
         Update player's last login timestamp
 
@@ -289,7 +289,7 @@ class Player:
             player_id: Player ID
 
         Returns:
-            True if successful, False otherwise
+            Tuple of (success, message)
         """
         store = get_data_store()
         data = store.read_players()
@@ -302,13 +302,13 @@ class Player:
                 break
 
         if not player:
-            return False
+            return False, "Player not found"
 
         # Update last login
         player['last_login'] = datetime.now(UTC).strftime('%Y-%m-%dT%H:%M:%SZ')
 
         store.write_players(data)
-        return True
+        return True, "Last login updated successfully"
 
     @staticmethod
     def is_admin(player_id: str) -> bool:
