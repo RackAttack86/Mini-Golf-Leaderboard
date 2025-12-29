@@ -5,9 +5,12 @@ import threading
 from pathlib import Path
 from typing import Dict, Any
 
+# Current schema version for all JSON files
+CURRENT_SCHEMA_VERSION = 1
+
 
 class DataStore:
-    """Thread-safe JSON data storage with atomic writes"""
+    """Thread-safe JSON data storage with atomic writes and schema versioning"""
 
     def __init__(self, data_dir: Path):
         """Initialize data store and create directory if needed"""
@@ -34,19 +37,34 @@ class DataStore:
     def _initialize_files(self):
         """Create JSON files with empty structures if they don't exist"""
         if not self.players_file.exists():
-            self._write_file(self.players_file, {'players': []}, self._players_lock)
+            self._write_file(self.players_file, {
+                'schema_version': CURRENT_SCHEMA_VERSION,
+                'players': []
+            }, self._players_lock)
 
         if not self.courses_file.exists():
-            self._write_file(self.courses_file, {'courses': []}, self._courses_lock)
+            self._write_file(self.courses_file, {
+                'schema_version': CURRENT_SCHEMA_VERSION,
+                'courses': []
+            }, self._courses_lock)
 
         if not self.rounds_file.exists():
-            self._write_file(self.rounds_file, {'rounds': []}, self._rounds_lock)
+            self._write_file(self.rounds_file, {
+                'schema_version': CURRENT_SCHEMA_VERSION,
+                'rounds': []
+            }, self._rounds_lock)
 
         if not self.course_ratings_file.exists():
-            self._write_file(self.course_ratings_file, {'ratings': []}, self._course_ratings_lock)
+            self._write_file(self.course_ratings_file, {
+                'schema_version': CURRENT_SCHEMA_VERSION,
+                'ratings': []
+            }, self._course_ratings_lock)
 
         if not self.tournaments_file.exists():
-            self._write_file(self.tournaments_file, {'tournaments': []}, self._tournaments_lock)
+            self._write_file(self.tournaments_file, {
+                'schema_version': CURRENT_SCHEMA_VERSION,
+                'tournaments': []
+            }, self._tournaments_lock)
 
     def _atomic_write(self, file_path: Path, data: Dict[str, Any]):
         """Write data atomically to prevent corruption"""
@@ -71,15 +89,58 @@ class DataStore:
                 os.remove(temp_path)
             raise e
 
+    def _migrate_data(self, data: Dict[str, Any], file_path: Path) -> Dict[str, Any]:
+        """
+        Migrate data to current schema version if needed
+
+        Args:
+            data: The data dictionary from JSON file
+            file_path: Path to the file being read
+
+        Returns:
+            Migrated data dictionary
+        """
+        # If schema_version is missing, it's version 0 (old format)
+        current_version = data.get('schema_version', 0)
+
+        if current_version == CURRENT_SCHEMA_VERSION:
+            return data  # Already at current version
+
+        # Migration from version 0 to version 1
+        if current_version == 0:
+            # Add schema_version field
+            data['schema_version'] = CURRENT_SCHEMA_VERSION
+            # Data structure is the same, just adding version field
+
+        # Future migrations would go here:
+        # if current_version == 1:
+        #     # Migrate from version 1 to version 2
+        #     data['schema_version'] = 2
+        #     # Apply migration logic...
+
+        return data
+
     def _read_file(self, file_path: Path, lock: threading.Lock) -> Dict[str, Any]:
-        """Read JSON file with thread safety"""
+        """Read JSON file with thread safety and automatic migration"""
         with lock:
             try:
                 with open(file_path, 'r', encoding='utf-8') as f:
-                    return json.load(f)
+                    data = json.load(f)
+
+                # Migrate data if needed
+                migrated_data = self._migrate_data(data, file_path)
+
+                # Write back if migration occurred
+                if migrated_data.get('schema_version') != data.get('schema_version'):
+                    self._atomic_write(file_path, migrated_data)
+
+                return migrated_data
             except (FileNotFoundError, json.JSONDecodeError):
                 # Return empty structure if file is missing or corrupted
-                return {file_path.stem: []}
+                return {
+                    'schema_version': CURRENT_SCHEMA_VERSION,
+                    file_path.stem: []
+                }
 
     def _write_file(self, file_path: Path, data: Dict[str, Any], lock: threading.Lock):
         """Write JSON file with thread safety and atomic writes"""

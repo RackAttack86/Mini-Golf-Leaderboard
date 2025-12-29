@@ -176,7 +176,7 @@ def validate_date(date_str: str) -> Tuple[bool, str]:
 
 def validate_email(email: str) -> Tuple[bool, str]:
     """
-    Validate email address (basic validation)
+    Validate email address using RFC 5322 simplified pattern
 
     Args:
         email: Email to validate
@@ -187,11 +187,31 @@ def validate_email(email: str) -> Tuple[bool, str]:
     if not email or email.strip() == '':
         return True, ""  # Optional field
 
-    # Basic email validation
-    if '@' not in email or '.' not in email.split('@')[-1]:
-        return False, "Invalid email format"
+    email = email.strip()
 
     if len(email) > 100:
         return False, "Email too long (max 100 characters)"
+
+    # RFC 5322 simplified email validation pattern
+    # Matches: user@domain.com, user.name@sub.domain.com, user+tag@domain.co.uk
+    # Rejects: @., user@., user@domain., @domain.com, user@@domain.com
+    email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+
+    if not re.match(email_pattern, email):
+        return False, "Invalid email format"
+
+    # Additional checks for edge cases
+    if email.count('@') != 1:
+        return False, "Invalid email format"
+
+    local, domain = email.split('@')
+
+    # Validate local part (before @)
+    if not local or local.startswith('.') or local.endswith('.') or '..' in local:
+        return False, "Invalid email format"
+
+    # Validate domain part (after @)
+    if not domain or domain.startswith('.') or domain.endswith('.') or '..' in domain:
+        return False, "Invalid email format"
 
     return True, ""

@@ -11,6 +11,75 @@ class Round:
     """Round model with CRUD operations and filtering"""
 
     @staticmethod
+    def _validate_date_and_course(date_played: str, course_id: str) -> Tuple[bool, str, Optional[Dict[str, Any]]]:
+        """
+        Validate date and course
+
+        Args:
+            date_played: Date in YYYY-MM-DD format
+            course_id: Course ID
+
+        Returns:
+            Tuple of (is_valid, error_message, course_dict)
+        """
+        # Validate date
+        is_valid, error = validate_date(date_played)
+        if not is_valid:
+            return False, error, None
+
+        # Validate course exists
+        course = Course.get_by_id(course_id)
+        if not course:
+            return False, "Course not found", None
+
+        return True, "", course
+
+    @staticmethod
+    def _validate_and_process_scores(scores: List[Dict[str, Any]]) -> Tuple[bool, str, List[Dict[str, Any]]]:
+        """
+        Validate and process player scores
+
+        Args:
+            scores: List of dicts with player_id and score
+
+        Returns:
+            Tuple of (is_valid, error_message, validated_scores)
+        """
+        # Validate scores exist
+        if not scores or len(scores) == 0:
+            return False, "At least one player score is required", []
+
+        validated_scores = []
+        player_ids_seen = set()
+
+        for score_data in scores:
+            player_id = score_data.get('player_id')
+            score = score_data.get('score')
+
+            # Check for duplicate players
+            if player_id in player_ids_seen:
+                return False, "Duplicate player in round", []
+            player_ids_seen.add(player_id)
+
+            # Validate player exists
+            player = Player.get_by_id(player_id)
+            if not player:
+                return False, f"Player not found: {player_id}", []
+
+            # Validate score
+            is_valid, error = validate_score(score)
+            if not is_valid:
+                return False, f"Invalid score for {player['name']}: {error}", []
+
+            validated_scores.append({
+                'player_id': player_id,
+                'player_name': player['name'],  # Denormalized
+                'score': int(score)
+            })
+
+        return True, "", validated_scores
+
+    @staticmethod
     def create(course_id: str, date_played: str, scores: List[Dict[str, Any]],
                notes: Optional[str] = None) -> Tuple[bool, str, Optional[Dict[str, Any]]]:
         """
@@ -27,47 +96,15 @@ class Round:
         """
         store = get_data_store()
 
-        # Validate date
-        is_valid, error = validate_date(date_played)
+        # Validate date and course
+        is_valid, error, course = Round._validate_date_and_course(date_played, course_id)
         if not is_valid:
             return False, error, None
 
-        # Validate course exists
-        course = Course.get_by_id(course_id)
-        if not course:
-            return False, "Course not found", None
-
-        # Validate scores
-        if not scores or len(scores) == 0:
-            return False, "At least one player score is required", None
-
-        validated_scores = []
-        player_ids_seen = set()
-
-        for score_data in scores:
-            player_id = score_data.get('player_id')
-            score = score_data.get('score')
-
-            # Check for duplicate players
-            if player_id in player_ids_seen:
-                return False, f"Duplicate player in round", None
-            player_ids_seen.add(player_id)
-
-            # Validate player exists
-            player = Player.get_by_id(player_id)
-            if not player:
-                return False, f"Player not found: {player_id}", None
-
-            # Validate score
-            is_valid, error = validate_score(score)
-            if not is_valid:
-                return False, f"Invalid score for {player['name']}: {error}", None
-
-            validated_scores.append({
-                'player_id': player_id,
-                'player_name': player['name'],  # Denormalized
-                'score': int(score)
-            })
+        # Validate and process scores
+        is_valid, error, validated_scores = Round._validate_and_process_scores(scores)
+        if not is_valid:
+            return False, error, None
 
         # Create round
         round_data = {
@@ -115,47 +152,15 @@ class Round:
         if round_index is None:
             return False, "Round not found"
 
-        # Validate date
-        is_valid, error = validate_date(date_played)
+        # Validate date and course
+        is_valid, error, course = Round._validate_date_and_course(date_played, course_id)
         if not is_valid:
             return False, error
 
-        # Validate course exists
-        course = Course.get_by_id(course_id)
-        if not course:
-            return False, "Course not found"
-
-        # Validate scores
-        if not scores or len(scores) == 0:
-            return False, "At least one player score is required"
-
-        validated_scores = []
-        player_ids_seen = set()
-
-        for score_data in scores:
-            player_id = score_data.get('player_id')
-            score = score_data.get('score')
-
-            # Check for duplicate players
-            if player_id in player_ids_seen:
-                return False, f"Duplicate player in round", None
-            player_ids_seen.add(player_id)
-
-            # Validate player exists
-            player = Player.get_by_id(player_id)
-            if not player:
-                return False, f"Player not found: {player_id}"
-
-            # Validate score
-            is_valid, error = validate_score(score)
-            if not is_valid:
-                return False, f"Invalid score for {player['name']}: {error}"
-
-            validated_scores.append({
-                'player_id': player_id,
-                'player_name': player['name'],  # Denormalized
-                'score': int(score)
-            })
+        # Validate and process scores
+        is_valid, error, validated_scores = Round._validate_and_process_scores(scores)
+        if not is_valid:
+            return False, error
 
         # Update the round
         data['rounds'][round_index]['course_id'] = course_id

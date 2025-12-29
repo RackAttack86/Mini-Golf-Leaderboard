@@ -3,7 +3,7 @@ from flask_login import login_user, logout_user, current_user
 from flask_dance.contrib.google import google
 from services.auth_service import AuthService
 from urllib.parse import urlparse, urljoin
-from app import limiter
+from extensions import limiter
 import secrets
 
 
@@ -37,6 +37,7 @@ def login():
 
 
 @auth_bp.route('/google')
+@limiter.limit("10 per minute")
 def google_login():
     """Initiate Google OAuth flow"""
     # Generate and store state token for CSRF protection

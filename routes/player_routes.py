@@ -7,7 +7,7 @@ from models.round import Round
 from services.achievement_service import AchievementService
 from utils.auth_decorators import admin_required, player_or_admin_required
 from utils.file_validators import validate_image_file, sanitize_filename
-from app import limiter
+from extensions import limiter
 
 bp = Blueprint('players', __name__)
 
