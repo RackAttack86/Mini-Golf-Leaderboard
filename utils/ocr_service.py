@@ -36,8 +36,11 @@ class WalkaboutOCRService:
             image = Image.open(image_path)
             preprocessed = WalkaboutOCRService._preprocess_image(image)
 
-            # Extract raw text
-            raw_text = pytesseract.image_to_string(preprocessed)
+            # Extract raw text with better Tesseract configuration
+            # PSM 6 = Assume a single uniform block of text
+            # PSM 11 = Sparse text. Find as much text as possible in no particular order
+            custom_config = r'--oem 3 --psm 6'
+            raw_text = pytesseract.image_to_string(preprocessed, config=custom_config)
 
             # Extract individual fields
             course_name, course_confidence = WalkaboutOCRService._extract_course_name(raw_text, image)
@@ -93,19 +96,26 @@ class WalkaboutOCRService:
         if image.mode != 'RGB':
             image = image.convert('RGB')
 
-        # Increase contrast
+        # Increase brightness slightly (helps with dark screenshots)
+        enhancer = ImageEnhance.Brightness(image)
+        image = enhancer.enhance(1.2)
+
+        # Increase contrast more aggressively
         enhancer = ImageEnhance.Contrast(image)
-        image = enhancer.enhance(2.0)
+        image = enhancer.enhance(2.5)
 
         # Increase sharpness
         enhancer = ImageEnhance.Sharpness(image)
-        image = enhancer.enhance(1.5)
+        image = enhancer.enhance(2.0)
 
         # Convert to grayscale
         image = image.convert('L')
 
-        # Apply slight blur to reduce noise
-        image = image.filter(ImageFilter.MedianFilter(size=3))
+        # Apply threshold to make text more distinct (binarization)
+        # Convert to black and white based on threshold
+        threshold = 150
+        image = image.point(lambda x: 0 if x < threshold else 255, '1')
+        image = image.convert('L')
 
         return image
 
@@ -123,29 +133,39 @@ class WalkaboutOCRService:
         # Look for course name patterns in the first few lines
         lines = raw_text.split('\n')
 
+        # Known course name patterns
+        known_courses = ['MARS', 'GARDEN', 'SHANGRI', 'LA', 'NEON', 'OLYMPUS', 'CASTLE',
+                        'FORE', 'FORE', 'LABYRINTH', 'TEMPLE', 'ATLANTIS', 'SACRED']
+
         # Course names are typically all caps or title case and appear early
-        for i, line in enumerate(lines[:10]):
+        for i, line in enumerate(lines[:15]):
             line = line.strip()
 
             # Skip empty lines and common UI elements
-            if not line or line.lower() in ['settings', 'friends', 'tutorial', 'resume game', 'main menu']:
+            if not line or line.lower() in ['settings', 'friends', 'tutorial', 'resume game', 'main menu', 'mode', 'full', 'record']:
                 continue
 
+            # Remove common prefixes that OCR might add
+            line = re.sub(r'^(Mode:|Record:|Full\s*\d+)', '', line, flags=re.IGNORECASE).strip()
+
             # Look for capitalized multi-word patterns (likely course names)
-            if len(line) > 5 and (line.isupper() or line.istitle()):
-                # Check if it contains course-like words or is standalone capitalized text
-                if any(word in line.upper() for word in ['GARDEN', 'COURSE', 'GOLF', 'MINI', 'SHANGRI', 'MARS', 'NEON']):
-                    return line, 0.9
+            if len(line) > 5 and line.isupper():
+                # Check if it contains known course words
+                if any(word in line.upper() for word in known_courses):
+                    # Clean up the line
+                    cleaned = re.sub(r'[^A-Z\s]', '', line).strip()
+                    if len(cleaned) > 5:
+                        return cleaned, 0.9
 
-                # If it's the largest text in first 5 lines, likely the course name
-                if i < 5 and len(line) > 8:
-                    return line, 0.7
+                # If it's mostly letters and spaces, likely course name
+                if re.match(r'^[A-Z\s]{6,30}$', line):
+                    return line, 0.8
 
-        # Fallback: try pattern matching
-        course_pattern = r'([A-Z][a-zA-Z\s]{5,30})'
-        match = re.search(course_pattern, raw_text)
+        # Fallback: Look for "MARS GARDENS" or similar patterns anywhere
+        course_pattern = r'\b(MARS\s*GARDENS?|SHANGRI\s*LA|NEON\s*HEIGHTS?|MOUNT\s*OLYMPUS|ATLANTIS)\b'
+        match = re.search(course_pattern, raw_text, re.IGNORECASE)
         if match:
-            return match.group(1).strip(), 0.5
+            return match.group(1).upper(), 0.85
 
         return None, 0.0
 
@@ -161,24 +181,35 @@ class WalkaboutOCRService:
             Tuple of (username, confidence)
         """
         # Look for PlayerName label followed by the username
-        player_pattern = r'(?:PlayerName|PLAYERNAME|Player\s*Name)[:\s]*([A-Za-z0-9_\-]+)'
-        match = re.search(player_pattern, raw_text, re.IGNORECASE)
+        # More flexible pattern to catch variations
+        player_pattern = r'(?:PlayerName|PLAYERNAME|Player[\s_]*Name|Name)[:\s]*([A-Za-z][A-Za-z0-9_\-]{2,20})'
+        match = re.search(player_pattern, raw_text, re.IGNORECASE | re.MULTILINE)
         if match:
             username = match.group(1).strip()
             # Filter out common false positives
-            if username.lower() not in ['start', 'current', 'version', 'active', 'modifiers']:
+            if username.lower() not in ['start', 'current', 'version', 'active', 'modifiers', 'mode', 'full', 'record']:
                 return username, 0.9
 
-        # Fallback: look for username-like patterns (alphanumeric with underscores)
-        username_pattern = r'\b([A-Za-z][A-Za-z0-9_]{3,20})\b'
-        matches = re.findall(username_pattern, raw_text)
+        # Look specifically for patterns like "Sir_Chops" (common username format)
+        # Username with underscore pattern
+        underscore_pattern = r'\b([A-Z][a-z]+_[A-Za-z]+)\b'
+        match = re.search(underscore_pattern, raw_text)
+        if match:
+            return match.group(1), 0.85
 
-        # Filter matches that look like usernames
-        for match in matches:
-            if '_' in match or match[0].isupper():
-                # Avoid common UI words
-                if match.lower() not in ['settings', 'tutorial', 'playername', 'current', 'version', 'active']:
-                    return match, 0.6
+        # Fallback: look for username-like patterns near bottom of text
+        lines = raw_text.split('\n')
+        # Search bottom half of document
+        for line in lines[len(lines)//2:]:
+            # Look for alphanumeric with underscores
+            username_pattern = r'\b([A-Za-z][A-Za-z0-9_]{3,20})\b'
+            matches = re.findall(username_pattern, line)
+
+            for match in matches:
+                if '_' in match:
+                    # Likely a username
+                    if match.lower() not in ['settings', 'tutorial', 'playername']:
+                        return match, 0.7
 
         return None, 0.0
 
@@ -195,27 +226,38 @@ class WalkaboutOCRService:
         """
         # Look for date/time patterns
         # Format: MM/DD/YYYY HH:MM:SS AM/PM
-        datetime_pattern = r'(\d{1,2}/\d{1,2}/\d{4}\s+\d{1,2}:\d{2}:\d{2}\s*(?:AM|PM)?)'
-        match = re.search(datetime_pattern, raw_text, re.IGNORECASE)
+        # Try multiple patterns to catch OCR errors
+        datetime_patterns = [
+            r'(\d{1,2}/\d{1,2}/\d{4}\s+\d{1,2}:\d{2}:\d{2}\s*(?:AM|PM))',  # 12/30/2025 3:15:28 AM
+            r'(\d{1,2}/\d{1,2}/\d{4}\s+\d{1,2}:\d{2}:\d{2})',  # Without AM/PM
+            r'(\d{4}-\d{1,2}-\d{1,2}\s+\d{1,2}:\d{2}:\d{2})',  # ISO format
+        ]
 
-        if match:
-            datetime_str = match.group(1).strip()
-            try:
-                # Parse the datetime
-                # Try with AM/PM first
-                for fmt in ['%m/%d/%Y %I:%M:%S %p', '%m/%d/%Y %H:%M:%S', '%d/%m/%Y %I:%M:%S %p', '%d/%m/%Y %H:%M:%S']:
-                    try:
-                        dt = datetime.strptime(datetime_str, fmt)
-                        # Convert to ISO-8601 format
-                        iso_timestamp = dt.strftime('%Y-%m-%dT%H:%M:%SZ')
-                        return iso_timestamp, 0.9
-                    except ValueError:
-                        continue
+        for pattern in datetime_patterns:
+            match = re.search(pattern, raw_text, re.IGNORECASE)
+            if match:
+                datetime_str = match.group(1).strip()
+                try:
+                    # Parse the datetime - try multiple formats
+                    formats = [
+                        '%m/%d/%Y %I:%M:%S %p',  # 12/30/2025 3:15:28 AM
+                        '%m/%d/%Y %H:%M:%S',     # 12/30/2025 15:15:28
+                        '%d/%m/%Y %I:%M:%S %p',  # 30/12/2025 3:15:28 AM
+                        '%d/%m/%Y %H:%M:%S',     # 30/12/2025 15:15:28
+                        '%Y-%m-%d %H:%M:%S',     # 2025-12-30 15:15:28
+                    ]
 
-                return None, 0.0
+                    for fmt in formats:
+                        try:
+                            dt = datetime.strptime(datetime_str, fmt)
+                            # Convert to ISO-8601 format
+                            iso_timestamp = dt.strftime('%Y-%m-%dT%H:%M:%SZ')
+                            return iso_timestamp, 0.9
+                        except ValueError:
+                            continue
 
-            except Exception:
-                return None, 0.0
+                except Exception:
+                    pass
 
         return None, 0.0
 
@@ -235,31 +277,53 @@ class WalkaboutOCRService:
         scores = []
         confidence = 0.0
 
-        # Find lines containing "SCORE"
+        # Find lines containing "SCORE" or "Score"
         for i, line in enumerate(lines):
-            if 'SCORE' in line.upper() or 'Score' in line:
-                # Extract numbers from this line and nearby lines
-                # Look in current line and next 2 lines
-                search_text = ' '.join(lines[i:i+3])
+            if re.search(r'\b(SCORE|Score)\b', line):
+                # Extract numbers from this line and next 3 lines
+                # Sometimes the scores are on the next line
+                search_lines = lines[i:min(i+4, len(lines))]
+                search_text = ' '.join(search_lines)
 
                 # Extract all single-digit and double-digit numbers
+                # Use word boundaries to avoid splitting multi-digit numbers
                 numbers = re.findall(r'\b(\d{1,2})\b', search_text)
 
-                # Filter to reasonable golf scores (1-10)
-                valid_scores = [int(n) for n in numbers if 1 <= int(n) <= 10]
+                # Filter to reasonable golf scores (1-10, allowing up to 15 for very bad holes)
+                valid_scores = []
+                for n in numbers:
+                    score = int(n)
+                    if 1 <= score <= 15:
+                        valid_scores.append(score)
 
                 # If we found exactly 18 scores, high confidence
                 if len(valid_scores) == 18:
                     scores = valid_scores
                     confidence = 0.95
                     break
-                # If we found close to 18, lower confidence
-                elif 15 <= len(valid_scores) <= 20:
-                    scores = valid_scores[:18] if len(valid_scores) >= 18 else valid_scores
-                    confidence = 0.6
-                    break
+                # If we found 17 or 19, try to adjust
+                elif 16 <= len(valid_scores) <= 20:
+                    # Take the first 18
+                    if len(valid_scores) >= 18:
+                        scores = valid_scores[:18]
+                        confidence = 0.75
+                        break
 
-        # Fallback: try to find 18 consecutive numbers in reasonable range
+        # Fallback: Look for hole numbers (1-18) followed by scores
+        if not scores:
+            # Try to find pattern like "1 2 3 4 5 ... 18" followed by scores
+            hole_pattern = r'(?:Hole|HOLE).*?(?:\d+\s+){17}\d+'
+            match = re.search(hole_pattern, raw_text, re.IGNORECASE | re.DOTALL)
+            if match:
+                # Get text after the hole numbers
+                remaining_text = raw_text[match.end():]
+                numbers = re.findall(r'\b(\d{1,2})\b', remaining_text[:200])
+                valid_scores = [int(n) for n in numbers if 1 <= int(n) <= 15]
+                if len(valid_scores) >= 18:
+                    scores = valid_scores[:18]
+                    confidence = 0.7
+
+        # Last fallback: try to find any sequence of 18 valid scores
         if not scores:
             all_numbers = re.findall(r'\b(\d{1,2})\b', raw_text)
             valid_numbers = [int(n) for n in all_numbers if 1 <= int(n) <= 10]
@@ -267,16 +331,16 @@ class WalkaboutOCRService:
             # Look for sequence of 18 valid scores
             for i in range(len(valid_numbers) - 17):
                 potential_scores = valid_numbers[i:i+18]
-                # Check if total is reasonable (typically 45-90 for mini golf)
+                # Check if total is reasonable (typically 40-90 for mini golf)
                 total = sum(potential_scores)
-                if 30 <= total <= 100:
+                if 35 <= total <= 120:
                     scores = potential_scores
-                    confidence = 0.4
+                    confidence = 0.5
                     break
 
         if len(scores) == 18:
             return scores, confidence
-        elif scores:
+        elif len(scores) > 0:
             # Partial scores found
             return scores, confidence * 0.5
 

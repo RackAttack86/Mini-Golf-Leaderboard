@@ -87,7 +87,7 @@
                                 <optgroup label="All Courses">
                                 {% endif %}
                                     {% for course in courses %}
-                                    {% if not course_suggestions or course.id not in [s[0].id for s in course_suggestions[:5]] %}
+                                    {% if not suggested_course_ids or course.id not in suggested_course_ids %}
                                     <option value="{{ course.id }}">{{ course.name }}</option>
                                     {% endif %}
                                     {% endfor %}

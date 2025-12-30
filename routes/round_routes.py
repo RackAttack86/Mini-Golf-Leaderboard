@@ -184,6 +184,7 @@ def upload_picture():
         # Try to match course
         matched_course_id = None
         course_suggestions = []
+        suggested_course_ids = set()
         match_score = 0
 
         if ocr_result['data'].get('course_name'):
@@ -192,6 +193,8 @@ def upload_picture():
                 courses
             )
             course_suggestions = suggestions
+            # Create set of suggested course IDs for template filtering
+            suggested_course_ids = {s[0]['id'] for s in suggestions[:5]}
 
         # Try to match player by Meta Quest username
         matched_player = None
@@ -210,6 +213,7 @@ def upload_picture():
                                matched_course_id=matched_course_id,
                                course_match_score=match_score,
                                course_suggestions=course_suggestions,
+                               suggested_course_ids=suggested_course_ids,
                                matched_player=matched_player,
                                courses=courses,
                                players=players,
