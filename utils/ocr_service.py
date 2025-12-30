@@ -50,10 +50,14 @@ class WalkaboutOCRService:
             player_username, player_confidence = WalkaboutOCRService._extract_player_username(raw_text)
             start_time, time_confidence = WalkaboutOCRService._extract_start_time(raw_text)
 
-            # Try advanced preprocessing for score extraction
-            hole_scores, scores_confidence = WalkaboutOCRService._extract_hole_scores_advanced(image_path)
+            # Try EasyOCR for score extraction (best for stylized fonts)
+            hole_scores, scores_confidence = WalkaboutOCRService._extract_hole_scores_easyocr(image_path)
 
-            # Fallback to basic extraction if advanced fails
+            # Fallback to advanced preprocessing if EasyOCR fails
+            if not hole_scores:
+                hole_scores, scores_confidence = WalkaboutOCRService._extract_hole_scores_advanced(image_path)
+
+            # Last fallback to basic extraction
             if not hole_scores:
                 hole_scores, scores_confidence = WalkaboutOCRService._extract_hole_scores(raw_text, image)
 
@@ -511,6 +515,107 @@ class WalkaboutOCRService:
             errors.append(f"Total score {total_score} is out of reasonable range (18-180)")
 
         return errors
+
+    @staticmethod
+    def _extract_hole_scores_easyocr(image_path: str) -> Tuple[Optional[List[int]], float]:
+        """
+        Extract hole scores using EasyOCR (deep learning based)
+
+        EasyOCR is better at reading stylized fonts and colored text
+        than traditional Tesseract OCR.
+
+        Args:
+            image_path: Path to the scorecard image
+
+        Returns:
+            Tuple of (list of 18 scores, confidence)
+        """
+        try:
+            import easyocr
+
+            # Initialize EasyOCR reader (English only, GPU if available)
+            reader = easyocr.Reader(['en'], gpu=False, verbose=False)
+
+            # Load image
+            img = cv2.imread(str(image_path))
+            if img is None:
+                return None, 0.0
+
+            # Run EasyOCR on full image (better than cropping for this case)
+            results = reader.readtext(img, detail=1)
+
+            # Find the SCORE row and PAR row by looking for these labels
+            score_row_y = None
+            par_row_y = None
+
+            for (bbox, text, conf) in results:
+                text_upper = text.upper()
+                y_coord = bbox[0][1]
+
+                if 'SCORE' in text_upper or 'SCO' in text_upper:
+                    score_row_y = y_coord
+                elif 'PAR' in text_upper:
+                    # Make sure it's the PAR label, not "TRAP" or similar
+                    if text_upper.strip() == 'PAR' or text_upper.startswith('PAR'):
+                        par_row_y = y_coord
+
+            print(f"EasyOCR: Found SCORE row at y={score_row_y}, PAR row at y={par_row_y}")
+
+            # If we found the PAR row, the SCORE row should be right after it
+            if par_row_y and not score_row_y:
+                score_row_y = par_row_y + 80  # Approx distance between PAR and SCORE rows
+
+            if score_row_y:
+                # Extract all numbers near the SCORE row
+                # Be more precise: SCORE row is typically 30-60 pixels BELOW the PAR row
+                # Only look at numbers very close to the SCORE label's y-coordinate
+                score_candidates = []
+                for (bbox, text, conf) in results:
+                    y_coord = bbox[0][1]
+                    x_coord = bbox[0][0]  # left x coordinate
+
+                    # Check if this text is close to the SCORE row (within 50 pixels)
+                    # But exclude anything above the SCORE label (PAR row)
+                    if score_row_y - 20 <= y_coord <= score_row_y + 50:
+                        # Extract digits from this text
+                        for char in text:
+                            if char.isdigit():
+                                digit = int(char)
+                                # Store with x-coordinate for sorting left-to-right
+                                score_candidates.append((x_coord, digit))
+
+                # Sort by x-coordinate (left to right)
+                score_candidates.sort(key=lambda x: x[0])
+
+                # Extract just the digits in order
+                ordered_scores = [score for (x, score) in score_candidates]
+
+                # Filter to valid scores (1-15)
+                valid_scores = [s for s in ordered_scores if 1 <= s <= 15]
+
+                print(f"EasyOCR: Found {len(valid_scores)} valid scores: {valid_scores}")
+
+                # Check if we got exactly 18 scores
+                if len(valid_scores) == 18:
+                    return valid_scores, 0.90
+                # If we got 17-20, take first 18
+                elif 17 <= len(valid_scores) <= 20:
+                    return valid_scores[:18], 0.75
+                # If we got more than 20, try to find the best 18 consecutive scores
+                elif len(valid_scores) > 20:
+                    # Look for a sequence of 18 that has a reasonable total
+                    for i in range(len(valid_scores) - 17):
+                        potential = valid_scores[i:i+18]
+                        total = sum(potential)
+                        # Check if total is reasonable (typically 35-90 for mini golf)
+                        if 35 <= total <= 120:
+                            return potential, 0.70
+
+            return None, 0.0
+
+        except Exception as e:
+            print(f"EasyOCR error: {str(e)}")
+            return None, 0.0
 
     @staticmethod
     def _extract_hole_scores_advanced(image_path: str) -> Tuple[Optional[List[int]], float]:
