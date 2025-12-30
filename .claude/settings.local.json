@@ -14,7 +14,31 @@
       "Bash(taskkill /F /PID 32564)",
       "Bash(taskkill:*)",
       "Bash(git add:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(test:*)",
+      "Bash(cat:*)",
+      "Bash(find:*)",
+      "Bash(tree:*)",
+      "Bash(ls:*)",
+      "Bash(pytest:*)",
+      "Bash(wc:*)",
+      "Bash(C:UsersRacklAppDataLocalProgramsPythonPython312python.exe -m pip install Flask-Limiter==3.5.0)",
+      "Bash(where:*)",
+      "WebSearch",
+      "Bash(for file in tests/**/*.py)",
+      "Bash(do if grep -q \"player1@test.com\\\\|player2@test.com\\\\|player3@test.com\" \"$file\")",
+      "Bash(then echo \"$file\")",
+      "Bash(fi)",
+      "Bash(done)",
+      "Bash(tasklist:*)",
+      "Bash(git checkout:*)",
+      "Bash(if not exist migrations mkdir migrations)",
+      "Bash(del dataminigolf.db)",
+      "Bash(curl:*)",
+      "Bash(C:UsersRacklAppDataLocalProgramsPythonPython312python.exe -m pip install pytesseract==0.3.10 fuzzywuzzy==0.18.0 python-Levenshtein==0.23.0)",
+      "Bash(python3.12 -m pip install:*)",
+      "Bash(git reset:*)"
     ]
   }
 }
