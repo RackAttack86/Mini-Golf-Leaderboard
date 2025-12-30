@@ -1,7 +1,6 @@
 from flask import Flask, render_template, request
 from datetime import datetime
 from config import Config
-from models.data_store import init_data_store
 from flask_login import current_user
 from flask_dance.contrib.google import make_google_blueprint
 from flask_talisman import Talisman
@@ -27,8 +26,9 @@ def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
 
-    # Initialize data store
-    init_data_store(app.config['DATA_DIR'])
+    # Initialize database
+    from models.database import init_database
+    init_database(app.config['DATABASE_PATH'])
 
     # Set max upload size
     app.config['MAX_CONTENT_LENGTH'] = Config.MAX_CONTENT_LENGTH

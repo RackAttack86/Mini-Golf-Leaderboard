@@ -1,7 +1,8 @@
 import uuid
+import json
 from datetime import datetime, UTC
 from typing import List, Optional, Dict, Any, Tuple
-from models.data_store import get_data_store
+from models.database import get_db
 from models.player import Player
 from models.course import Course
 from utils.validators import validate_date, validate_score, sanitize_html
@@ -9,11 +10,12 @@ from utils.validators import validate_date, validate_score, sanitize_html
 
 class Round:
     """
-    Round model with CRUD operations and filtering
+    Round model with CRUD operations and filtering using SQLite
 
     Note: This model uses denormalized data (player_name, course_name) for performance.
     The denormalized data is automatically kept in sync when players/courses are updated.
-    See docs/DENORMALIZED_DATA.md for full details.
+    Scores are stored in a separate round_scores table but are assembled into the
+    scores array when returning round data for backward compatibility.
     """
 
     @staticmethod
@@ -46,7 +48,7 @@ class Round:
         Validate and process player scores
 
         Args:
-            scores: List of dicts with player_id and score
+            scores: List of dicts with player_id, score, and optional hole_scores
 
         Returns:
             Tuple of (is_valid, error_message, validated_scores)
@@ -61,6 +63,7 @@ class Round:
         for score_data in scores:
             player_id = score_data.get('player_id')
             score = score_data.get('score')
+            hole_scores = score_data.get('hole_scores')  # NEW: Optional hole-by-hole scores
 
             # Check for duplicate players
             if player_id in player_ids_seen:
@@ -80,27 +83,32 @@ class Round:
             validated_scores.append({
                 'player_id': player_id,
                 'player_name': player['name'],  # Denormalized
-                'score': int(score)
+                'score': int(score),
+                'hole_scores': hole_scores  # Will be JSON-encoded when stored
             })
 
         return True, "", validated_scores
 
     @staticmethod
     def create(course_id: str, date_played: str, scores: List[Dict[str, Any]],
-               notes: Optional[str] = None) -> Tuple[bool, str, Optional[Dict[str, Any]]]:
+               notes: Optional[str] = None, round_start_time: Optional[str] = None,
+               picture_filename: Optional[str] = None) -> Tuple[bool, str, Optional[Dict[str, Any]]]:
         """
         Create a new round
 
         Args:
             course_id: Course ID
             date_played: Date in YYYY-MM-DD format
-            scores: List of dicts with player_id and score
+            scores: List of dicts with player_id, score, and optional hole_scores
             notes: Optional notes
+            round_start_time: Optional round start time from game (for duplicate detection)
+            picture_filename: Optional filename of uploaded round picture
 
         Returns:
             Tuple of (success, message, round_dict)
         """
-        store = get_data_store()
+        db = get_db()
+        conn = db.get_connection()
 
         # Validate date and course
         is_valid, error, course = Round._validate_date_and_course(date_played, course_id)
@@ -113,21 +121,52 @@ class Round:
             return False, error, None
 
         # Create round
-        round_data = {
-            'id': str(uuid.uuid4()),
-            'course_id': course_id,
-            'course_name': course['name'],  # Denormalized
-            'date_played': date_played,
-            'timestamp': datetime.now(UTC).strftime('%Y-%m-%dT%H:%M:%SZ'),
-            'scores': validated_scores,
-            'notes': sanitize_html(notes) if notes else ''
-        }
+        round_id = str(uuid.uuid4())
+        timestamp = datetime.now(UTC).strftime('%Y-%m-%dT%H:%M:%SZ')
 
-        data = store.read_rounds()
-        data['rounds'].append(round_data)
-        store.write_rounds(data)
+        try:
+            # Insert round
+            conn.execute("""
+                INSERT INTO rounds (
+                    id, course_id, course_name, date_played, timestamp,
+                    round_start_time, notes, picture_filename
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                round_id,
+                course_id,
+                course['name'],  # Denormalized
+                date_played,
+                timestamp,
+                round_start_time,
+                sanitize_html(notes) if notes else None,
+                picture_filename
+            ))
 
-        return True, "Round created successfully", round_data
+            # Insert scores
+            for score_data in validated_scores:
+                # Encode hole_scores as JSON if present
+                hole_scores_json = None
+                if score_data['hole_scores']:
+                    hole_scores_json = json.dumps(score_data['hole_scores'])
+
+                conn.execute("""
+                    INSERT INTO round_scores (
+                        round_id, player_id, player_name, score, hole_scores
+                    ) VALUES (?, ?, ?, ?, ?)
+                """, (
+                    round_id,
+                    score_data['player_id'],
+                    score_data['player_name'],
+                    score_data['score'],
+                    hole_scores_json
+                ))
+
+            # Return the created round
+            round_data = Round.get_by_id(round_id)
+            return True, "Round created successfully", round_data
+
+        except Exception as e:
+            return False, f"Error creating round: {str(e)}", None
 
     @staticmethod
     def update(round_id: str, course_id: str, date_played: str,
@@ -139,23 +178,17 @@ class Round:
             round_id: Round ID to update
             course_id: Course ID
             date_played: Date in YYYY-MM-DD format
-            scores: List of dicts with player_id and score
+            scores: List of dicts with player_id, score, and optional hole_scores
             notes: Optional notes
 
         Returns:
             Tuple of (success, message)
         """
-        store = get_data_store()
+        db = get_db()
+        conn = db.get_connection()
 
-        # Find the round
-        data = store.read_rounds()
-        round_index = None
-        for i, r in enumerate(data['rounds']):
-            if r['id'] == round_id:
-                round_index = i
-                break
-
-        if round_index is None:
+        # Check if round exists
+        if not Round.get_by_id(round_id):
             return False, "Round not found"
 
         # Validate date and course
@@ -168,16 +201,90 @@ class Round:
         if not is_valid:
             return False, error
 
-        # Update the round
-        data['rounds'][round_index]['course_id'] = course_id
-        data['rounds'][round_index]['course_name'] = course['name']  # Update denormalized
-        data['rounds'][round_index]['date_played'] = date_played
-        data['rounds'][round_index]['scores'] = validated_scores
-        data['rounds'][round_index]['notes'] = sanitize_html(notes) if notes else ''
+        try:
+            # Update round
+            conn.execute("""
+                UPDATE rounds SET
+                    course_id = ?,
+                    course_name = ?,
+                    date_played = ?,
+                    notes = ?
+                WHERE id = ?
+            """, (
+                course_id,
+                course['name'],  # Update denormalized
+                date_played,
+                sanitize_html(notes) if notes else None,
+                round_id
+            ))
 
-        store.write_rounds(data)
+            # Delete old scores
+            conn.execute("DELETE FROM round_scores WHERE round_id = ?", (round_id,))
 
-        return True, "Round updated successfully"
+            # Insert new scores
+            for score_data in validated_scores:
+                # Encode hole_scores as JSON if present
+                hole_scores_json = None
+                if score_data.get('hole_scores'):
+                    hole_scores_json = json.dumps(score_data['hole_scores'])
+
+                conn.execute("""
+                    INSERT INTO round_scores (
+                        round_id, player_id, player_name, score, hole_scores
+                    ) VALUES (?, ?, ?, ?, ?)
+                """, (
+                    round_id,
+                    score_data['player_id'],
+                    score_data['player_name'],
+                    score_data['score'],
+                    hole_scores_json
+                ))
+
+            return True, "Round updated successfully"
+
+        except Exception as e:
+            return False, f"Error updating round: {str(e)}"
+
+    @staticmethod
+    def _round_row_to_dict(round_row, score_rows) -> Dict[str, Any]:
+        """
+        Convert round and score rows to dictionary format
+
+        Args:
+            round_row: Round table row
+            score_rows: List of score table rows for this round
+
+        Returns:
+            Round dictionary with scores array
+        """
+        scores = []
+        for score_row in score_rows:
+            score_dict = {
+                'player_id': score_row['player_id'],
+                'player_name': score_row['player_name'],
+                'score': score_row['score']
+            }
+
+            # Decode hole_scores JSON if present
+            if score_row['hole_scores']:
+                try:
+                    score_dict['hole_scores'] = json.loads(score_row['hole_scores'])
+                except json.JSONDecodeError:
+                    score_dict['hole_scores'] = None
+
+            scores.append(score_dict)
+
+        return {
+            'id': round_row['id'],
+            'course_id': round_row['course_id'],
+            'course_name': round_row['course_name'],
+            'date_played': round_row['date_played'],
+            'timestamp': round_row['timestamp'],
+            'round_start_time': round_row['round_start_time'],
+            'notes': round_row['notes'] or '',
+            'picture_filename': round_row['picture_filename'],
+            'scores': scores
+        }
 
     @staticmethod
     def get_all(filters: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
@@ -194,30 +301,51 @@ class Round:
         Returns:
             List of round dictionaries, sorted by date (newest first)
         """
-        store = get_data_store()
-        data = store.read_rounds()
-        rounds = data['rounds']
+        db = get_db()
+        conn = db.get_connection()
 
-        # Apply filters
+        # Build query based on filters
+        query = "SELECT * FROM rounds"
+        params = []
+        conditions = []
+
         if filters:
-            if 'player_id' in filters:
-                player_id = filters['player_id']
-                rounds = [r for r in rounds if any(s['player_id'] == player_id for s in r['scores'])]
-
             if 'course_id' in filters:
-                course_id = filters['course_id']
-                rounds = [r for r in rounds if r['course_id'] == course_id]
+                conditions.append("course_id = ?")
+                params.append(filters['course_id'])
 
             if 'start_date' in filters:
-                start_date = filters['start_date']
-                rounds = [r for r in rounds if r['date_played'] >= start_date]
+                conditions.append("date_played >= ?")
+                params.append(filters['start_date'])
 
             if 'end_date' in filters:
-                end_date = filters['end_date']
-                rounds = [r for r in rounds if r['date_played'] <= end_date]
+                conditions.append("date_played <= ?")
+                params.append(filters['end_date'])
 
-        # Sort by date (newest first)
-        rounds.sort(key=lambda r: r['date_played'], reverse=True)
+        if conditions:
+            query += " WHERE " + " AND ".join(conditions)
+
+        query += " ORDER BY date_played DESC"
+
+        cursor = conn.execute(query, params)
+        round_rows = cursor.fetchall()
+
+        # Get scores for all rounds
+        rounds = []
+        for round_row in round_rows:
+            score_cursor = conn.execute(
+                "SELECT * FROM round_scores WHERE round_id = ?",
+                (round_row['id'],)
+            )
+            score_rows = score_cursor.fetchall()
+
+            # Filter by player if needed
+            if filters and 'player_id' in filters:
+                player_id = filters['player_id']
+                if not any(s['player_id'] == player_id for s in score_rows):
+                    continue  # Skip rounds where this player didn't play
+
+            rounds.append(Round._round_row_to_dict(round_row, score_rows))
 
         return rounds
 
@@ -232,14 +360,23 @@ class Round:
         Returns:
             Round dictionary or None
         """
-        store = get_data_store()
-        data = store.read_rounds()
+        db = get_db()
+        conn = db.get_connection()
 
-        for round_data in data['rounds']:
-            if round_data['id'] == round_id:
-                return round_data
+        cursor = conn.execute("SELECT * FROM rounds WHERE id = ?", (round_id,))
+        round_row = cursor.fetchone()
 
-        return None
+        if not round_row:
+            return None
+
+        # Get scores for this round
+        score_cursor = conn.execute(
+            "SELECT * FROM round_scores WHERE round_id = ?",
+            (round_id,)
+        )
+        score_rows = score_cursor.fetchall()
+
+        return Round._round_row_to_dict(round_row, score_rows)
 
     @staticmethod
     def get_by_player(player_id: str) -> List[Dict[str, Any]]:
@@ -270,7 +407,7 @@ class Round:
     @staticmethod
     def delete(round_id: str) -> Tuple[bool, str]:
         """
-        Delete round
+        Delete round (CASCADE deletes scores automatically)
 
         Args:
             round_id: Round ID
@@ -278,22 +415,15 @@ class Round:
         Returns:
             Tuple of (success, message)
         """
-        store = get_data_store()
-        data = store.read_rounds()
+        db = get_db()
+        conn = db.get_connection()
 
-        # Find round
-        round_index = None
-        for i, r in enumerate(data['rounds']):
-            if r['id'] == round_id:
-                round_index = i
-                break
-
-        if round_index is None:
+        # Check if round exists
+        if not Round.get_by_id(round_id):
             return False, "Round not found"
 
-        # Delete round
-        data['rounds'].pop(round_index)
-        store.write_rounds(data)
+        # Delete round (scores are CASCADE deleted)
+        conn.execute("DELETE FROM rounds WHERE id = ?", (round_id,))
 
         return True, "Round deleted successfully"
 

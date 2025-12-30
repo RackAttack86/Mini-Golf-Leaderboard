@@ -1,14 +1,27 @@
 """Tournament model for multi-round competitions"""
 import uuid
-from datetime import datetime
+from datetime import datetime, UTC
 from typing import List, Optional, Dict, Any, Tuple
-from models.data_store import get_data_store
+from models.database import get_db
 from models.round import Round
 from models.player import Player
 
 
 class Tournament:
-    """Tournament model with CRUD operations"""
+    """Tournament model with CRUD operations using SQLite"""
+
+    @staticmethod
+    def _row_to_dict(row) -> Dict[str, Any]:
+        """Convert SQLite Row to dictionary"""
+        return {
+            'id': row['id'],
+            'name': row['name'],
+            'description': row['description'] or '',
+            'start_date': row['start_date'] or '',
+            'end_date': row['end_date'] or '',
+            'created_at': row['created_at'],
+            'active': bool(row['active'])
+        }
 
     @staticmethod
     def create(name: str, description: Optional[str] = None,
@@ -28,25 +41,32 @@ class Tournament:
         if not name or not name.strip():
             return False, "Tournament name is required", None
 
-        store = get_data_store()
-        data = store.read_tournaments()
+        db = get_db()
+        conn = db.get_connection()
 
-        # Create tournament
-        tournament = {
-            'id': str(uuid.uuid4()),
-            'name': name.strip(),
-            'description': description.strip() if description else '',
-            'start_date': start_date or '',
-            'end_date': end_date or '',
-            'round_ids': [],
-            'created_at': datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
-            'active': True
-        }
+        tournament_id = str(uuid.uuid4())
+        created_at = datetime.now(UTC).strftime('%Y-%m-%dT%H:%M:%SZ')
 
-        data['tournaments'].append(tournament)
-        store.write_tournaments(data)
+        try:
+            conn.execute("""
+                INSERT INTO tournaments (
+                    id, name, description, start_date, end_date, created_at, active
+                ) VALUES (?, ?, ?, ?, ?, ?, ?)
+            """, (
+                tournament_id,
+                name.strip(),
+                description.strip() if description else None,
+                start_date or None,
+                end_date or None,
+                created_at,
+                1  # active
+            ))
 
-        return True, "Tournament created successfully", tournament
+            tournament = Tournament.get_by_id(tournament_id)
+            return True, "Tournament created successfully", tournament
+
+        except Exception as e:
+            return False, f"Error creating tournament: {str(e)}", None
 
     @staticmethod
     def get_all(active_only: bool = True) -> List[Dict[str, Any]]:
@@ -59,13 +79,17 @@ class Tournament:
         Returns:
             List of tournament dictionaries
         """
-        store = get_data_store()
-        data = store.read_tournaments()
+        db = get_db()
+        conn = db.get_connection()
 
         if active_only:
-            return [t for t in data['tournaments'] if t.get('active', True)]
+            cursor = conn.execute(
+                "SELECT * FROM tournaments WHERE active = 1 ORDER BY created_at DESC"
+            )
+        else:
+            cursor = conn.execute("SELECT * FROM tournaments ORDER BY created_at DESC")
 
-        return data['tournaments']
+        return [Tournament._row_to_dict(row) for row in cursor.fetchall()]
 
     @staticmethod
     def get_by_id(tournament_id: str) -> Optional[Dict[str, Any]]:
@@ -76,16 +100,27 @@ class Tournament:
             tournament_id: Tournament ID
 
         Returns:
-            Tournament dictionary or None
+            Tournament dictionary or None (includes round_ids for compatibility)
         """
-        store = get_data_store()
-        data = store.read_tournaments()
+        db = get_db()
+        conn = db.get_connection()
 
-        for tournament in data['tournaments']:
-            if tournament['id'] == tournament_id:
-                return tournament
+        cursor = conn.execute("SELECT * FROM tournaments WHERE id = ?", (tournament_id,))
+        row = cursor.fetchone()
 
-        return None
+        if not row:
+            return None
+
+        tournament = Tournament._row_to_dict(row)
+
+        # Get round IDs for this tournament (for backward compatibility)
+        cursor = conn.execute(
+            "SELECT round_id FROM tournament_rounds WHERE tournament_id = ? ORDER BY rowid",
+            (tournament_id,)
+        )
+        tournament['round_ids'] = [r['round_id'] for r in cursor.fetchall()]
+
+        return tournament
 
     @staticmethod
     def update(tournament_id: str, name: Optional[str] = None, description: Optional[str] = None,
@@ -103,16 +138,11 @@ class Tournament:
         Returns:
             Tuple of (success, message)
         """
-        store = get_data_store()
-        data = store.read_tournaments()
+        db = get_db()
+        conn = db.get_connection()
 
         # Find tournament
-        tournament = None
-        for t in data['tournaments']:
-            if t['id'] == tournament_id:
-                tournament = t
-                break
-
+        tournament = Tournament.get_by_id(tournament_id)
         if not tournament:
             return False, "Tournament not found"
 
@@ -120,18 +150,17 @@ class Tournament:
         if name is not None:
             if not name.strip():
                 return False, "Tournament name cannot be empty"
-            tournament['name'] = name.strip()
+            conn.execute("UPDATE tournaments SET name = ? WHERE id = ?", (name.strip(), tournament_id))
 
         if description is not None:
-            tournament['description'] = description.strip()
+            conn.execute("UPDATE tournaments SET description = ? WHERE id = ?", (description.strip(), tournament_id))
 
         if start_date is not None:
-            tournament['start_date'] = start_date
+            conn.execute("UPDATE tournaments SET start_date = ? WHERE id = ?", (start_date, tournament_id))
 
         if end_date is not None:
-            tournament['end_date'] = end_date
+            conn.execute("UPDATE tournaments SET end_date = ? WHERE id = ?", (end_date, tournament_id))
 
-        store.write_tournaments(data)
         return True, "Tournament updated successfully"
 
     @staticmethod
@@ -146,16 +175,11 @@ class Tournament:
         Returns:
             Tuple of (success, message)
         """
-        store = get_data_store()
-        data = store.read_tournaments()
+        db = get_db()
+        conn = db.get_connection()
 
         # Find tournament
-        tournament = None
-        for t in data['tournaments']:
-            if t['id'] == tournament_id:
-                tournament = t
-                break
-
+        tournament = Tournament.get_by_id(tournament_id)
         if not tournament:
             return False, "Tournament not found"
 
@@ -164,12 +188,14 @@ class Tournament:
         if not round_data:
             return False, "Round not found"
 
-        # Add round if not already in tournament
-        if round_id not in tournament['round_ids']:
-            tournament['round_ids'].append(round_id)
-            store.write_tournaments(data)
+        try:
+            # Try to insert, will fail if already exists (primary key constraint)
+            conn.execute(
+                "INSERT INTO tournament_rounds (tournament_id, round_id) VALUES (?, ?)",
+                (tournament_id, round_id)
+            )
             return True, "Round added to tournament successfully"
-        else:
+        except Exception:
             return False, "Round already in tournament"
 
     @staticmethod
@@ -184,23 +210,21 @@ class Tournament:
         Returns:
             Tuple of (success, message)
         """
-        store = get_data_store()
-        data = store.read_tournaments()
+        db = get_db()
+        conn = db.get_connection()
 
         # Find tournament
-        tournament = None
-        for t in data['tournaments']:
-            if t['id'] == tournament_id:
-                tournament = t
-                break
-
+        tournament = Tournament.get_by_id(tournament_id)
         if not tournament:
             return False, "Tournament not found"
 
         # Remove round
-        if round_id in tournament['round_ids']:
-            tournament['round_ids'].remove(round_id)
-            store.write_tournaments(data)
+        cursor = conn.execute(
+            "DELETE FROM tournament_rounds WHERE tournament_id = ? AND round_id = ?",
+            (tournament_id, round_id)
+        )
+
+        if cursor.rowcount > 0:
             return True, "Round removed from tournament successfully"
         else:
             return False, "Round not in tournament"
@@ -282,28 +306,26 @@ class Tournament:
         Returns:
             Tuple of (success, message)
         """
-        store = get_data_store()
-        data = store.read_tournaments()
+        db = get_db()
+        conn = db.get_connection()
 
         # Find tournament
-        tournament_index = None
-        for i, t in enumerate(data['tournaments']):
-            if t['id'] == tournament_id:
-                tournament_index = i
-                break
-
-        if tournament_index is None:
+        tournament = Tournament.get_by_id(tournament_id)
+        if not tournament:
             return False, "Tournament not found"
 
-        tournament = data['tournaments'][tournament_index]
+        # Check if has rounds
+        cursor = conn.execute(
+            "SELECT COUNT(*) as count FROM tournament_rounds WHERE tournament_id = ?",
+            (tournament_id,)
+        )
+        has_rounds = cursor.fetchone()['count'] > 0
 
-        # Soft delete if has rounds
-        if tournament['round_ids']:
-            tournament['active'] = False
-            store.write_tournaments(data)
+        if has_rounds:
+            # Soft delete
+            conn.execute("UPDATE tournaments SET active = 0 WHERE id = ?", (tournament_id,))
             return True, "Tournament deactivated (has rounds)"
         else:
-            # Hard delete if no rounds
-            data['tournaments'].pop(tournament_index)
-            store.write_tournaments(data)
+            # Hard delete
+            conn.execute("DELETE FROM tournaments WHERE id = ?", (tournament_id,))
             return True, "Tournament deleted successfully"

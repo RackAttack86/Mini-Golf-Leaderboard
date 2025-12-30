@@ -12,6 +12,8 @@ class Config:
     # Data storage
     BASE_DIR = Path(__file__).parent
     DATA_DIR = BASE_DIR / 'data'
+    DATABASE_PATH = BASE_DIR / 'data' / 'minigolf.db'
+    ROUND_PICTURES_DIR = BASE_DIR / 'data' / 'round_pictures'
 
     # File Upload Security
     MAX_CONTENT_LENGTH = 5 * 1024 * 1024  # 5MB max file size
@@ -88,3 +90,8 @@ class Config:
         'camera': '\'none\'',
         'payment': '\'none\'',
     }
+
+    # OCR Settings
+    OCR_CONFIDENCE_THRESHOLD = 0.70  # Auto-accept OCR results if >= 70%
+    FUZZY_MATCH_THRESHOLD = 85  # Minimum similarity for course name auto-matching
+    OCR_TESSERACT_PATH = r'C:\Program Files\Tesseract-OCR\tesseract.exe'  # Windows default

@@ -1,12 +1,29 @@
 import uuid
 from datetime import datetime, UTC
 from typing import List, Optional, Dict, Any, Tuple
-from models.data_store import get_data_store
+from models.database import get_db
 from utils.validators import validate_player_name, validate_email, sanitize_html
 
 
 class Player:
-    """Player model with CRUD operations"""
+    """Player model with CRUD operations using SQLite"""
+
+    @staticmethod
+    def _row_to_dict(row) -> Dict[str, Any]:
+        """Convert SQLite Row to dictionary"""
+        return {
+            'id': row['id'],
+            'name': row['name'],
+            'email': row['email'] or '',
+            'profile_picture': row['profile_picture'] or '',
+            'favorite_color': row['favorite_color'] or '#2e7d32',
+            'google_id': row['google_id'],
+            'role': row['role'] or 'player',
+            'last_login': row['last_login'],
+            'created_at': row['created_at'],
+            'active': bool(row['active']),
+            'meta_quest_username': row['meta_quest_username']
+        }
 
     @staticmethod
     def create(name: str, email: Optional[str] = None, profile_picture: Optional[str] = None,
@@ -24,11 +41,14 @@ class Player:
         Returns:
             Tuple of (success, message, player_dict)
         """
-        store = get_data_store()
-        data = store.read_players()
+        db = get_db()
+        conn = db.get_connection()
+
+        # Get all players for validation
+        all_players = Player.get_all(active_only=False)
 
         # Validate name
-        is_valid, error = validate_player_name(name, data['players'])
+        is_valid, error = validate_player_name(name, all_players)
         if not is_valid:
             return False, error, None
 
@@ -38,23 +58,35 @@ class Player:
             return False, error, None
 
         # Create player
-        player = {
-            'id': str(uuid.uuid4()),
-            'name': sanitize_html(name),
-            'email': email.strip() if email else '',
-            'profile_picture': profile_picture or '',
-            'favorite_color': favorite_color or '#2e7d32',
-            'google_id': None,
-            'role': role if role in ['admin', 'player'] else 'player',
-            'last_login': None,
-            'created_at': datetime.now(UTC).strftime('%Y-%m-%dT%H:%M:%SZ'),
-            'active': True
-        }
+        player_id = str(uuid.uuid4())
+        created_at = datetime.now(UTC).strftime('%Y-%m-%dT%H:%M:%SZ')
 
-        data['players'].append(player)
-        store.write_players(data)
+        try:
+            conn.execute("""
+                INSERT INTO players (
+                    id, name, email, profile_picture, favorite_color,
+                    google_id, role, last_login, created_at, active, meta_quest_username
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                player_id,
+                sanitize_html(name),
+                email.strip() if email else None,
+                profile_picture or None,
+                favorite_color or '#2e7d32',
+                None,  # google_id
+                role if role in ['admin', 'player'] else 'player',
+                None,  # last_login
+                created_at,
+                1,  # active
+                None  # meta_quest_username
+            ))
 
-        return True, "Player created successfully", player
+            # Return the created player
+            player = Player.get_by_id(player_id)
+            return True, "Player created successfully", player
+
+        except Exception as e:
+            return False, f"Error creating player: {str(e)}", None
 
     @staticmethod
     def get_all(active_only: bool = True) -> List[Dict[str, Any]]:
@@ -67,13 +99,17 @@ class Player:
         Returns:
             List of player dictionaries
         """
-        store = get_data_store()
-        data = store.read_players()
+        db = get_db()
+        conn = db.get_connection()
 
         if active_only:
-            return [p for p in data['players'] if p.get('active', True)]
+            cursor = conn.execute(
+                "SELECT * FROM players WHERE active = 1 ORDER BY name"
+            )
+        else:
+            cursor = conn.execute("SELECT * FROM players ORDER BY name")
 
-        return data['players']
+        return [Player._row_to_dict(row) for row in cursor.fetchall()]
 
     @staticmethod
     def get_by_id(player_id: str) -> Optional[Dict[str, Any]]:
@@ -86,14 +122,13 @@ class Player:
         Returns:
             Player dictionary or None
         """
-        store = get_data_store()
-        data = store.read_players()
+        db = get_db()
+        conn = db.get_connection()
 
-        for player in data['players']:
-            if player['id'] == player_id:
-                return player
+        cursor = conn.execute("SELECT * FROM players WHERE id = ?", (player_id,))
+        row = cursor.fetchone()
 
-        return None
+        return Player._row_to_dict(row) if row else None
 
     @staticmethod
     def update(player_id: str, name: Optional[str] = None, email: Optional[str] = None,
@@ -113,52 +148,49 @@ class Player:
         Returns:
             Tuple of (success, message)
         """
-        store = get_data_store()
-        data = store.read_players()
+        db = get_db()
+        conn = db.get_connection()
 
         # Find player
-        player = None
-        for p in data['players']:
-            if p['id'] == player_id:
-                player = p
-                break
-
+        player = Player.get_by_id(player_id)
         if not player:
             return False, "Player not found"
 
         # Validate and update name
         if name is not None:
-            is_valid, error = validate_player_name(name, data['players'], exclude_id=player_id)
+            all_players = Player.get_all(active_only=False)
+            is_valid, error = validate_player_name(name, all_players, exclude_id=player_id)
             if not is_valid:
                 return False, error
 
             old_name = player['name']
-            player['name'] = sanitize_html(name)
+            new_name = sanitize_html(name)
+
+            conn.execute("UPDATE players SET name = ? WHERE id = ?", (new_name, player_id))
 
             # Update denormalized data in rounds
-            if old_name != player['name']:
-                Player._update_name_in_rounds(player_id, player['name'])
+            if old_name != new_name:
+                Player._update_name_in_rounds(player_id, new_name)
 
         # Validate and update email
         if email is not None:
             is_valid, error = validate_email(email)
             if not is_valid:
                 return False, error
-            player['email'] = email.strip()
+            conn.execute("UPDATE players SET email = ? WHERE id = ?", (email.strip(), player_id))
 
         # Update profile picture
         if profile_picture is not None:
-            player['profile_picture'] = profile_picture
+            conn.execute("UPDATE players SET profile_picture = ? WHERE id = ?", (profile_picture, player_id))
 
         # Update favorite color
         if favorite_color is not None:
-            player['favorite_color'] = favorite_color
+            conn.execute("UPDATE players SET favorite_color = ? WHERE id = ?", (favorite_color, player_id))
 
         # Update role
         if role is not None and role in ['admin', 'player']:
-            player['role'] = role
+            conn.execute("UPDATE players SET role = ? WHERE id = ?", (role, player_id))
 
-        store.write_players(data)
         return True, "Player updated successfully"
 
     @staticmethod
@@ -173,17 +205,12 @@ class Player:
         Returns:
             Tuple of (success, message)
         """
-        store = get_data_store()
-        data = store.read_players()
+        db = get_db()
+        conn = db.get_connection()
 
         # Find player
-        player_index = None
-        for i, p in enumerate(data['players']):
-            if p['id'] == player_id:
-                player_index = i
-                break
-
-        if player_index is None:
+        player = Player.get_by_id(player_id)
+        if not player:
             return False, "Player not found"
 
         # Check if player has rounds
@@ -191,13 +218,11 @@ class Player:
 
         if has_rounds and not force:
             # Soft delete
-            data['players'][player_index]['active'] = False
-            store.write_players(data)
+            conn.execute("UPDATE players SET active = 0 WHERE id = ?", (player_id,))
             return True, "Player deactivated (has existing rounds)"
         else:
             # Hard delete
-            data['players'].pop(player_index)
-            store.write_players(data)
+            conn.execute("DELETE FROM players WHERE id = ?", (player_id,))
             return True, "Player deleted successfully"
 
     @staticmethod
@@ -210,18 +235,14 @@ class Player:
     @staticmethod
     def _update_name_in_rounds(player_id: str, new_name: str):
         """Update denormalized player name in all rounds"""
-        store = get_data_store()
-        data = store.read_rounds()
+        db = get_db()
+        conn = db.get_connection()
 
-        updated = False
-        for round_data in data['rounds']:
-            for score in round_data['scores']:
-                if score['player_id'] == player_id:
-                    score['player_name'] = new_name
-                    updated = True
-
-        if updated:
-            store.write_rounds(data)
+        # Update in round_scores table
+        conn.execute(
+            "UPDATE round_scores SET player_name = ? WHERE player_id = ?",
+            (new_name, player_id)
+        )
 
     @staticmethod
     def get_by_google_id(google_id: str) -> Optional[Dict[str, Any]]:
@@ -234,14 +255,13 @@ class Player:
         Returns:
             Player dictionary or None
         """
-        store = get_data_store()
-        data = store.read_players()
+        db = get_db()
+        conn = db.get_connection()
 
-        for player in data['players']:
-            if player.get('google_id') == google_id:
-                return player
+        cursor = conn.execute("SELECT * FROM players WHERE google_id = ?", (google_id,))
+        row = cursor.fetchone()
 
-        return None
+        return Player._row_to_dict(row) if row else None
 
     @staticmethod
     def link_google_account(player_id: str, google_id: str) -> Tuple[bool, str]:
@@ -255,8 +275,8 @@ class Player:
         Returns:
             Tuple of (success, message)
         """
-        store = get_data_store()
-        data = store.read_players()
+        db = get_db()
+        conn = db.get_connection()
 
         # Check if Google ID is already linked
         existing = Player.get_by_google_id(google_id)
@@ -264,20 +284,17 @@ class Player:
             return False, "This Google account is already linked to another player"
 
         # Find player
-        player = None
-        for p in data['players']:
-            if p['id'] == player_id:
-                player = p
-                break
-
+        player = Player.get_by_id(player_id)
         if not player:
             return False, "Player not found"
 
         # Link Google account
-        player['google_id'] = google_id
-        player['last_login'] = datetime.now(UTC).strftime('%Y-%m-%dT%H:%M:%SZ')
+        last_login = datetime.now(UTC).strftime('%Y-%m-%dT%H:%M:%SZ')
+        conn.execute(
+            "UPDATE players SET google_id = ?, last_login = ? WHERE id = ?",
+            (google_id, last_login, player_id)
+        )
 
-        store.write_players(data)
         return True, "Google account linked successfully"
 
     @staticmethod
@@ -291,23 +308,18 @@ class Player:
         Returns:
             Tuple of (success, message)
         """
-        store = get_data_store()
-        data = store.read_players()
+        db = get_db()
+        conn = db.get_connection()
 
         # Find player
-        player = None
-        for p in data['players']:
-            if p['id'] == player_id:
-                player = p
-                break
-
+        player = Player.get_by_id(player_id)
         if not player:
             return False, "Player not found"
 
         # Update last login
-        player['last_login'] = datetime.now(UTC).strftime('%Y-%m-%dT%H:%M:%SZ')
+        last_login = datetime.now(UTC).strftime('%Y-%m-%dT%H:%M:%SZ')
+        conn.execute("UPDATE players SET last_login = ? WHERE id = ?", (last_login, player_id))
 
-        store.write_players(data)
         return True, "Last login updated successfully"
 
     @staticmethod
@@ -326,3 +338,64 @@ class Player:
             return False
 
         return player.get('role', 'player') == 'admin'
+
+    # New methods for Meta Quest username support
+
+    @staticmethod
+    def set_meta_quest_username(player_id: str, username: str) -> Tuple[bool, str]:
+        """
+        Set Meta Quest username for player
+
+        Args:
+            player_id: Player ID
+            username: Meta Quest username
+
+        Returns:
+            Tuple of (success, message)
+        """
+        db = get_db()
+        conn = db.get_connection()
+
+        # Check if username is already taken
+        existing = Player.get_by_meta_quest_username(username)
+        if existing and existing['id'] != player_id:
+            return False, "This Meta Quest username is already linked to another player"
+
+        # Find player
+        player = Player.get_by_id(player_id)
+        if not player:
+            return False, "Player not found"
+
+        try:
+            conn.execute(
+                "UPDATE players SET meta_quest_username = ? WHERE id = ?",
+                (username.strip() if username else None, player_id)
+            )
+            return True, "Meta Quest username updated successfully"
+        except Exception as e:
+            return False, f"Error updating Meta Quest username: {str(e)}"
+
+    @staticmethod
+    def get_by_meta_quest_username(username: str) -> Optional[Dict[str, Any]]:
+        """
+        Get player by Meta Quest username
+
+        Args:
+            username: Meta Quest username
+
+        Returns:
+            Player dictionary or None
+        """
+        if not username:
+            return None
+
+        db = get_db()
+        conn = db.get_connection()
+
+        cursor = conn.execute(
+            "SELECT * FROM players WHERE meta_quest_username = ? COLLATE NOCASE",
+            (username.strip(),)
+        )
+        row = cursor.fetchone()
+
+        return Player._row_to_dict(row) if row else None

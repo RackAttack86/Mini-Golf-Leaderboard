@@ -1,11 +1,11 @@
 """Course rating model for player ratings"""
 from datetime import datetime, UTC
 from typing import List, Dict, Any, Tuple, Optional
-from models.data_store import get_data_store
+from models.database import get_db
 
 
 class CourseRating:
-    """Course rating model with CRUD operations"""
+    """Course rating model with CRUD operations using SQLite"""
 
     @staticmethod
     def rate_course(player_id: str, course_id: str, rating: int) -> Tuple[bool, str]:
@@ -24,34 +24,32 @@ class CourseRating:
         if not isinstance(rating, int) or rating < 1 or rating > 5:
             return False, "Rating must be between 1 and 5 stars"
 
-        store = get_data_store()
-        data = store.read_course_ratings()
+        db = get_db()
+        conn = db.get_connection()
 
-        # Check if player already rated this course
-        existing_rating = None
-        for i, r in enumerate(data['ratings']):
-            if r['player_id'] == player_id and r['course_id'] == course_id:
-                existing_rating = i
-                break
+        date_rated = datetime.now(UTC).strftime('%Y-%m-%dT%H:%M:%SZ')
 
-        if existing_rating is not None:
-            # Update existing rating
-            data['ratings'][existing_rating]['rating'] = rating
-            data['ratings'][existing_rating]['date_rated'] = datetime.now(UTC).strftime('%Y-%m-%dT%H:%M:%SZ')
-            message = "Rating updated successfully"
-        else:
-            # Create new rating
-            new_rating = {
-                'player_id': player_id,
-                'course_id': course_id,
-                'rating': rating,
-                'date_rated': datetime.now(UTC).strftime('%Y-%m-%dT%H:%M:%SZ')
-            }
-            data['ratings'].append(new_rating)
-            message = "Rating added successfully"
+        try:
+            # Try to insert, if exists (primary key conflict), update instead
+            conn.execute("""
+                INSERT INTO course_ratings (player_id, course_id, rating, date_rated)
+                VALUES (?, ?, ?, ?)
+                ON CONFLICT(player_id, course_id) DO UPDATE SET
+                    rating = excluded.rating,
+                    date_rated = excluded.date_rated
+            """, (player_id, course_id, rating, date_rated))
 
-        store.write_course_ratings(data)
-        return True, message
+            # Check if this was an insert or update
+            existing = conn.execute(
+                "SELECT COUNT(*) FROM course_ratings WHERE player_id = ? AND course_id = ?",
+                (player_id, course_id)
+            ).fetchone()[0]
+
+            message = "Rating updated successfully" if existing else "Rating added successfully"
+            return True, message
+
+        except Exception as e:
+            return False, f"Error saving rating: {str(e)}"
 
     @staticmethod
     def get_player_rating(player_id: str, course_id: str) -> Optional[int]:
@@ -65,14 +63,16 @@ class CourseRating:
         Returns:
             Rating (1-5) or None if not rated
         """
-        store = get_data_store()
-        data = store.read_course_ratings()
+        db = get_db()
+        conn = db.get_connection()
 
-        for rating in data['ratings']:
-            if rating['player_id'] == player_id and rating['course_id'] == course_id:
-                return rating['rating']
+        cursor = conn.execute(
+            "SELECT rating FROM course_ratings WHERE player_id = ? AND course_id = ?",
+            (player_id, course_id)
+        )
+        row = cursor.fetchone()
 
-        return None
+        return row['rating'] if row else None
 
     @staticmethod
     def get_course_average_rating(course_id: str) -> Tuple[Optional[float], int]:
@@ -85,16 +85,19 @@ class CourseRating:
         Returns:
             Tuple of (average_rating, count)
         """
-        store = get_data_store()
-        data = store.read_course_ratings()
+        db = get_db()
+        conn = db.get_connection()
 
-        ratings = [r['rating'] for r in data['ratings'] if r['course_id'] == course_id]
+        cursor = conn.execute(
+            "SELECT AVG(rating) as avg_rating, COUNT(*) as count FROM course_ratings WHERE course_id = ?",
+            (course_id,)
+        )
+        row = cursor.fetchone()
 
-        if not ratings:
+        if row['count'] == 0:
             return None, 0
 
-        avg_rating = sum(ratings) / len(ratings)
-        return round(avg_rating, 1), len(ratings)
+        return round(row['avg_rating'], 1), row['count']
 
     @staticmethod
     def get_all_course_ratings() -> Dict[str, Tuple[Optional[float], int]]:
@@ -104,20 +107,18 @@ class CourseRating:
         Returns:
             Dictionary of {course_id: (average_rating, count)}
         """
-        store = get_data_store()
-        data = store.read_course_ratings()
+        db = get_db()
+        conn = db.get_connection()
 
-        course_ratings = {}
-        for rating in data['ratings']:
-            course_id = rating['course_id']
-            if course_id not in course_ratings:
-                course_ratings[course_id] = []
-            course_ratings[course_id].append(rating['rating'])
+        cursor = conn.execute("""
+            SELECT course_id, AVG(rating) as avg_rating, COUNT(*) as count
+            FROM course_ratings
+            GROUP BY course_id
+        """)
 
         result = {}
-        for course_id, ratings in course_ratings.items():
-            avg_rating = sum(ratings) / len(ratings)
-            result[course_id] = (round(avg_rating, 1), len(ratings))
+        for row in cursor.fetchall():
+            result[row['course_id']] = (round(row['avg_rating'], 1), row['count'])
 
         return result
 
@@ -133,13 +134,15 @@ class CourseRating:
         Returns:
             Tuple of (success, message)
         """
-        store = get_data_store()
-        data = store.read_course_ratings()
+        db = get_db()
+        conn = db.get_connection()
 
-        for i, rating in enumerate(data['ratings']):
-            if rating['player_id'] == player_id and rating['course_id'] == course_id:
-                data['ratings'].pop(i)
-                store.write_course_ratings(data)
-                return True, "Rating deleted successfully"
+        cursor = conn.execute(
+            "DELETE FROM course_ratings WHERE player_id = ? AND course_id = ?",
+            (player_id, course_id)
+        )
 
-        return False, "Rating not found"
+        if cursor.rowcount > 0:
+            return True, "Rating deleted successfully"
+        else:
+            return False, "Rating not found"
