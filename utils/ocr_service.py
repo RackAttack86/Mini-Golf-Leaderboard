@@ -133,7 +133,8 @@ class WalkaboutOCRService:
 
         # Known course name patterns
         known_courses = ['MARS', 'GARDEN', 'SHANGRI', 'LA', 'NEON', 'OLYMPUS', 'CASTLE',
-                        'FORE', 'FORE', 'LABYRINTH', 'TEMPLE', 'ATLANTIS', 'SACRED']
+                        'FORE', 'LABYRINTH', 'TEMPLE', 'ATLANTIS', 'SACRED', 'TOURIST', 'TRAP',
+                        'PIRATES', 'COVE', 'WILD', 'WEST', 'JUNGLE', 'SAFARI']
 
         # Course names are typically all caps or title case and appear early
         for i, line in enumerate(lines[:15]):
@@ -146,15 +147,22 @@ class WalkaboutOCRService:
             # Remove common prefixes that OCR might add
             line = re.sub(r'^(Mode:|Record:|Full\s*\d+)', '', line, flags=re.IGNORECASE).strip()
 
+            # Check if it contains known course words (case insensitive)
+            if any(word in line.upper() for word in known_courses):
+                # Look for the actual course name words in the line
+                # Extract words that match known course keywords
+                words = line.upper().split()
+                course_words = [w for w in words if any(kw in w for kw in known_courses)]
+
+                if course_words:
+                    # Clean up and join course words
+                    cleaned = ' '.join(course_words)
+                    cleaned = re.sub(r'[^A-Z\s]', '', cleaned).strip()
+                    if len(cleaned) > 5:
+                        return cleaned, 0.85
+
             # Look for capitalized multi-word patterns (likely course names)
             if len(line) > 5 and line.isupper():
-                # Check if it contains known course words
-                if any(word in line.upper() for word in known_courses):
-                    # Clean up the line
-                    cleaned = re.sub(r'[^A-Z\s]', '', line).strip()
-                    if len(cleaned) > 5:
-                        return cleaned, 0.9
-
                 # If it's mostly letters and spaces, likely course name
                 if re.match(r'^[A-Z\s]{6,30}$', line):
                     return line, 0.8
@@ -269,11 +277,14 @@ class WalkaboutOCRService:
         Returns:
             Tuple of (ISO-8601 timestamp string, confidence)
         """
+        # Replace newlines with spaces to handle multi-line datetime patterns
+        # Sometimes OCR splits date and time across lines
+        normalized_text = raw_text.replace('\n', ' ').replace('\r', ' ')
+
         # Look for "Start:" or "Start" label followed by datetime
-        # This helps narrow down the search area
-        start_label_pattern = r'Start[:\s]+(.{0,100})'
-        start_match = re.search(start_label_pattern, raw_text, re.IGNORECASE)
-        search_text = start_match.group(1) if start_match else raw_text
+        start_label_pattern = r'Start[:\s]+(.{0,150})'
+        start_match = re.search(start_label_pattern, normalized_text, re.IGNORECASE)
+        search_text = start_match.group(1) if start_match else normalized_text
 
         # Look for date/time patterns
         # Format: MM/DD/YYYY HH:MM:SS AM/PM
@@ -315,8 +326,32 @@ class WalkaboutOCRService:
                 except Exception:
                     pass
 
+        # Fallback: Extract date and time separately (they may be far apart in OCR text)
+        # Find date pattern
+        date_pattern = r'(\d{1,2}/\d{1,2}/\d{4})'
+        time_pattern = r'(\d{1,2}:\d{2}:\d{2}\s*(?:AM|PM))'
+
+        date_match = re.search(date_pattern, search_text)
+        time_match = re.search(time_pattern, search_text, re.IGNORECASE)
+
+        if date_match and time_match:
+            # Combine date and time
+            combined = f"{date_match.group(1)} {time_match.group(1)}"
+            try:
+                dt = datetime.strptime(combined, '%m/%d/%Y %I:%M:%S %p')
+                iso_timestamp = dt.strftime('%Y-%m-%dT%H:%M:%SZ')
+                return iso_timestamp, 0.75  # Lower confidence since they were separated
+            except ValueError:
+                # Try alternative date format
+                try:
+                    dt = datetime.strptime(combined, '%d/%m/%Y %I:%M:%S %p')
+                    iso_timestamp = dt.strftime('%Y-%m-%dT%H:%M:%SZ')
+                    return iso_timestamp, 0.7
+                except:
+                    pass
+
         # Fallback: Look for any datetime-like pattern in entire text
-        match = re.search(datetime_patterns[0], raw_text, re.IGNORECASE)
+        match = re.search(datetime_patterns[0], normalized_text, re.IGNORECASE)
         if match:
             datetime_str = match.group(1).strip()
             try:
