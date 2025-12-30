@@ -1,14 +1,14 @@
 """OCR service for extracting scorecard data from Walkabout Mini Golf screenshots"""
 import re
 import pytesseract
-from PIL import Image, ImageEnhance, ImageFilter
+from PIL import Image, ImageEnhance, ImageFilter, ImageOps
 from datetime import datetime
 from typing import Dict, List, Optional, Tuple, Any
 from pathlib import Path
 from fuzzywuzzy import fuzz
 from config import Config
-import base64
-import json
+import numpy as np
+import cv2
 
 # Set Tesseract path for Windows
 pytesseract.pytesseract.tesseract_cmd = Config.OCR_TESSERACT_PATH
@@ -49,14 +49,13 @@ class WalkaboutOCRService:
             course_name, course_confidence = WalkaboutOCRService._extract_course_name(raw_text, image)
             player_username, player_confidence = WalkaboutOCRService._extract_player_username(raw_text)
             start_time, time_confidence = WalkaboutOCRService._extract_start_time(raw_text)
-            hole_scores, scores_confidence = WalkaboutOCRService._extract_hole_scores(raw_text, image)
 
-            # If Tesseract failed to extract scores, try Claude Vision API fallback
-            if not hole_scores and Config.USE_CLAUDE_VISION_FALLBACK and Config.ANTHROPIC_API_KEY:
-                print("Tesseract failed to extract scores, trying Claude Vision API...")
-                hole_scores, scores_confidence = WalkaboutOCRService._extract_scores_with_claude_vision(image_path)
-                if hole_scores:
-                    print(f"Claude Vision successfully extracted {len(hole_scores)} scores!")
+            # Try advanced preprocessing for score extraction
+            hole_scores, scores_confidence = WalkaboutOCRService._extract_hole_scores_advanced(image_path)
+
+            # Fallback to basic extraction if advanced fails
+            if not hole_scores:
+                hole_scores, scores_confidence = WalkaboutOCRService._extract_hole_scores(raw_text, image)
 
             total_score = sum(hole_scores) if hole_scores and len(hole_scores) == 18 else None
 
@@ -514,12 +513,15 @@ class WalkaboutOCRService:
         return errors
 
     @staticmethod
-    def _extract_scores_with_claude_vision(image_path: str) -> Tuple[Optional[List[int]], float]:
+    def _extract_hole_scores_advanced(image_path: str) -> Tuple[Optional[List[int]], float]:
         """
-        Use Claude Vision API to extract hole scores from scorecard image
+        Extract hole scores using advanced image preprocessing
 
-        This is used as a fallback when Tesseract OCR fails to extract scores.
-        Claude's vision model can read stylized fonts and small text better.
+        This method:
+        1. Detects and crops the score table region
+        2. Upscales the cropped region for better OCR
+        3. Applies adaptive thresholding
+        4. Uses optimized Tesseract configuration
 
         Args:
             image_path: Path to the scorecard image
@@ -527,84 +529,82 @@ class WalkaboutOCRService:
         Returns:
             Tuple of (list of 18 scores, confidence)
         """
-        if not Config.ANTHROPIC_API_KEY:
-            return None, 0.0
-
         try:
-            from anthropic import Anthropic
-
-            # Read and encode image
-            with open(image_path, 'rb') as f:
-                image_data = base64.standard_b64encode(f.read()).decode('utf-8')
-
-            # Determine image type
-            image_ext = Path(image_path).suffix.lower()
-            media_type_map = {
-                '.jpg': 'image/jpeg',
-                '.jpeg': 'image/jpeg',
-                '.png': 'image/png',
-                '.gif': 'image/gif',
-                '.webp': 'image/webp'
-            }
-            media_type = media_type_map.get(image_ext, 'image/jpeg')
-
-            # Create Anthropic client
-            client = Anthropic(api_key=Config.ANTHROPIC_API_KEY)
-
-            # Call Claude Vision API
-            message = client.messages.create(
-                model="claude-3-5-sonnet-20241022",
-                max_tokens=1024,
-                messages=[
-                    {
-                        "role": "user",
-                        "content": [
-                            {
-                                "type": "image",
-                                "source": {
-                                    "type": "base64",
-                                    "media_type": media_type,
-                                    "data": image_data,
-                                },
-                            },
-                            {
-                                "type": "text",
-                                "text": """This is a scorecard from Walkabout Mini Golf. Please extract the 18 hole scores from the SCORE row.
-
-Return ONLY a JSON object with this exact format:
-{
-  "hole_scores": [score1, score2, score3, ..., score18]
-}
-
-Each score should be an integer from 1 to 15. Return exactly 18 scores in order from hole 1 to hole 18.
-Do not include any other text, just the JSON object."""
-                            }
-                        ],
-                    }
-                ],
-            )
-
-            # Parse response
-            response_text = message.content[0].text.strip()
-
-            # Extract JSON from response (handle cases where Claude adds markdown formatting)
-            if '```json' in response_text:
-                response_text = response_text.split('```json')[1].split('```')[0].strip()
-            elif '```' in response_text:
-                response_text = response_text.split('```')[1].split('```')[0].strip()
-
-            result = json.loads(response_text)
-            scores = result.get('hole_scores', [])
-
-            # Validate scores
-            if len(scores) == 18 and all(isinstance(s, int) and 1 <= s <= 15 for s in scores):
-                return scores, 0.95  # High confidence for Claude Vision
-            else:
+            # Load image with OpenCV
+            img = cv2.imread(str(image_path))
+            if img is None:
                 return None, 0.0
 
+            height, width = img.shape[:2]
+
+            # The score table is typically in the center-top area of the scorecard
+            # Crop to the score table region (approximate coordinates based on typical layout)
+            # For a 3840x2160 image, the score table is roughly at:
+            # X: 20%-80% of width, Y: 15%-30% of height
+            crop_x1 = int(width * 0.20)
+            crop_x2 = int(width * 0.80)
+            crop_y1 = int(height * 0.15)
+            crop_y2 = int(height * 0.30)
+
+            score_region = img[crop_y1:crop_y2, crop_x1:crop_x2]
+
+            # Convert to grayscale
+            gray = cv2.cvtColor(score_region, cv2.COLOR_BGR2GRAY)
+
+            # For colored scorecards (yellow text on dark background),
+            # we need to extract the luminance channel differently
+
+            # Convert to HSV to better separate colors
+            score_rgb = cv2.cvtColor(score_region, cv2.COLOR_BGR2RGB)
+
+            # Upscale FIRST before any thresholding (make text larger)
+            scale_factor = 3  # 3x upscaling for better detail
+            upscaled_rgb = cv2.resize(score_rgb, None, fx=scale_factor, fy=scale_factor,
+                                     interpolation=cv2.INTER_CUBIC)
+
+            # Convert to grayscale
+            gray_upscaled = cv2.cvtColor(upscaled_rgb, cv2.COLOR_RGB2GRAY)
+
+            # Invert the image (dark background with light text -> light background with dark text)
+            inverted = cv2.bitwise_not(gray_upscaled)
+
+            # Apply Otsu's thresholding (automatically finds best threshold)
+            _, thresh = cv2.threshold(inverted, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+
+            # Denoise AFTER thresholding
+            kernel = np.ones((2, 2), np.uint8)
+            cleaned = cv2.morphologyEx(thresh, cv2.MORPH_OPEN, kernel)  # Remove noise
+            cleaned = cv2.morphologyEx(cleaned, cv2.MORPH_CLOSE, kernel)  # Close gaps
+
+            # Convert back to PIL Image for Tesseract
+            pil_img = Image.fromarray(cleaned)
+
+            # Try multiple Tesseract configurations for digits
+            configs = [
+                r'--oem 3 --psm 6 -c tessedit_char_whitelist=0123456789 ',  # Digits only, uniform block
+                r'--oem 3 --psm 7 -c tessedit_char_whitelist=0123456789',  # Digits only, single line
+                r'--oem 3 --psm 11 -c tessedit_char_whitelist=0123456789',  # Digits only, sparse text
+            ]
+
+            for config in configs:
+                text = pytesseract.image_to_string(pil_img, config=config)
+
+                # Extract numbers
+                numbers = re.findall(r'\d+', text)
+                scores = [int(n) for n in numbers if 1 <= int(n) <= 15]
+
+                # If we found exactly 18 scores, we're done!
+                if len(scores) == 18:
+                    return scores, 0.90
+                # If we found 17-20 scores, take the first 18
+                elif 17 <= len(scores) <= 20:
+                    return scores[:18], 0.75
+
+            # If we didn't find 18 scores, return None
+            return None, 0.0
+
         except Exception as e:
-            # If Claude Vision fails, return None
-            print(f"Claude Vision API error: {str(e)}")
+            print(f"Advanced score extraction error: {str(e)}")
             return None, 0.0
 
     @staticmethod
