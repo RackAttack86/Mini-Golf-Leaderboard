@@ -14,7 +14,7 @@
                     </h5>
                 </div>
                 <div class="card-body p-2">
-                    <img src="{{ url_for('static', filename='../data/temp/' + temp_image_path) }}"
+                    <img src="{{ url_for('rounds.serve_temp_image', filename=temp_image_path) }}"
                          alt="Scorecard"
                          class="img-fluid rounded">
                 </div>

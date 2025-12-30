@@ -148,14 +148,35 @@ def upload_picture():
 
     try:
         # Run OCR extraction
-        ocr_result = WalkaboutOCRService.extract_scorecard_data(str(temp_path))
+        try:
+            ocr_result = WalkaboutOCRService.extract_scorecard_data(str(temp_path))
+        except Exception as ocr_error:
+            # OCR failed (probably Tesseract not installed) - provide manual entry
+            flash(
+                f"OCR extraction unavailable (Tesseract not installed). Please enter data manually.",
+                'warning'
+            )
+            ocr_result = {
+                'success': False,
+                'confidence': 0.0,
+                'data': {
+                    'course_name': None,
+                    'player_username': None,
+                    'start_time': None,
+                    'hole_scores': None,
+                    'total_score': None
+                },
+                'errors': [f'OCR extraction failed: {str(ocr_error)}'],
+                'raw_text': ''
+            }
 
         if not ocr_result['success'] or ocr_result['confidence'] < Config.OCR_CONFIDENCE_THRESHOLD:
             # Low confidence or errors - show manual entry with suggestions
-            flash(
-                f"OCR confidence low ({ocr_result['confidence']:.0%}). Please review and correct the data.",
-                'warning'
-            )
+            if ocr_result['confidence'] > 0:
+                flash(
+                    f"OCR confidence low ({ocr_result['confidence']:.0%}). Please review and correct the data.",
+                    'warning'
+                )
 
         # Get all courses for fuzzy matching
         courses = Course.get_all()
@@ -201,6 +222,15 @@ def upload_picture():
 
         flash(f'Error processing image: {str(e)}', 'error')
         return redirect(url_for('rounds.upload_picture'))
+
+
+@bp.route('/upload-picture/temp/<filename>')
+@login_required
+def serve_temp_image(filename):
+    """Serve temporary uploaded image for preview"""
+    from flask import send_from_directory
+    temp_dir = Path(Config.BASE_DIR) / 'data' / 'temp'
+    return send_from_directory(temp_dir, filename)
 
 
 @bp.route('/upload-picture/create', methods=['POST'])
