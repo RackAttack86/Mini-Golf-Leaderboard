@@ -95,3 +95,7 @@ class Config:
     OCR_CONFIDENCE_THRESHOLD = 0.70  # Auto-accept OCR results if >= 70%
     FUZZY_MATCH_THRESHOLD = 85  # Minimum similarity for course name auto-matching
     OCR_TESSERACT_PATH = r'C:\Program Files\Tesseract-OCR\tesseract.exe'  # Windows default
+
+    # Claude Vision API (fallback for score extraction)
+    ANTHROPIC_API_KEY = os.environ.get('ANTHROPIC_API_KEY')
+    USE_CLAUDE_VISION_FALLBACK = True  # Enable Claude Vision API fallback if Tesseract fails

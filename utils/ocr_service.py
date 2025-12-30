@@ -7,6 +7,8 @@ from typing import Dict, List, Optional, Tuple, Any
 from pathlib import Path
 from fuzzywuzzy import fuzz
 from config import Config
+import base64
+import json
 
 # Set Tesseract path for Windows
 pytesseract.pytesseract.tesseract_cmd = Config.OCR_TESSERACT_PATH
@@ -48,6 +50,14 @@ class WalkaboutOCRService:
             player_username, player_confidence = WalkaboutOCRService._extract_player_username(raw_text)
             start_time, time_confidence = WalkaboutOCRService._extract_start_time(raw_text)
             hole_scores, scores_confidence = WalkaboutOCRService._extract_hole_scores(raw_text, image)
+
+            # If Tesseract failed to extract scores, try Claude Vision API fallback
+            if not hole_scores and Config.USE_CLAUDE_VISION_FALLBACK and Config.ANTHROPIC_API_KEY:
+                print("Tesseract failed to extract scores, trying Claude Vision API...")
+                hole_scores, scores_confidence = WalkaboutOCRService._extract_scores_with_claude_vision(image_path)
+                if hole_scores:
+                    print(f"Claude Vision successfully extracted {len(hole_scores)} scores!")
+
             total_score = sum(hole_scores) if hole_scores and len(hole_scores) == 18 else None
 
             # Calculate overall confidence
@@ -502,6 +512,100 @@ class WalkaboutOCRService:
             errors.append(f"Total score {total_score} is out of reasonable range (18-180)")
 
         return errors
+
+    @staticmethod
+    def _extract_scores_with_claude_vision(image_path: str) -> Tuple[Optional[List[int]], float]:
+        """
+        Use Claude Vision API to extract hole scores from scorecard image
+
+        This is used as a fallback when Tesseract OCR fails to extract scores.
+        Claude's vision model can read stylized fonts and small text better.
+
+        Args:
+            image_path: Path to the scorecard image
+
+        Returns:
+            Tuple of (list of 18 scores, confidence)
+        """
+        if not Config.ANTHROPIC_API_KEY:
+            return None, 0.0
+
+        try:
+            from anthropic import Anthropic
+
+            # Read and encode image
+            with open(image_path, 'rb') as f:
+                image_data = base64.standard_b64encode(f.read()).decode('utf-8')
+
+            # Determine image type
+            image_ext = Path(image_path).suffix.lower()
+            media_type_map = {
+                '.jpg': 'image/jpeg',
+                '.jpeg': 'image/jpeg',
+                '.png': 'image/png',
+                '.gif': 'image/gif',
+                '.webp': 'image/webp'
+            }
+            media_type = media_type_map.get(image_ext, 'image/jpeg')
+
+            # Create Anthropic client
+            client = Anthropic(api_key=Config.ANTHROPIC_API_KEY)
+
+            # Call Claude Vision API
+            message = client.messages.create(
+                model="claude-3-5-sonnet-20241022",
+                max_tokens=1024,
+                messages=[
+                    {
+                        "role": "user",
+                        "content": [
+                            {
+                                "type": "image",
+                                "source": {
+                                    "type": "base64",
+                                    "media_type": media_type,
+                                    "data": image_data,
+                                },
+                            },
+                            {
+                                "type": "text",
+                                "text": """This is a scorecard from Walkabout Mini Golf. Please extract the 18 hole scores from the SCORE row.
+
+Return ONLY a JSON object with this exact format:
+{
+  "hole_scores": [score1, score2, score3, ..., score18]
+}
+
+Each score should be an integer from 1 to 15. Return exactly 18 scores in order from hole 1 to hole 18.
+Do not include any other text, just the JSON object."""
+                            }
+                        ],
+                    }
+                ],
+            )
+
+            # Parse response
+            response_text = message.content[0].text.strip()
+
+            # Extract JSON from response (handle cases where Claude adds markdown formatting)
+            if '```json' in response_text:
+                response_text = response_text.split('```json')[1].split('```')[0].strip()
+            elif '```' in response_text:
+                response_text = response_text.split('```')[1].split('```')[0].strip()
+
+            result = json.loads(response_text)
+            scores = result.get('hole_scores', [])
+
+            # Validate scores
+            if len(scores) == 18 and all(isinstance(s, int) and 1 <= s <= 15 for s in scores):
+                return scores, 0.95  # High confidence for Claude Vision
+            else:
+                return None, 0.0
+
+        except Exception as e:
+            # If Claude Vision fails, return None
+            print(f"Claude Vision API error: {str(e)}")
+            return None, 0.0
 
     @staticmethod
     def find_matching_course(ocr_course_name: str, available_courses: List[Dict[str, Any]]) -> Tuple[Optional[str], int, List[Tuple[Dict[str, Any], int]]]:
