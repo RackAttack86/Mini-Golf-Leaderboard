@@ -44,6 +44,13 @@
             </div>
             <div class="card-body">
                 <p><strong>Email:</strong> {{ player.email or 'Not provided' }}</p>
+                <p><strong>Meta Quest Username:</strong>
+                    {% if player.meta_quest_username %}
+                        <span class="badge bg-primary">{{ player.meta_quest_username }}</span>
+                    {% else %}
+                        <span class="text-muted">Not linked</span>
+                    {% endif %}
+                </p>
                 <p><strong>Member Since:</strong> {{ player.created_at[:10] }}</p>
                 <p><strong>Favorite Color:</strong>
                     <span class="color-swatch" style="background-color: {{ player.favorite_color or '#2e7d32' }};"></span>
@@ -336,6 +343,22 @@
                                name="email"
                                value="{{ player.email or '' }}"
                                maxlength="100">
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_meta_quest_username" class="form-label">
+                            Meta Quest Username
+                            <i class="bi bi-info-circle text-muted" title="Link your Meta Quest account for automatic scorecard matching"></i>
+                        </label>
+                        <input type="text"
+                               class="form-control"
+                               id="edit_meta_quest_username"
+                               name="meta_quest_username"
+                               value="{{ player.meta_quest_username or '' }}"
+                               maxlength="50"
+                               placeholder="e.g. Sir_Chops">
+                        <small class="text-muted">
+                            This is your username in Walkabout Mini Golf, used to match uploaded scorecards to your profile.
+                        </small>
                     </div>
                     <div class="mb-3">
                         <label for="edit_profile_picture" class="form-label">Profile Picture</label>

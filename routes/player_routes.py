@@ -158,6 +158,7 @@ def edit_player(player_id):
     name = request.form.get('name', '').strip()
     email = request.form.get('email', '').strip()
     favorite_color = request.form.get('favorite_color')
+    meta_quest_username = request.form.get('meta_quest_username', '').strip()
 
     # Get current player data
     player = Player.get_by_id(player_id)
@@ -212,7 +213,15 @@ def edit_player(player_id):
     )
 
     if success:
-        flash(message, 'success')
+        # Update Meta Quest username if changed
+        quest_success, quest_message = Player.set_meta_quest_username(
+            player_id,
+            meta_quest_username if meta_quest_username else None
+        )
+        if not quest_success:
+            flash(quest_message, 'warning')
+        else:
+            flash(message, 'success')
     else:
         flash(message, 'error')
 

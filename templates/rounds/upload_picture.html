@@ -26,6 +26,7 @@
 
                     <form method="POST" action="{{ url_for('rounds.upload_picture') }}"
                           enctype="multipart/form-data" id="uploadForm">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                         <div class="mb-4">
                             <label for="scorecard_image" class="form-label fw-bold">
                                 Select Scorecard Image

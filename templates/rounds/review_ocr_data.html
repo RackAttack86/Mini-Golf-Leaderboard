@@ -50,6 +50,7 @@
                     {% endif %}
 
                     <form method="POST" action="{{ url_for('rounds.create_from_upload') }}" id="reviewForm">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                         <!-- Course Selection -->
                         <div class="mb-4">
                             <label for="course_id" class="form-label fw-bold">
