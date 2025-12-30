@@ -379,17 +379,41 @@ class WalkaboutOCRService:
         scores = []
         confidence = 0.0
 
+        # First, try to correct common OCR errors in score lines
+        # Common mistakes when reading small numbers: O→0, B→8, S→5, I→1, l→1, etc.
+        def correct_score_line(text: str) -> str:
+            """Correct common OCR errors in score tables"""
+            corrections = {
+                'O': '0',
+                'o': '0',
+                'B': '8',
+                'S': '5',
+                's': '5',
+                'I': '1',
+                'l': '1',
+                'Z': '2',
+                'G': '6',
+                'T': '7',
+            }
+            corrected = text
+            for wrong, right in corrections.items():
+                corrected = corrected.replace(wrong, right)
+            return corrected
+
         # Find lines containing "SCORE" or "Score"
         for i, line in enumerate(lines):
-            if re.search(r'\b(SCORE|Score)\b', line):
+            if re.search(r'\b(SCORE|Score|Sco)\b', line, re.IGNORECASE):
                 # Extract numbers from this line and next 3 lines
                 # Sometimes the scores are on the next line
                 search_lines = lines[i:min(i+4, len(lines))]
                 search_text = ' '.join(search_lines)
 
+                # Try with score correction first
+                corrected_text = correct_score_line(search_text)
+
                 # Extract all single-digit and double-digit numbers
                 # Use word boundaries to avoid splitting multi-digit numbers
-                numbers = re.findall(r'\b(\d{1,2})\b', search_text)
+                numbers = re.findall(r'\b(\d{1,2})\b', corrected_text)
 
                 # Filter to reasonable golf scores (1-10, allowing up to 15 for very bad holes)
                 valid_scores = []
