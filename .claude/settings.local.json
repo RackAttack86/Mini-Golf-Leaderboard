@@ -40,7 +40,7 @@
       "Bash(python3.12 -m pip install:*)",
       "Bash(git reset:*)",
       "Bash(git stash:*)",
-      "Bash(timeout /t 5)"
+      "Bash(git merge:*)"
     ]
   }
 }
