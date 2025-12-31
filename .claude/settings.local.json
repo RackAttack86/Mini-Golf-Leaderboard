@@ -38,7 +38,8 @@
       "Bash(curl:*)",
       "Bash(C:UsersRacklAppDataLocalProgramsPythonPython312python.exe -m pip install pytesseract==0.3.10 fuzzywuzzy==0.18.0 python-Levenshtein==0.23.0)",
       "Bash(python3.12 -m pip install:*)",
-      "Bash(git reset:*)"
+      "Bash(git reset:*)",
+      "Bash(git stash:*)"
     ]
   }
 }
