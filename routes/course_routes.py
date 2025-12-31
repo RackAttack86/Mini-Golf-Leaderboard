@@ -3,6 +3,7 @@ from flask_login import current_user
 from models.course import Course
 from models.round import Round
 from models.course_rating import CourseRating
+from models.course_notes import CourseNotes
 from utils.auth_decorators import admin_required
 from utils.file_validators import validate_image_file, sanitize_filename
 import os
@@ -180,8 +181,11 @@ def course_detail(course_id):
     # Get course rating info
     avg_rating, rating_count = CourseRating.get_course_average_rating(course_id)
     user_rating = None
+    user_notes = None
     if current_user.is_authenticated:
         user_rating = CourseRating.get_player_rating(current_user.id, course_id)
+        user_notes_data = CourseNotes.get_player_notes(current_user.id, course_id)
+        user_notes = user_notes_data['notes'] if user_notes_data else ''
 
     # Get user's rounds on this course with pagination
     user_rounds = []
@@ -213,6 +217,7 @@ def course_detail(course_id):
                          avg_rating=avg_rating,
                          rating_count=rating_count,
                          user_rating=user_rating,
+                         user_notes=user_notes,
                          user_rounds=user_rounds,
                          user_rounds_page=user_rounds_page,
                          user_rounds_total_pages=user_rounds_total_pages,
@@ -305,3 +310,35 @@ def rate_course(course_id):
             return jsonify({'success': False, 'message': message}), 400
     except ValueError:
         return jsonify({'success': False, 'message': 'Invalid rating value'}), 400
+
+
+@bp.route('/<course_id>/notes', methods=['POST'])
+def save_course_notes(course_id):
+    """Save player's personal notes for a course"""
+    if not current_user.is_authenticated:
+        return jsonify({'success': False, 'message': 'You must be logged in to save notes'}), 401
+
+    try:
+        notes = request.form.get('notes', '').strip()
+        success, message = CourseNotes.save_notes(current_user.id, course_id, notes)
+
+        return jsonify({
+            'success': success,
+            'message': message
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'message': f'Error: {str(e)}'}), 500
+
+
+@bp.route('/<course_id>/notes', methods=['GET'])
+def get_course_notes(course_id):
+    """Get player's personal notes for a course (AJAX)"""
+    if not current_user.is_authenticated:
+        return jsonify({'notes': None}), 401
+
+    notes_data = CourseNotes.get_player_notes(current_user.id, course_id)
+
+    return jsonify({
+        'notes': notes_data['notes'] if notes_data else '',
+        'date_updated': notes_data['date_updated'] if notes_data else None
+    })
