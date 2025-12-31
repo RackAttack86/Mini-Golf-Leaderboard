@@ -143,6 +143,69 @@
     </div>
 </div>
 
+<!-- Hole-by-Hole Scores -->
+{% set has_hole_scores = namespace(value=false) %}
+{% for score in round.scores %}
+    {% if score.hole_scores %}
+        {% set has_hole_scores.value = true %}
+    {% endif %}
+{% endfor %}
+
+{% if has_hole_scores.value %}
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="bi bi-grid-3x3-gap"></i> Hole-by-Hole Scores</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm table-bordered">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width: 150px;">Player</th>
+                                {% for hole_num in range(1, 19) %}
+                                <th class="text-center" style="min-width: 40px;">{{ hole_num }}</th>
+                                {% endfor %}
+                                <th class="text-center bg-primary text-white" style="min-width: 60px;">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for score in round.scores %}
+                            <tr>
+                                <td>
+                                    <a href="{{ url_for('players.player_detail', player_id=score.player_id) }}">
+                                        {{ score.player_name }}
+                                    </a>
+                                </td>
+                                {% if score.hole_scores %}
+                                    {% for hole_score in score.hole_scores %}
+                                    <td class="text-center">{{ hole_score }}</td>
+                                    {% endfor %}
+                                    {# Fill remaining holes if less than 18 #}
+                                    {% for i in range(score.hole_scores|length, 18) %}
+                                    <td class="text-center text-muted">-</td>
+                                    {% endfor %}
+                                {% else %}
+                                    {% for i in range(18) %}
+                                    <td class="text-center text-muted">-</td>
+                                    {% endfor %}
+                                {% endif %}
+                                <td class="text-center bg-light"><strong>{{ score.score }}</strong></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                <small class="text-muted">
+                    <i class="bi bi-info-circle"></i> Individual hole scores recorded from scorecard upload
+                </small>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
 <!-- Edit Modal -->
 <div class="modal fade" id="editModal" tabindex="-1">
     <div class="modal-dialog modal-lg">
