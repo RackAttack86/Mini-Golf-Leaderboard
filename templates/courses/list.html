@@ -17,8 +17,26 @@
 {% if courses %}
 <div class="card">
     <div class="card-body">
+        <!-- Search Bar -->
+        <div class="mb-3">
+            <div class="input-group">
+                <span class="input-group-text">
+                    <i class="bi bi-search"></i>
+                </span>
+                <input type="text"
+                       id="courseSearch"
+                       class="form-control"
+                       placeholder="Search courses by name, location, holes, or par..."
+                       onkeyup="filterCourses()">
+                <button class="btn btn-outline-secondary" type="button" onclick="clearSearch()">
+                    <i class="bi bi-x-circle"></i> Clear
+                </button>
+            </div>
+            <small id="searchResults" class="text-muted"></small>
+        </div>
+
         <div class="table-responsive">
-            <table class="table table-hover">
+            <table class="table table-hover" id="coursesTable">
                 <thead>
                     <tr>
                         <th style="width: 80px;"></th>
@@ -97,4 +115,58 @@
     <i class="bi bi-info-circle"></i> No courses yet. <a href="{{ url_for('courses.add_course') }}">Add your first course!</a>
 </div>
 {% endif %}
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+function filterCourses() {
+    const searchInput = document.getElementById('courseSearch');
+    const filter = searchInput.value.toLowerCase();
+    const table = document.getElementById('coursesTable');
+    const rows = table.getElementsByTagName('tbody')[0].getElementsByTagName('tr');
+    const resultsSpan = document.getElementById('searchResults');
+
+    let visibleCount = 0;
+
+    for (let i = 0; i < rows.length; i++) {
+        const row = rows[i];
+        const cells = row.getElementsByTagName('td');
+
+        // Search in: name (cell 1), location (cell 2), holes (cell 3), par (cell 4)
+        const name = cells[1] ? cells[1].textContent.toLowerCase() : '';
+        const location = cells[2] ? cells[2].textContent.toLowerCase() : '';
+        const holes = cells[3] ? cells[3].textContent.toLowerCase() : '';
+        const par = cells[4] ? cells[4].textContent.toLowerCase() : '';
+
+        const searchableText = name + ' ' + location + ' ' + holes + ' ' + par;
+
+        if (searchableText.indexOf(filter) > -1) {
+            row.style.display = '';
+            visibleCount++;
+        } else {
+            row.style.display = 'none';
+        }
+    }
+
+    // Update results count
+    if (filter) {
+        resultsSpan.textContent = `Showing ${visibleCount} of ${rows.length} courses`;
+    } else {
+        resultsSpan.textContent = '';
+    }
+}
+
+function clearSearch() {
+    document.getElementById('courseSearch').value = '';
+    filterCourses();
+}
+
+// Auto-focus search on page load
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('courseSearch');
+    if (searchInput) {
+        searchInput.focus();
+    }
+});
+</script>
 {% endblock %}

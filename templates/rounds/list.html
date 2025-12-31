@@ -91,10 +91,12 @@
                 <tbody>
                     {% for round in rounds %}
                     {% set winner = round.scores|sort(attribute='score')|first %}
+                    {% set is_solo = round.scores|length == 1 %}
                     {% set winner_color = round.winner_player.favorite_color if round.winner_player and round.winner_player.favorite_color else '#2e7d32' %}
+                    {% set bg_color = '' if is_solo else winner_color + '33' %}
                     <tr class="winner-color-row" onclick="window.location='{{ url_for('rounds.round_detail', round_id=round.id) }}';" style="cursor: pointer;">
-                        <td style="background-color: {{ winner_color }}33 !important;">{{ round.date_played }}</td>
-                        <td style="background-color: {{ winner_color }}33 !important;">
+                        <td {% if not is_solo %}style="background-color: {{ bg_color }} !important;"{% endif %}>{{ round.date_played }}</td>
+                        <td {% if not is_solo %}style="background-color: {{ bg_color }} !important;"{% endif %}>
                             {% if round.course_image_url %}
                                 {% if round.course_image_url.startswith('http') %}
                                 <img src="{{ round.course_image_url }}" alt="{{ round.course_name }}" class="course-thumbnail">
@@ -107,9 +109,10 @@
                             </div>
                             {% endif %}
                         </td>
-                        <td style="background-color: {{ winner_color }}33 !important;">{{ round.course_name | format_course_name | safe }}</td>
-                        <td style="background-color: {{ winner_color }}33 !important;">{{ round.scores|length }}</td>
-                        <td style="background-color: {{ winner_color }}33 !important;">
+                        <td {% if not is_solo %}style="background-color: {{ bg_color }} !important;"{% endif %}>{{ round.course_name | format_course_name | safe }}</td>
+                        <td {% if not is_solo %}style="background-color: {{ bg_color }} !important;"{% endif %}>{{ round.scores|length }}</td>
+                        {% if not is_solo %}
+                        <td style="background-color: {{ bg_color }} !important;">
                             {% if round.winner_player and round.winner_player.profile_picture %}
                             <img src="{{ url_for('static', filename='uploads/profiles/' + round.winner_player.profile_picture) }}"
                                  alt="{{ winner.player_name }}"
@@ -122,13 +125,16 @@
                             </div>
                             {% endif %}
                         </td>
-                        <td style="background-color: {{ winner_color }}33 !important;">
+                        <td style="background-color: {{ bg_color }} !important;">
                             {{ winner.player_name }}
                         </td>
-                        <td style="background-color: {{ winner_color }}33 !important;">
+                        <td style="background-color: {{ bg_color }} !important;">
                             {{ winner.score }}
                         </td>
-                        <td class="text-end" style="background-color: {{ winner_color }}33 !important;">
+                        {% else %}
+                        <td colspan="3" class="text-muted">Solo Round</td>
+                        {% endif %}
+                        <td class="text-end" {% if not is_solo %}style="background-color: {{ bg_color }} !important;"{% endif %}>
                             <a href="{{ url_for('rounds.round_detail', round_id=round.id) }}"
                                class="btn btn-sm btn-outline-primary"
                                onclick="event.stopPropagation();">

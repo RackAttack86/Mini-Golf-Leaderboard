@@ -39,6 +39,7 @@
         </div>
     </div>
 
+    {% if round.scores|length > 1 %}
     <div class="col-md-6">
         <div class="card">
             <div class="card-header bg-success text-white">
@@ -56,6 +57,7 @@
             </div>
         </div>
     </div>
+    {% endif %}
 </div>
 
 <!-- Scores -->
@@ -87,16 +89,18 @@
                                 {% endif %}
                                 {% set ns.last_score = score.score %}
 
-                            <tr {% if ns.position == 1 %}class="table-success"{% elif ns.position == 2 %}class="table-info"{% elif ns.position == 3 %}class="table-warning"{% elif ns.position == 4 %}class="table-danger"{% endif %}>
+                            <tr {% if round.scores|length > 1 %}{% if ns.position == 1 %}class="table-success"{% elif ns.position == 2 %}class="table-info"{% elif ns.position == 3 %}class="table-warning"{% elif ns.position == 4 %}class="table-danger"{% endif %}{% endif %}>
                                 <td>
-                                    {% if ns.position == 1 %}
-                                        <i class="bi bi-trophy-fill text-warning" title="1st Place - Champion!"></i>
-                                    {% elif ns.position == 2 %}
-                                        <i class="bi bi-trophy-fill text-secondary" title="2nd Place - Silver Medal"></i>
-                                    {% elif ns.position == 3 %}
-                                        <i class="bi bi-trophy-fill" style="color: #cd7f32;" title="3rd Place - Bronze Medal"></i>
-                                    {% elif ns.position == 4 %}
-                                        <i class="bi bi-emoji-frown-fill text-danger" title="4th Place - Better luck next time!"></i>
+                                    {% if round.scores|length > 1 %}
+                                        {% if ns.position == 1 %}
+                                            <i class="bi bi-trophy-fill text-warning" title="1st Place - Champion!"></i>
+                                        {% elif ns.position == 2 %}
+                                            <i class="bi bi-trophy-fill text-secondary" title="2nd Place - Silver Medal"></i>
+                                        {% elif ns.position == 3 %}
+                                            <i class="bi bi-trophy-fill" style="color: #cd7f32;" title="3rd Place - Bronze Medal"></i>
+                                        {% elif ns.position == 4 %}
+                                            <i class="bi bi-emoji-frown-fill text-danger" title="4th Place - Better luck next time!"></i>
+                                        {% endif %}
                                     {% endif %}
                                     #{{ ns.position }}
                                 </td>

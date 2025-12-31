@@ -145,6 +145,40 @@
     </div>
 </div>
 
+<!-- Personal Course Notes Section -->
+{% if current_user.is_authenticated %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0">
+                    <i class="bi bi-sticky-fill"></i> My Personal Notes
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <textarea id="course-notes"
+                              class="form-control"
+                              rows="5"
+                              placeholder="Add your personal notes about this course (strategy tips, favorite holes, etc.)..."
+                              maxlength="5000">{{ user_notes or '' }}</textarea>
+                    <small class="text-muted">
+                        These notes are private and only visible to you. Max 5000 characters.
+                    </small>
+                </div>
+                <button class="btn btn-primary" onclick="saveCourseNotes()">
+                    <i class="bi bi-save"></i> Save Notes
+                </button>
+                <button class="btn btn-secondary ms-2" onclick="clearCourseNotes()">
+                    <i class="bi bi-x-circle"></i> Clear
+                </button>
+                <span id="notes-save-status" class="ms-3"></span>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
 <!-- User's Rounds (if logged in) -->
 {% if current_user.is_authenticated and user_rounds_total > 0 %}
 <div class="row mb-4">
@@ -169,6 +203,7 @@
                         </thead>
                         <tbody>
                             {% for round in user_rounds %}
+                            {% set is_solo = round.scores|length == 1 %}
                             <tr>
                                 <td>{{ round.date_played }}</td>
                                 <td>
@@ -179,6 +214,7 @@
                                     {% endfor %}
                                 </td>
                                 <td>{{ round.scores|length }}</td>
+                                {% if not is_solo %}
                                 <td>
                                     {% set winner = round.scores|sort(attribute='score')|first %}
                                     {{ winner.player_name }}
@@ -190,6 +226,9 @@
                                     {% set winner = round.scores|sort(attribute='score')|first %}
                                     {{ winner.score }}
                                 </td>
+                                {% else %}
+                                <td colspan="2" class="text-muted">Solo Round</td>
+                                {% endif %}
                                 <td class="text-end">
                                     <a href="{{ url_for('rounds.round_detail', round_id=round.id) }}"
                                        class="btn btn-sm btn-outline-primary">
@@ -269,9 +308,11 @@
                         </thead>
                         <tbody>
                             {% for round in rounds %}
+                            {% set is_solo = round.scores|length == 1 %}
                             <tr>
                                 <td>{{ round.date_played }}</td>
                                 <td>{{ round.scores|length }}</td>
+                                {% if not is_solo %}
                                 <td>
                                     {% set winner = round.scores|sort(attribute='score')|first %}
                                     {{ winner.player_name }}
@@ -280,6 +321,9 @@
                                     {% set winner = round.scores|sort(attribute='score')|first %}
                                     {{ winner.score }}
                                 </td>
+                                {% else %}
+                                <td colspan="2" class="text-muted">Solo Round</td>
+                                {% endif %}
                                 <td class="text-end">
                                     <a href="{{ url_for('rounds.round_detail', round_id=round.id) }}"
                                        class="btn btn-sm btn-outline-primary">
@@ -504,5 +548,65 @@ function rateCourse(rating) {
         alert('Error rating course');
     });
 }
+
+// Course Notes Functions
+function saveCourseNotes() {
+    const notesTextarea = document.getElementById('course-notes');
+    const notes = notesTextarea.value.trim();
+    const statusSpan = document.getElementById('notes-save-status');
+
+    // Show saving indicator
+    statusSpan.innerHTML = '<span class="text-muted"><i class="bi bi-hourglass-split"></i> Saving...</span>';
+
+    const formData = new FormData();
+    formData.append('notes', notes);
+    formData.append('csrf_token', '{{ csrf_token() }}');
+
+    fetch('{{ url_for("courses.save_course_notes", course_id=course.id) }}', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            statusSpan.innerHTML = '<span class="text-success"><i class="bi bi-check-circle-fill"></i> ' + data.message + '</span>';
+            setTimeout(() => {
+                statusSpan.innerHTML = '';
+            }, 3000);
+        } else {
+            statusSpan.innerHTML = '<span class="text-danger"><i class="bi bi-exclamation-circle-fill"></i> ' + data.message + '</span>';
+        }
+    })
+    .catch(error => {
+        console.error('Error saving notes:', error);
+        statusSpan.innerHTML = '<span class="text-danger"><i class="bi bi-exclamation-circle-fill"></i> Error saving notes</span>';
+    });
+}
+
+function clearCourseNotes() {
+    if (confirm('Are you sure you want to clear your notes for this course?')) {
+        document.getElementById('course-notes').value = '';
+        saveCourseNotes();
+    }
+}
+
+// Character counter for notes
+{% if current_user.is_authenticated %}
+document.addEventListener('DOMContentLoaded', function() {
+    const notesTextarea = document.getElementById('course-notes');
+    if (notesTextarea) {
+        notesTextarea.addEventListener('input', function() {
+            const charCount = this.value.length;
+            const maxChars = 5000;
+            if (charCount > maxChars - 100) {
+                // Warn when approaching limit
+                this.style.borderColor = charCount >= maxChars ? 'red' : 'orange';
+            } else {
+                this.style.borderColor = '';
+            }
+        });
+    }
+});
+{% endif %}
 </script>
 {% endblock %}
