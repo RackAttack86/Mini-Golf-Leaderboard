@@ -167,20 +167,18 @@
                         </button>
                     </div>
 
-                    <div class="px-5">
-                        <div class="mb-3">
-                            <label for="notes" class="form-label">Notes (Optional)</label>
-                            <textarea class="form-control" id="notes" name="notes" rows="3">{{ form_data.notes if form_data else '' }}</textarea>
-                        </div>
+                    <div class="mb-3">
+                        <label for="notes" class="form-label">Notes (Optional)</label>
+                        <textarea class="form-control" id="notes" name="notes" rows="3">{{ form_data.notes if form_data else '' }}</textarea>
+                    </div>
 
-                        <div class="d-grid gap-2">
-                            <button type="submit" class="btn btn-primary">
-                                <i class="bi bi-check-circle"></i> Save Round
-                            </button>
-                            <a href="{{ url_for('rounds.list_rounds') }}" class="btn btn-outline-secondary">
-                                Cancel
-                            </a>
-                        </div>
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-circle"></i> Save Round
+                        </button>
+                        <a href="{{ url_for('rounds.list_rounds') }}" class="btn btn-outline-secondary">
+                            Cancel
+                        </a>
                     </div>
                 </form>
                 {% endif %}
