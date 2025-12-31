@@ -37,6 +37,10 @@ def index():
             total_position = 0
             count = 0
             for round_data in player_rounds:
+                # Skip solo rounds (no competition)
+                if len(round_data['scores']) <= 1:
+                    continue
+
                 # Find player's position in this round
                 player_score = Round.get_player_score_in_round(round_data, player['id'])
                 if player_score is not None:
