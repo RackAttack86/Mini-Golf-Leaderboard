@@ -79,14 +79,45 @@ def add_round():
         player_ids = request.form.getlist('player_id[]')
         player_scores = request.form.getlist('score[]')
 
+        # Check if hole-by-hole scores were provided
+        hole_1_scores = request.form.getlist('hole_1_[]')
+        has_hole_scores = bool(hole_1_scores and any(hole_1_scores))
+
         # Build scores list
         scores = []
         for i in range(len(player_ids)):
             if player_ids[i] and player_scores[i]:
-                scores.append({
+                score_data = {
                     'player_id': player_ids[i],
                     'score': player_scores[i]
-                })
+                }
+
+                # If hole scores were provided, collect them for this player
+                if has_hole_scores:
+                    hole_scores = []
+                    for hole_num in range(1, 19):
+                        hole_field = f'hole_{hole_num}_[]'
+                        hole_values = request.form.getlist(hole_field)
+                        if i < len(hole_values) and hole_values[i]:
+                            try:
+                                hole_scores.append(int(hole_values[i]))
+                            except ValueError:
+                                flash(f'Invalid score for hole {hole_num}', 'error')
+                                return render_template('rounds/add.html',
+                                                       players=players,
+                                                       courses=courses,
+                                                       form_data={
+                                                           'course_id': course_id,
+                                                           'date_played': date_played,
+                                                           'notes': notes,
+                                                           'scores': scores
+                                                       })
+
+                    # Only add hole_scores if we got all 18
+                    if len(hole_scores) == 18:
+                        score_data['hole_scores'] = hole_scores
+
+                scores.append(score_data)
 
         success, message, round_data = Round.create(
             course_id,

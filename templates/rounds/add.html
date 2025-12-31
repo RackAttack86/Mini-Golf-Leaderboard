@@ -59,51 +59,99 @@
                     </div>
 
                     <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="recordHoleScores" onchange="toggleHoleScores()">
+                            <label class="form-check-label" for="recordHoleScores">
+                                <i class="bi bi-grid-3x3-gap"></i> Record hole-by-hole scores (18 holes)
+                            </label>
+                        </div>
+                        <small class="text-muted">Enable this to enter individual scores for all 18 holes. Total score will be calculated automatically.</small>
+                    </div>
+
+                    <div class="mb-3">
                         <label class="form-label">Player Scores *</label>
                         <div id="playerScores">
                             {% if form_data and form_data.scores %}
                                 {% for score in form_data.scores %}
-                                <div class="row player-score-row">
-                                    <div class="col-md-6">
-                                        <select class="form-select" name="player_id[]" required>
-                                            <option value="">Select player...</option>
-                                            {% for player in players %}
-                                            <option value="{{ player.id }}" {% if score.player_id == player.id %}selected{% endif %}>
-                                                {{ player.name }}
-                                            </option>
-                                            {% endfor %}
-                                        </select>
+                                <div class="player-score-row mb-3">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <select class="form-select" name="player_id[]" required>
+                                                <option value="">Select player...</option>
+                                                {% for player in players %}
+                                                <option value="{{ player.id }}" {% if score.player_id == player.id %}selected{% endif %}>
+                                                    {{ player.name }}
+                                                </option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <input type="number" class="form-control total-score-input" name="score[]"
+                                                   placeholder="Total Score" min="-50" max="500"
+                                                   value="{{ score.score }}" required>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <button type="button" class="btn btn-danger btn-sm remove-player" onclick="removePlayer(this)">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </div>
                                     </div>
-                                    <div class="col-md-4">
-                                        <input type="number" class="form-control" name="score[]"
-                                               placeholder="Score" min="-50" max="500"
-                                               value="{{ score.score }}" required>
-                                    </div>
-                                    <div class="col-md-2">
-                                        <button type="button" class="btn btn-danger btn-sm remove-player" onclick="removePlayer(this)">
-                                            <i class="bi bi-trash"></i>
-                                        </button>
+                                    <div class="hole-scores-container" style="display: none;">
+                                        <div class="card mt-2 bg-light">
+                                            <div class="card-body">
+                                                <h6 class="mb-2"><i class="bi bi-grid-3x3-gap"></i> Hole-by-Hole Scores</h6>
+                                                <div class="row g-2">
+                                                    {% for hole in range(1, 19) %}
+                                                    <div class="col-6 col-md-3 col-lg-2">
+                                                        <label class="form-label small mb-0">Hole {{ hole }}</label>
+                                                        <input type="number" class="form-control form-control-sm hole-score-input"
+                                                               name="hole_{{ hole }}_[]" placeholder="{{ hole }}"
+                                                               min="1" max="20" onchange="calculateTotalScore(this)">
+                                                    </div>
+                                                    {% endfor %}
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                                 {% endfor %}
                             {% else %}
-                                <div class="row player-score-row">
-                                    <div class="col-md-6">
-                                        <select class="form-select" name="player_id[]" required>
-                                            <option value="">Select player...</option>
-                                            {% for player in players %}
-                                            <option value="{{ player.id }}">{{ player.name }}</option>
-                                            {% endfor %}
-                                        </select>
+                                <div class="player-score-row mb-3">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <select class="form-select" name="player_id[]" required>
+                                                <option value="">Select player...</option>
+                                                {% for player in players %}
+                                                <option value="{{ player.id }}">{{ player.name }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <input type="number" class="form-control total-score-input" name="score[]"
+                                                   placeholder="Total Score" min="-50" max="500" required>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <button type="button" class="btn btn-danger btn-sm remove-player" onclick="removePlayer(this)">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </div>
                                     </div>
-                                    <div class="col-md-4">
-                                        <input type="number" class="form-control" name="score[]"
-                                               placeholder="Score" min="-50" max="500" required>
-                                    </div>
-                                    <div class="col-md-2">
-                                        <button type="button" class="btn btn-danger btn-sm remove-player" onclick="removePlayer(this)">
-                                            <i class="bi bi-trash"></i>
-                                        </button>
+                                    <div class="hole-scores-container" style="display: none;">
+                                        <div class="card mt-2 bg-light">
+                                            <div class="card-body">
+                                                <h6 class="mb-2"><i class="bi bi-grid-3x3-gap"></i> Hole-by-Hole Scores</h6>
+                                                <div class="row g-2">
+                                                    {% for hole in range(1, 19) %}
+                                                    <div class="col-6 col-md-3 col-lg-2">
+                                                        <label class="form-label small mb-0">Hole {{ hole }}</label>
+                                                        <input type="number" class="form-control form-control-sm hole-score-input"
+                                                               name="hole_{{ hole }}_[]" placeholder="{{ hole }}"
+                                                               min="1" max="20" onchange="calculateTotalScore(this)">
+                                                    </div>
+                                                    {% endfor %}
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             {% endif %}
@@ -155,30 +203,117 @@ function updateCoursePreview(selectElement) {
     }
 }
 
+function toggleHoleScores() {
+    const checkbox = document.getElementById('recordHoleScores');
+    const holeContainers = document.querySelectorAll('.hole-scores-container');
+    const totalScoreInputs = document.querySelectorAll('.total-score-input');
+
+    if (checkbox.checked) {
+        // Show hole score inputs and make total score readonly
+        holeContainers.forEach(container => {
+            container.style.display = 'block';
+        });
+        totalScoreInputs.forEach(input => {
+            input.readOnly = true;
+            input.placeholder = 'Auto-calculated';
+            input.value = '';
+        });
+    } else {
+        // Hide hole score inputs and make total score editable
+        holeContainers.forEach(container => {
+            container.style.display = 'none';
+        });
+        totalScoreInputs.forEach(input => {
+            input.readOnly = false;
+            input.placeholder = 'Total Score';
+            // Clear hole scores
+            const playerRow = input.closest('.player-score-row');
+            const holeInputs = playerRow.querySelectorAll('.hole-score-input');
+            holeInputs.forEach(hi => hi.value = '');
+        });
+    }
+}
+
+function calculateTotalScore(holeInput) {
+    // Find the player row this hole belongs to
+    const playerRow = holeInput.closest('.player-score-row');
+    const holeInputs = playerRow.querySelectorAll('.hole-score-input');
+    const totalInput = playerRow.querySelector('.total-score-input');
+
+    // Calculate sum of all holes
+    let total = 0;
+    let hasValues = false;
+    holeInputs.forEach(input => {
+        if (input.value) {
+            total += parseInt(input.value) || 0;
+            hasValues = true;
+        }
+    });
+
+    // Update total score (only if at least one hole has a value)
+    if (hasValues) {
+        totalInput.value = total;
+    }
+}
+
 function addPlayer() {
     const container = document.getElementById('playerScores');
     const newRow = document.createElement('div');
-    newRow.className = 'row player-score-row';
+    newRow.className = 'player-score-row mb-3';
+
+    const holeInputsHtml = Array.from({length: 18}, (_, i) => {
+        const hole = i + 1;
+        return `
+            <div class="col-6 col-md-3 col-lg-2">
+                <label class="form-label small mb-0">Hole ${hole}</label>
+                <input type="number" class="form-control form-control-sm hole-score-input"
+                       name="hole_${hole}_[]" placeholder="${hole}"
+                       min="1" max="20" onchange="calculateTotalScore(this)">
+            </div>`;
+    }).join('');
+
     newRow.innerHTML = `
-        <div class="col-md-6">
-            <select class="form-select" name="player_id[]" required>
-                <option value="">Select player...</option>
-                {% for player in players %}
-                <option value="{{ player.id }}">{{ player.name }}</option>
-                {% endfor %}
-            </select>
+        <div class="row">
+            <div class="col-md-6">
+                <select class="form-select" name="player_id[]" required>
+                    <option value="">Select player...</option>
+                    {% for player in players %}
+                    <option value="{{ player.id }}">{{ player.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-4">
+                <input type="number" class="form-control total-score-input" name="score[]"
+                       placeholder="Total Score" min="-50" max="500" required>
+            </div>
+            <div class="col-md-2">
+                <button type="button" class="btn btn-danger btn-sm remove-player" onclick="removePlayer(this)">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </div>
         </div>
-        <div class="col-md-4">
-            <input type="number" class="form-control" name="score[]"
-                   placeholder="Score" min="-50" max="500" required>
-        </div>
-        <div class="col-md-2">
-            <button type="button" class="btn btn-danger btn-sm remove-player" onclick="removePlayer(this)">
-                <i class="bi bi-trash"></i>
-            </button>
+        <div class="hole-scores-container" style="display: none;">
+            <div class="card mt-2 bg-light">
+                <div class="card-body">
+                    <h6 class="mb-2"><i class="bi bi-grid-3x3-gap"></i> Hole-by-Hole Scores</h6>
+                    <div class="row g-2">
+                        ${holeInputsHtml}
+                    </div>
+                </div>
+            </div>
         </div>
     `;
     container.appendChild(newRow);
+
+    // If hole scores are currently enabled, show them for the new player
+    const checkbox = document.getElementById('recordHoleScores');
+    if (checkbox.checked) {
+        const newContainer = newRow.querySelector('.hole-scores-container');
+        const newTotalInput = newRow.querySelector('.total-score-input');
+        newContainer.style.display = 'block';
+        newTotalInput.readOnly = true;
+        newTotalInput.placeholder = 'Auto-calculated';
+    }
 }
 
 function removePlayer(button) {
