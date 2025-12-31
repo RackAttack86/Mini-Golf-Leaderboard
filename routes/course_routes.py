@@ -181,7 +181,7 @@ def course_detail(course_id):
     avg_rating, rating_count = CourseRating.get_course_average_rating(course_id)
     user_rating = None
     if current_user.is_authenticated:
-        user_rating = CourseRating.get_player_rating(current_user.google_id, course_id)
+        user_rating = CourseRating.get_player_rating(current_user.id, course_id)
 
     # Get user's rounds on this course with pagination
     user_rounds = []
@@ -290,7 +290,7 @@ def rate_course(course_id):
 
     try:
         rating = int(request.form.get('rating', 0))
-        success, message = CourseRating.rate_course(current_user.google_id, course_id, rating)
+        success, message = CourseRating.rate_course(current_user.id, course_id, rating)
 
         if success:
             # Get updated average rating
