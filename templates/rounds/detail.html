@@ -3,19 +3,18 @@
 {% block title %}Round Details - {{ app_name }}{% endblock %}
 
 {% block content %}
-<div class="row mb-4">
-    <div class="col-md-8">
-        <h1><i class="bi bi-list-ol"></i> Round Details</h1>
+<div class="row">
+    <!-- Left Sidebar -->
+    <div class="col-auto">
+        <div class="position-sticky" style="top: 20px;">
+            <h4 class="text-muted" style="writing-mode: vertical-rl; transform: rotate(180deg); white-space: nowrap;">
+                <i class="bi bi-list-ol"></i> Round Details
+            </h4>
+        </div>
     </div>
-    <div class="col-md-4 text-end">
-        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#editModal">
-            <i class="bi bi-pencil"></i> Edit
-        </button>
-        <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteModal">
-            <i class="bi bi-trash"></i> Delete
-        </button>
-    </div>
-</div>
+
+    <!-- Main Content -->
+    <div class="col">
 
 <!-- Round Info -->
 <div class="row mb-4">
@@ -340,6 +339,24 @@
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                     <button type="submit" class="btn btn-danger">Delete Round</button>
                 </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+    </div>
+    <!-- End Main Content -->
+
+    <!-- Right Sidebar -->
+    <div class="col-auto">
+        <div class="position-sticky" style="top: 20px;">
+            <div class="d-flex flex-column gap-2">
+                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#editModal">
+                    <i class="bi bi-pencil"></i> Edit
+                </button>
+                <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteModal">
+                    <i class="bi bi-trash"></i> Delete
+                </button>
             </div>
         </div>
     </div>
