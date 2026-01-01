@@ -47,7 +47,21 @@
             </div>
             <div class="card-body text-center">
                 {% set winner = round.scores[0] %}
-                <i class="bi bi-trophy-fill display-1 text-warning"></i>
+                {% set base_course_name = round.course_name.replace(' (HARD)', '') %}
+                {% set trophy_path = 'uploads/trophies/' ~ base_course_name ~ '.png' %}
+
+                {# Check if course-specific trophy exists #}
+                {% set has_trophy = base_course_name in ['Cherry Blossom', 'Sweetopia', 'Tourist Trap'] %}
+
+                {% if has_trophy %}
+                    <img src="{{ url_for('static', filename=trophy_path) }}"
+                         alt="{{ base_course_name }} Trophy"
+                         class="img-fluid mb-3"
+                         style="max-height: 200px; object-fit: contain;">
+                {% else %}
+                    <i class="bi bi-trophy-fill display-1 text-warning"></i>
+                {% endif %}
+
                 <h3 class="mt-2">
                     <a href="{{ url_for('players.player_detail', player_id=winner.player_id) }}">
                         {{ winner.player_name }}
