@@ -3,18 +3,18 @@
 {% block title %}Round Details - {{ app_name }}{% endblock %}
 
 {% block content %}
-<div class="row">
+<div class="row g-0">
     <!-- Left Sidebar -->
-    <div class="col-auto">
+    <div class="col-auto ps-2">
         <div class="position-sticky" style="top: 20px;">
-            <h4 class="text-muted" style="writing-mode: vertical-rl; transform: rotate(180deg); white-space: nowrap;">
-                <i class="bi bi-list-ol"></i> Round Details
-            </h4>
+            <h5 class="text-muted mb-0">
+                <i class="bi bi-list-ol"></i><br>Round<br>Details
+            </h5>
         </div>
     </div>
 
     <!-- Main Content -->
-    <div class="col">
+    <div class="col px-3">
 
 <!-- Round Info -->
 <div class="row mb-4">
@@ -348,14 +348,14 @@
     <!-- End Main Content -->
 
     <!-- Right Sidebar -->
-    <div class="col-auto">
+    <div class="col-auto pe-2">
         <div class="position-sticky" style="top: 20px;">
             <div class="d-flex flex-column gap-2">
-                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#editModal">
-                    <i class="bi bi-pencil"></i> Edit
+                <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#editModal">
+                    <i class="bi bi-pencil"></i><br>Edit
                 </button>
-                <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteModal">
-                    <i class="bi bi-trash"></i> Delete
+                <button type="button" class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#deleteModal">
+                    <i class="bi bi-trash"></i><br>Delete
                 </button>
             </div>
         </div>
