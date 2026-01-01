@@ -40,7 +40,7 @@ schtasks /Create ^
     /TN "MiniGolfDatabaseBackup" ^
     /TR "\"%BATCH_FILE%\"" ^
     /SC DAILY ^
-    /ST 02:00 ^
+    /ST 00:00 ^
     /RL HIGHEST ^
     /F
 
@@ -50,11 +50,11 @@ if %errorLevel% equ 0 (
     echo.
     echo Task Details:
     echo   Name: MiniGolfDatabaseBackup
-    echo   Schedule: Daily at 2:00 AM
+    echo   Schedule: Daily at 12:00 AM (midnight)
     echo   Script: %BATCH_FILE%
     echo   Logs: %PROJECT_ROOT%\logs\backup.log
     echo.
-    echo The backup will run automatically every day at 2:00 AM
+    echo The backup will run automatically every day at midnight
     echo.
     echo To manage this task:
     echo   - Open Task Scheduler (taskschd.msc^)

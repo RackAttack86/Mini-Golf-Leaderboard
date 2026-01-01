@@ -14,7 +14,7 @@ $batchFile = Join-Path $scriptPath "run_backup.bat"
 # Task details
 $taskName = "MiniGolfDatabaseBackup"
 $taskDescription = "Daily backup of Mini Golf Leaderboard database"
-$taskTime = "02:00AM"  # 2 AM daily
+$taskTime = "12:00AM"  # Midnight daily
 
 # Check if running as administrator
 $currentPrincipal = New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent())
@@ -81,11 +81,11 @@ try {
     Write-Host ""
     Write-Host "Task Details:" -ForegroundColor Cyan
     Write-Host "  Name: $taskName" -ForegroundColor White
-    Write-Host "  Schedule: Daily at $taskTime" -ForegroundColor White
+    Write-Host "  Schedule: Daily at midnight (12:00 AM)" -ForegroundColor White
     Write-Host "  Script: $batchFile" -ForegroundColor White
     Write-Host "  Logs: $projectRoot\logs\backup.log" -ForegroundColor White
     Write-Host ""
-    Write-Host "The backup will run automatically every day at $taskTime" -ForegroundColor Green
+    Write-Host "The backup will run automatically every day at midnight" -ForegroundColor Green
     Write-Host ""
 
     # Test the task
