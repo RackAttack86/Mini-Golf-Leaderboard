@@ -19,8 +19,8 @@
 
 <!-- Round Info -->
 <div class="row mb-4">
-    <div class="col-md-6">
-        <div class="card">
+    <div class="col-md-4">
+        <div class="card h-100">
             <div class="card-header bg-info text-white">
                 <h5 class="mb-0">Round Information</h5>
             </div>
@@ -40,7 +40,7 @@
     </div>
 
     {% if round.scores|length > 1 %}
-    <div class="col-md-6">
+    <div class="col-md-8">
         <div class="card">
             <div class="card-header bg-success text-white">
                 <h5 class="mb-0"><i class="bi bi-trophy"></i> Winner</h5>
@@ -57,9 +57,9 @@
                     <img src="{{ url_for('static', filename=trophy_path) }}"
                          alt="{{ base_course_name }} Trophy"
                          class="img-fluid mb-3"
-                         style="max-height: 200px; object-fit: contain;">
+                         style="max-height: 400px; object-fit: contain;">
                 {% else %}
-                    <i class="bi bi-trophy-fill display-1 text-warning"></i>
+                    <i class="bi bi-trophy-fill text-warning" style="font-size: 10rem;"></i>
                 {% endif %}
 
                 <h3 class="mt-2">
