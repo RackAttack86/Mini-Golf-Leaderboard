@@ -53,16 +53,32 @@ cp data/minigolf.db "data/minigolf_backup_$(date +%Y%m%d).db"
 
 ## Automated Backups (Recommended)
 
-### Windows Task Scheduler
+### Automatic Setup (Windows - Easiest!)
 
-1. Open Task Scheduler
-2. Create Basic Task
-3. Name: "Mini Golf DB Backup"
-4. Trigger: Daily or Weekly
+**Option 1: Run the batch file (Recommended)**
+1. Right-click `scripts/setup_scheduled_backup.bat`
+2. Select **"Run as Administrator"**
+3. Follow the prompts
+4. Done! Backups will run daily at 2:00 AM
+
+**Option 2: Run the PowerShell script**
+1. Right-click PowerShell and select **"Run as Administrator"**
+2. Navigate to the scripts folder
+3. Run: `.\setup_scheduled_backup.ps1`
+4. Follow the prompts
+
+### Manual Setup (Windows Task Scheduler)
+
+If automatic setup doesn't work:
+
+1. Open Task Scheduler (search in Start Menu)
+2. Click "Create Basic Task"
+3. Name: `MiniGolfDatabaseBackup`
+4. Trigger: Daily at 2:00 AM
 5. Action: Start a program
-6. Program: `python`
-7. Arguments: `D:\Mini-Golf-Leaderboard\scripts\backup_database.py`
-8. Start in: `D:\Mini-Golf-Leaderboard`
+   - Program: `D:\Mini-Golf-Leaderboard\scripts\run_backup.bat`
+   - Start in: `D:\Mini-Golf-Leaderboard`
+6. Finish
 
 ### Linux/Mac Cron Job
 

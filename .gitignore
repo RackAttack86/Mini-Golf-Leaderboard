@@ -55,6 +55,10 @@ test_stats.py
 # Data files (contains personal information like emails)
 data/
 
+# Logs
+logs/
+!logs/README.txt
+
 # Windows reserved filenames
 nul
 CON
