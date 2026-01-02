@@ -399,3 +399,58 @@ class Player:
         row = cursor.fetchone()
 
         return Player._row_to_dict(row) if row else None
+
+    @staticmethod
+    def get_player_trophies(player_id: str) -> List[Dict[str, Any]]:
+        """
+        Get all course trophies (wins) for a player
+
+        Args:
+            player_id: Player ID
+
+        Returns:
+            List of dicts with course_id, course_name, and win_count
+        """
+        db = get_db()
+        conn = db.get_connection()
+
+        # Query to find all rounds won by the player
+        # A win is when the player's score is the minimum score in that round
+        cursor = conn.execute("""
+            WITH RoundMinScores AS (
+                SELECT
+                    r.id as round_id,
+                    r.course_id,
+                    r.course_name,
+                    MIN(rs.score) as min_score
+                FROM rounds r
+                JOIN round_scores rs ON r.id = rs.round_id
+                GROUP BY r.id, r.course_id, r.course_name
+            ),
+            PlayerWins AS (
+                SELECT
+                    rms.course_id,
+                    rms.course_name,
+                    rms.round_id
+                FROM RoundMinScores rms
+                JOIN round_scores rs ON rms.round_id = rs.round_id
+                WHERE rs.player_id = ? AND rs.score = rms.min_score
+            )
+            SELECT
+                course_id,
+                course_name,
+                COUNT(*) as win_count
+            FROM PlayerWins
+            GROUP BY course_id, course_name
+            ORDER BY win_count DESC, course_name ASC
+        """, (player_id,))
+
+        trophies = []
+        for row in cursor.fetchall():
+            trophies.append({
+                'course_id': row['course_id'],
+                'course_name': row['course_name'],
+                'win_count': row['win_count']
+            })
+
+        return trophies

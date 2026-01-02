@@ -146,8 +146,11 @@ def player_detail(player_id):
     # Get player achievements
     achievements = AchievementService.get_player_achievements(player_id)
 
+    # Get player trophies (wins by course)
+    trophies = Player.get_player_trophies(player_id)
+
     return render_template('players/detail.html', player=player, rounds=rounds, stats=stats,
-                         achievements=achievements, personal_bests=personal_bests_list)
+                         achievements=achievements, personal_bests=personal_bests_list, trophies=trophies)
 
 
 @bp.route('/<player_id>/edit', methods=['POST'])
