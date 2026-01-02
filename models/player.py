@@ -410,14 +410,23 @@ class Player:
 
         Returns:
             List of dicts with course_id, course_name, and win_count
+            Note: Only counts wins from rounds with 2+ players (no solo rounds)
         """
         db = get_db()
         conn = db.get_connection()
 
         # Query to find all rounds won by the player
         # A win is when the player's score is the minimum score in that round
+        # Solo rounds (1 player) are excluded from trophy awards
         cursor = conn.execute("""
-            WITH RoundMinScores AS (
+            WITH RoundPlayerCounts AS (
+                SELECT
+                    round_id,
+                    COUNT(DISTINCT player_id) as player_count
+                FROM round_scores
+                GROUP BY round_id
+            ),
+            RoundMinScores AS (
                 SELECT
                     r.id as round_id,
                     r.course_id,
@@ -425,6 +434,8 @@ class Player:
                     MIN(rs.score) as min_score
                 FROM rounds r
                 JOIN round_scores rs ON r.id = rs.round_id
+                JOIN RoundPlayerCounts rpc ON r.id = rpc.round_id
+                WHERE rpc.player_count >= 2
                 GROUP BY r.id, r.course_id, r.course_name
             ),
             PlayerWins AS (
