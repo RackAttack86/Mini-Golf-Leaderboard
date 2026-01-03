@@ -63,11 +63,7 @@
 
                 {# Display all winners on same line with & separator #}
                 <h3 class="mt-2">
-                    {% for winner in winners %}
-                        <a href="{{ url_for('players.player_detail', player_id=winner.player_id) }}">
-                            {{ winner.player_name }}
-                        </a>{% if not loop.last %} & {% endif %}
-                    {% endfor %}
+                    {% for winner in winners %}<a href="{{ url_for('players.player_detail', player_id=winner.player_id) }}">{{ winner.player_name }}</a>{% if not loop.last %} & {% endif %}{% endfor %}
                 </h3>
                 <p class="lead mb-0">Score: <strong>{{ min_score }}</strong></p>
             </div>
