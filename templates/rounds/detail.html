@@ -46,20 +46,17 @@
             </div>
             <div class="card-body text-center">
                 {% set winner = round.scores[0] %}
-                {% set base_course_name = round.course_name.replace(' (HARD)', '') %}
+                {% set base_course_name = round.course_name.replace(' (HARD)', '').replace("'", "").replace(",", "").replace(" ", "_") %}
                 {% set trophy_path = 'uploads/trophies/' ~ base_course_name ~ '.png' %}
 
-                {# Check if course-specific trophy exists #}
-                {% set has_trophy = base_course_name in ['Cherry Blossom', 'Sweetopia', 'Tourist Trap'] %}
-
-                {% if has_trophy %}
-                    <img src="{{ url_for('static', filename=trophy_path) }}"
-                         alt="{{ base_course_name }} Trophy"
-                         class="img-fluid mb-3"
-                         style="max-height: 400px; object-fit: contain;">
-                {% else %}
-                    <i class="bi bi-trophy-fill text-warning" style="font-size: 10rem;"></i>
-                {% endif %}
+                {# Display trophy image with fallback to generic trophy icon #}
+                <img src="{{ url_for('static', filename=trophy_path) }}"
+                     alt="{{ round.course_name.replace(' (HARD)', '') }} Trophy"
+                     class="img-fluid mb-3"
+                     style="max-height: 400px; object-fit: contain;"
+                     onerror="this.onerror=null; this.style.display='none'; this.nextElementSibling.style.display='block';">
+                <i class="bi bi-trophy-fill text-warning"
+                   style="font-size: 10rem; display: none;"></i>
 
                 <h3 class="mt-2">
                     <a href="{{ url_for('players.player_detail', player_id=winner.player_id) }}">
