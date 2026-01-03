@@ -3,6 +3,7 @@ from models.player import Player
 from models.course import Course
 from models.round import Round
 from services.achievement_service import AchievementService
+import os
 
 bp = Blueprint('main', __name__)
 
@@ -72,3 +73,43 @@ def index():
                            total_rounds=len(rounds),
                            recent_rounds=recent_rounds,
                            top_players=top_players)
+
+
+@bp.route('/trophies')
+def trophies():
+    """Display all course trophies"""
+    # Get all courses
+    courses = Course.get_all()
+
+    # Remove duplicates (HARD versions) and sort
+    unique_courses = {}
+    for course in courses:
+        base_name = course['name'].replace(' (HARD)', '')
+        if base_name not in unique_courses:
+            unique_courses[base_name] = course
+
+    # Convert course names to Linux-friendly trophy filenames
+    def course_to_trophy_name(course_name):
+        return course_name.replace("'", "").replace(",", "").replace(" ", "_")
+
+    # Check which courses have trophy images
+    trophy_dir = os.path.join('static', 'uploads', 'trophies')
+    trophy_files = set(os.listdir(trophy_dir)) if os.path.exists(trophy_dir) else set()
+
+    # Build list of courses with trophy info
+    course_trophies = []
+    for base_name, course in sorted(unique_courses.items()):
+        trophy_filename = course_to_trophy_name(base_name) + '.png'
+        has_trophy = trophy_filename in trophy_files
+
+        course_trophies.append({
+            'course_id': course['id'],
+            'course_name': base_name,
+            'trophy_filename': trophy_filename,
+            'has_trophy': has_trophy
+        })
+
+    # Sort by course name
+    course_trophies.sort(key=lambda x: x['course_name'])
+
+    return render_template('trophies.html', course_trophies=course_trophies)

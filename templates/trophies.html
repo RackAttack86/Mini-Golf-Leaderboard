@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+
+{% block title %}Course Trophies - {{ app_name }}{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h1><i class="bi bi-trophy-fill text-warning"></i> Course Trophies</h1>
+        <p class="text-muted">Click any trophy to view all rounds played on that course</p>
+    </div>
+</div>
+
+<div class="row g-4">
+    {% for trophy in course_trophies %}
+    {% if trophy.has_trophy %}
+    <div class="col-6 col-md-4 col-lg-3 col-xl-2">
+        <a href="{{ url_for('rounds.list_rounds', course_id=trophy.course_id) }}"
+           class="text-decoration-none"
+           style="color: inherit;">
+            <div class="text-center trophy-card">
+                <div class="trophy-image-container mb-2">
+                    <img src="{{ url_for('static', filename='uploads/trophies/' ~ trophy.trophy_filename) }}"
+                         alt="{{ trophy.course_name }} Trophy"
+                         class="img-fluid trophy-image"
+                         style="max-height: 250px; width: 100%; object-fit: contain;">
+                </div>
+                <h6 class="trophy-course-name mb-0">{{ trophy.course_name | format_course_name | safe }}</h6>
+            </div>
+        </a>
+    </div>
+    {% endif %}
+    {% endfor %}
+</div>
+
+{% if course_trophies|selectattr('has_trophy')|list|length == 0 %}
+<div class="row">
+    <div class="col-12 text-center py-5">
+        <i class="bi bi-trophy" style="font-size: 5rem; color: #dee2e6;"></i>
+        <p class="text-muted mt-3">No course trophies available yet.</p>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_styles %}
+<style>
+.trophy-card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    border-radius: 8px;
+    padding: 1rem;
+}
+
+.trophy-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 16px rgba(0,0,0,.15);
+}
+
+.trophy-image-container {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-radius: 8px;
+    padding: 1rem;
+    min-height: 200px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.trophy-course-name {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #495057;
+}
+
+.trophy-card:hover .trophy-course-name {
+    color: var(--golf-green);
+}
+</style>
+{% endblock %}

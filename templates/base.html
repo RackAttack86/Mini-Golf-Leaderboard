@@ -51,6 +51,12 @@
                             <i class="bi bi-list-ol"></i> Rounds
                         </a>
                     </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'main.trophies' %}active{% endif %}"
+                           href="{{ url_for('main.trophies') }}">
+                            <i class="bi bi-trophy-fill"></i> Trophies
+                        </a>
+                    </li>
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle {% if request.endpoint and request.endpoint.startswith('stats.') %}active{% endif %}"
                            href="#" id="statsDropdown" role="button" data-bs-toggle="dropdown">
