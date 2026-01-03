@@ -21,8 +21,7 @@
                 <div class="trophy-image-container mb-2">
                     <img src="{{ url_for('static', filename='uploads/trophies/' ~ trophy.trophy_filename) }}"
                          alt="{{ trophy.course_name }} Trophy"
-                         class="img-fluid trophy-image"
-                         style="max-height: 250px; width: 100%; object-fit: contain;">
+                         class="trophy-image">
                 </div>
                 <h6 class="trophy-course-name mb-0">{{ trophy.course_name | format_course_name | safe }}</h6>
             </div>
@@ -59,10 +58,16 @@
     background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
     border-radius: 8px;
     padding: 1rem;
-    min-height: 200px;
+    height: 280px;
     display: flex;
     align-items: center;
     justify-content: center;
+}
+
+.trophy-image {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
 }
 
 .trophy-course-name {
