@@ -41,11 +41,14 @@
     {% if round.scores|length > 1 %}
     <div class="col-md-8">
         <div class="card h-100">
+            {# Find all winners (players with minimum score) #}
+            {% set min_score = round.scores|map(attribute='score')|min %}
+            {% set winners = round.scores|selectattr('score', 'equalto', min_score)|list %}
+
             <div class="card-header bg-success text-white">
-                <h5 class="mb-0"><i class="bi bi-trophy"></i> Winner</h5>
+                <h5 class="mb-0"><i class="bi bi-trophy"></i> {% if winners|length > 1 %}Winners (Tie){% else %}Winner{% endif %}</h5>
             </div>
             <div class="card-body text-center">
-                {% set winner = round.scores[0] %}
                 {% set base_course_name = round.course_name.replace(' (HARD)', '').replace("'", "").replace(",", "").replace(" ", "_") %}
                 {% set trophy_path = 'uploads/trophies/' ~ base_course_name ~ '.png' %}
 
@@ -58,12 +61,15 @@
                 <i class="bi bi-trophy-fill text-warning"
                    style="font-size: 10rem; display: none;"></i>
 
-                <h3 class="mt-2">
+                {# Display all winners #}
+                {% for winner in winners %}
+                <h3 class="mt-2 {% if not loop.first %}mt-1{% endif %}">
                     <a href="{{ url_for('players.player_detail', player_id=winner.player_id) }}">
                         {{ winner.player_name }}
                     </a>
                 </h3>
-                <p class="lead mb-0">Score: <strong>{{ winner.score }}</strong></p>
+                {% endfor %}
+                <p class="lead mb-0">Score: <strong>{{ min_score }}</strong></p>
             </div>
         </div>
     </div>
