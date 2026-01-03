@@ -61,14 +61,14 @@
                 <i class="bi bi-trophy-fill text-warning"
                    style="font-size: 10rem; display: none;"></i>
 
-                {# Display all winners #}
-                {% for winner in winners %}
-                <h3 class="mt-2 {% if not loop.first %}mt-1{% endif %}">
-                    <a href="{{ url_for('players.player_detail', player_id=winner.player_id) }}">
-                        {{ winner.player_name }}
-                    </a>
+                {# Display all winners on same line with & separator #}
+                <h3 class="mt-2">
+                    {% for winner in winners %}
+                        <a href="{{ url_for('players.player_detail', player_id=winner.player_id) }}">
+                            {{ winner.player_name }}
+                        </a>{% if not loop.last %} & {% endif %}
+                    {% endfor %}
                 </h3>
-                {% endfor %}
                 <p class="lead mb-0">Score: <strong>{{ min_score }}</strong></p>
             </div>
         </div>
