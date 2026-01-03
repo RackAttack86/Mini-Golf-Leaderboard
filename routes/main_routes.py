@@ -81,31 +81,36 @@ def trophies():
     # Get all courses
     courses = Course.get_all()
 
-    # Remove duplicates (HARD versions) and sort
-    unique_courses = {}
-    for course in courses:
-        base_name = course['name'].replace(' (HARD)', '')
-        if base_name not in unique_courses:
-            unique_courses[base_name] = course
-
     # Convert course names to Linux-friendly trophy filenames
     def course_to_trophy_name(course_name):
         return course_name.replace("'", "").replace(",", "").replace(" ", "_")
 
-    # Check which courses have trophy images
-    trophy_dir = os.path.join('static', 'uploads', 'trophies')
-    trophy_files = set(os.listdir(trophy_dir)) if os.path.exists(trophy_dir) else set()
+    # Check which courses have trophy images (normal and hard)
+    normal_trophy_dir = os.path.join('static', 'uploads', 'trophies', 'normal')
+    hard_trophy_dir = os.path.join('static', 'uploads', 'trophies', 'hard')
+    normal_trophy_files = set(os.listdir(normal_trophy_dir)) if os.path.exists(normal_trophy_dir) else set()
+    hard_trophy_files = set(os.listdir(hard_trophy_dir)) if os.path.exists(hard_trophy_dir) else set()
 
     # Build list of courses with trophy info
     course_trophies = []
-    for base_name, course in sorted(unique_courses.items()):
+    for course in courses:
+        is_hard = '(HARD)' in course['name']
+        base_name = course['name'].replace(' (HARD)', '')
         trophy_filename = course_to_trophy_name(base_name) + '.png'
-        has_trophy = trophy_filename in trophy_files
+
+        # Check appropriate directory based on course difficulty
+        if is_hard:
+            has_trophy = trophy_filename in hard_trophy_files
+            trophy_subdir = 'hard'
+        else:
+            has_trophy = trophy_filename in normal_trophy_files
+            trophy_subdir = 'normal'
 
         course_trophies.append({
             'course_id': course['id'],
-            'course_name': base_name,
+            'course_name': course['name'],  # Keep HARD in name for display
             'trophy_filename': trophy_filename,
+            'trophy_subdir': trophy_subdir,
             'has_trophy': has_trophy
         })
 

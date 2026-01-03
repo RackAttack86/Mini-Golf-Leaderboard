@@ -17,7 +17,7 @@
         <div class="col-12 col-sm-6 col-md-4 col-lg-3 mb-4">
             <div class="trophy-display-card">
                 <div class="trophy-img-wrapper">
-                    <img src="{{ url_for('static', filename='uploads/trophies/' ~ trophy.trophy_filename) }}"
+                    <img src="{{ url_for('static', filename='uploads/trophies/' ~ trophy.trophy_subdir ~ '/' ~ trophy.trophy_filename) }}"
                          alt="{{ trophy.course_name }} Trophy"
                          class="trophy-img">
                 </div>

@@ -49,8 +49,10 @@
                 <h5 class="mb-0"><i class="bi bi-trophy"></i> {% if winners|length > 1 %}Winners (Tie){% else %}Winner{% endif %}</h5>
             </div>
             <div class="card-body text-center">
+                {% set is_hard = '(HARD)' in round.course_name %}
                 {% set base_course_name = round.course_name.replace(' (HARD)', '').replace("'", "").replace(",", "").replace(" ", "_") %}
-                {% set trophy_path = 'uploads/trophies/' ~ base_course_name ~ '.png' %}
+                {% set trophy_subdir = 'hard' if is_hard else 'normal' %}
+                {% set trophy_path = 'uploads/trophies/' ~ trophy_subdir ~ '/' ~ base_course_name ~ '.png' %}
 
                 {# Display trophy image with fallback to generic trophy icon #}
                 <img src="{{ url_for('static', filename=trophy_path) }}"
