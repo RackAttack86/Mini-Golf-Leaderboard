@@ -11,16 +11,29 @@ bp = Blueprint('main', __name__)
 @bp.route('/')
 def index():
     """Dashboard/home page"""
+    from datetime import datetime, timedelta
+
     # Get summary statistics
     players = Player.get_all()
     courses = Course.get_all()
     rounds = Round.get_all()
 
-    # Get recent rounds (last 10) and add winner player data
-    recent_rounds = rounds[:10] if len(rounds) > 10 else rounds
+    # Get recent rounds from last 15 days for activity trends
+    today = datetime.now().date()
+    fifteen_days_ago = today - timedelta(days=14)  # 14 days ago = 15 days total including today
 
-    # Add winner player data and course image to each round
-    for round_data in recent_rounds:
+    # Filter rounds from last 15 days
+    recent_rounds = [
+        r for r in rounds
+        if datetime.strptime(r['date_played'], '%Y-%m-%d').date() >= fifteen_days_ago
+    ]
+
+    # Get last 10 rounds for the recent rounds table (exclude solo rounds)
+    non_solo_rounds = [r for r in rounds if len(r['scores']) > 1]
+    last_10_rounds = non_solo_rounds[:10] if len(non_solo_rounds) > 10 else non_solo_rounds
+
+    # Add winner player data and course image to rounds (for both lists)
+    for round_data in recent_rounds + last_10_rounds:
         if round_data['scores']:
             winner_score = min(round_data['scores'], key=lambda x: x['score'])
             winner_player = Player.get_by_id(winner_score['player_id'])
@@ -71,7 +84,8 @@ def index():
                            total_players=len(players),
                            total_courses=len(courses),
                            total_rounds=len(rounds),
-                           recent_rounds=recent_rounds,
+                           recent_rounds=recent_rounds,  # Last 15 days for activity trends
+                           last_10_rounds=last_10_rounds,  # Last 10 non-solo rounds for table
                            top_players=top_players)
 
 
