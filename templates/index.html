@@ -80,11 +80,11 @@
                             <div class="col-md-4 mb-3">
                                 <div class="text-center">
                                     {% if loop.index == 1 %}
-                                        <img src="{{ url_for('static', filename='images/trophies/masters.png') }}" alt="Masters Trophy" style="height: 180px; object-fit: contain;">
+                                        <img src="{{ url_for('static', filename='images/trophies/GoldTrophy.png') }}" alt="Gold Trophy - 1st Place" style="height: 180px; object-fit: contain;">
                                     {% elif loop.index == 2 %}
-                                        <img src="{{ url_for('static', filename='images/trophies/usopen.png') }}" alt="US Open Trophy" style="height: 180px; object-fit: contain;">
+                                        <img src="{{ url_for('static', filename='images/trophies/SilverTrophy.png') }}" alt="Silver Trophy - 2nd Place" style="height: 180px; object-fit: contain;">
                                     {% else %}
-                                        <img src="{{ url_for('static', filename='images/trophies/rydercup.png') }}" alt="Ryder Cup Trophy" style="height: 180px; object-fit: contain;">
+                                        <img src="{{ url_for('static', filename='images/trophies/BronzeTrophy.png') }}" alt="Bronze Trophy - 3rd Place" style="height: 180px; object-fit: contain;">
                                     {% endif %}
                                     <div class="mt-3 mb-2">
                                         {% if item.player.profile_picture %}
