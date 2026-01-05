@@ -126,54 +126,6 @@
 </div>
 {% endif %}
 
-<!-- Trophy Case -->
-{% if trophies %}
-<div class="row mb-4">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header bg-warning text-dark">
-                <h5 class="mb-0"><i class="bi bi-trophy-fill"></i> Trophy Case ({{ trophies|length }} courses won)</h5>
-            </div>
-            <div class="card-body">
-                <div class="row g-4">
-                    {% for trophy in trophies %}
-                    {% set is_hard = '(HARD)' in trophy.course_name %}
-                    {% set base_course_name = trophy.course_name.replace(' (HARD)', '').replace("'", "").replace(",", "").replace(" ", "_") %}
-                    {% set trophy_subdir = 'hard' if is_hard else 'normal' %}
-                    {% set trophy_path = 'uploads/trophies/' ~ trophy_subdir ~ '/' ~ base_course_name ~ '.png' %}
-                    <div class="col-md-4 col-lg-3">
-                        <a href="{{ url_for('rounds.list_rounds', player_id=player.id, course_id=trophy.course_id) }}"
-                           class="text-decoration-none"
-                           style="color: inherit;">
-                            <div class="text-center trophy-card">
-                                <div class="trophy-container mb-2" style="position: relative; min-height: 150px; display: flex; align-items: center; justify-content: center;">
-                                    <img src="{{ url_for('static', filename=trophy_path) }}"
-                                         alt="{{ base_course_name }} Trophy"
-                                         class="img-fluid"
-                                         style="max-height: 150px; object-fit: contain;"
-                                         onerror="this.onerror=null; this.style.display='none'; this.nextElementSibling.style.display='block';">
-                                    <i class="bi bi-trophy-fill text-warning"
-                                       style="font-size: 6rem; display: none;"></i>
-                                </div>
-                                <h6 class="mb-1">{{ trophy.course_name | format_course_name | safe }}</h6>
-                                <span class="badge bg-success" style="font-size: 0.9rem;">
-                                    {% if trophy.win_count == 1 %}
-                                        1 Win
-                                    {% else %}
-                                        {{ trophy.win_count }} Wins
-                                    {% endif %}
-                                </span>
-                            </div>
-                        </a>
-                    </div>
-                    {% endfor %}
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-{% endif %}
-
 <!-- Achievements -->
 <div class="row mb-4">
     <div class="col-12">
