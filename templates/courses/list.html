@@ -26,7 +26,7 @@
                 <input type="text"
                        id="courseSearch"
                        class="form-control"
-                       placeholder="Search courses by name, location, holes, or par..."
+                       placeholder="Search courses by name, location, holes, par, or trophy owner..."
                        onkeyup="filterCourses()">
                 <button class="btn btn-outline-secondary" type="button" onclick="clearSearch()">
                     <i class="bi bi-x-circle"></i> Clear
@@ -45,6 +45,7 @@
                         <th>Holes</th>
                         <th>Par</th>
                         <th>Rating</th>
+                        <th>Trophy Owner</th>
                         <th>Status</th>
                         <th></th>
                     </tr>
@@ -90,6 +91,17 @@
                             {% endif %}
                         </td>
                         <td>
+                            {% if course.trophy_owner %}
+                                <i class="bi bi-trophy-fill text-warning"></i>
+                                <a href="{{ url_for('players.player_detail', player_id=course.trophy_owner.player_id) }}"
+                                   onclick="event.stopPropagation();">
+                                    {{ course.trophy_owner.player_name }}
+                                </a>
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
                             {% if course.active %}
                                 <span class="badge bg-success">Active</span>
                             {% else %}
@@ -132,13 +144,14 @@ function filterCourses() {
         const row = rows[i];
         const cells = row.getElementsByTagName('td');
 
-        // Search in: name (cell 1), location (cell 2), holes (cell 3), par (cell 4)
+        // Search in: name (cell 1), location (cell 2), holes (cell 3), par (cell 4), trophy owner (cell 6)
         const name = cells[1] ? cells[1].textContent.toLowerCase() : '';
         const location = cells[2] ? cells[2].textContent.toLowerCase() : '';
         const holes = cells[3] ? cells[3].textContent.toLowerCase() : '';
         const par = cells[4] ? cells[4].textContent.toLowerCase() : '';
+        const trophyOwner = cells[6] ? cells[6].textContent.toLowerCase() : '';
 
-        const searchableText = name + ' ' + location + ' ' + holes + ' ' + par;
+        const searchableText = name + ' ' + location + ' ' + holes + ' ' + par + ' ' + trophyOwner;
 
         if (searchableText.indexOf(filter) > -1) {
             row.style.display = '';

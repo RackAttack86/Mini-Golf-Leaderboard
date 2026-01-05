@@ -3,6 +3,8 @@ from werkzeug.utils import secure_filename
 from models.round import Round
 from models.player import Player
 from models.course import Course
+from models.course_trophy import CourseTrophy
+from models.database import get_db
 from utils.auth_decorators import login_required, admin_required
 from utils.ocr_service import WalkaboutOCRService
 from utils.file_validators import validate_image_file
@@ -70,6 +72,9 @@ def add_round():
     players = Player.get_all()
     courses = Course.get_all()
 
+    # Get trophy ownership data for JavaScript
+    course_trophy_owners = CourseTrophy.get_all_trophy_owners_dict()
+
     if request.method == 'POST':
         course_id = request.form.get('course_id')
         date_played = request.form.get('date_played')
@@ -106,6 +111,7 @@ def add_round():
                                 return render_template('rounds/add.html',
                                                        players=players,
                                                        courses=courses,
+                                                       course_trophy_owners=course_trophy_owners,
                                                        form_data={
                                                            'course_id': course_id,
                                                            'date_played': date_played,
@@ -127,6 +133,49 @@ def add_round():
         )
 
         if success:
+            # Handle trophy award/transfer if applicable
+            trophy_up_for_grabs = request.form.get('trophy_up_for_grabs') == 'on'
+
+            # Check if course has a trophy owner
+            current_trophy_owner = CourseTrophy.get_trophy_owner(course_id)
+
+            # Award trophy if:
+            # 1. Trophy was marked "up for grabs" (contested), OR
+            # 2. Course has no trophy owner yet (first trophy)
+            # AND round has 4+ players
+            should_award_trophy = (trophy_up_for_grabs or not current_trophy_owner) and len(player_ids) >= 4
+
+            if should_award_trophy:
+                # Build scores list for winner determination
+                score_list = [{'player_id': pid, 'score': int(score)}
+                              for pid, score in zip(player_ids, player_scores)]
+
+                winner_id = CourseTrophy.determine_round_winner(score_list)
+
+                if winner_id:
+                    CourseTrophy.transfer_trophy(
+                        course_id, winner_id, round_data['id'], date_played
+                    )
+
+                    # Different message for first trophy vs transfer
+                    if not current_trophy_owner:
+                        flash('Trophy awarded for first time!', 'success')
+                    else:
+                        flash('Trophy transferred!', 'success')
+                else:
+                    # Tie scenario
+                    if current_trophy_owner:
+                        flash('Round ended in tie - trophy stays with current owner', 'info')
+                    else:
+                        flash('Round ended in tie - no trophy awarded', 'info')
+
+                # Mark round as trophy contest
+                conn = get_db().get_connection()
+                conn.execute(
+                    "UPDATE rounds SET trophy_up_for_grabs = 1 WHERE id = ?",
+                    (round_data['id'],)
+                )
+
             flash(message, 'success')
             return redirect(url_for('rounds.round_detail', round_id=round_data['id']))
         else:
@@ -134,6 +183,7 @@ def add_round():
             return render_template('rounds/add.html',
                                    players=players,
                                    courses=courses,
+                                   course_trophy_owners=course_trophy_owners,
                                    form_data={
                                        'course_id': course_id,
                                        'date_played': date_played,
@@ -141,7 +191,7 @@ def add_round():
                                        'scores': scores
                                    })
 
-    return render_template('rounds/add.html', players=players, courses=courses)
+    return render_template('rounds/add.html', players=players, courses=courses, course_trophy_owners=course_trophy_owners)
 
 
 @bp.route('/upload-picture', methods=['GET', 'POST'])
@@ -420,8 +470,47 @@ def round_detail(round_id):
     existing_player_ids = {score['player_id'] for score in round_data['scores']}
     available_players = [p for p in players if p['id'] not in existing_player_ids]
 
+    # Get trophy contest information if trophy was up for grabs
+    trophy_contest_info = None
+    if round_data.get('trophy_up_for_grabs'):
+        course_id = round_data['course_id']
+        trophy_owner = CourseTrophy.get_trophy_owner(course_id)
+
+        # Determine the winner of this round
+        if round_data['scores']:
+            winner = round_data['scores'][0]  # Already sorted by score
+            min_score = winner['score']
+            # Check for tie
+            tied_winners = [s for s in round_data['scores'] if s['score'] == min_score]
+            is_tie = len(tied_winners) > 1
+
+            # Determine if trophy was defended (winner was already owner) or changed hands
+            was_defended = False
+            if trophy_owner and not is_tie:
+                was_defended = winner['player_id'] == trophy_owner['player_id']
+
+            trophy_contest_info = {
+                'winner': winner,
+                'is_tie': is_tie,
+                'tied_players': tied_winners if is_tie else None,
+                'current_owner': trophy_owner,
+                'was_defended': was_defended
+            }
+
+    # Determine trophy image to display
+    trophy_image = None
+    if round_data.get('trophy_up_for_grabs'):
+        # Course trophy was awarded - show the course trophy
+        course_name = round_data['course_name']
+        difficulty, trophy_filename = CourseTrophy.generate_trophy_filename(course_name)
+        trophy_image = f'uploads/trophies/{difficulty}/{trophy_filename}'
+    else:
+        # Regular round - show gold trophy
+        trophy_image = 'images/trophies/GoldTrophy.png'
+
     return render_template('rounds/detail.html', round=round_data, courses=courses,
-                         players=players, available_players=available_players)
+                         players=players, available_players=available_players,
+                         trophy_contest_info=trophy_contest_info, trophy_image=trophy_image)
 
 
 @bp.route('/<round_id>/edit', methods=['POST'])

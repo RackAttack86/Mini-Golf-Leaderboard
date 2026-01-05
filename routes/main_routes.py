@@ -2,6 +2,7 @@ from flask import Blueprint, render_template
 from models.player import Player
 from models.course import Course
 from models.round import Round
+from models.course_trophy import CourseTrophy
 from services.achievement_service import AchievementService
 import os
 
@@ -132,3 +133,61 @@ def trophies():
     course_trophies.sort(key=lambda x: x['course_name'])
 
     return render_template('trophies.html', course_trophies=course_trophies)
+
+
+@bp.route('/trophy-leaderboard')
+def trophy_leaderboard():
+    """Trophy leaderboard showing players ranked by trophy count"""
+    from models.database import get_db
+
+    db = get_db()
+    conn = db.get_connection()
+
+    # Get trophy counts per player
+    cursor = conn.execute("""
+        SELECT
+            p.id as player_id,
+            p.name as player_name,
+            p.profile_picture,
+            COUNT(ct.course_id) as trophy_count
+        FROM players p
+        LEFT JOIN course_trophies ct ON p.id = ct.player_id
+        WHERE p.active = 1
+        GROUP BY p.id, p.name, p.profile_picture
+        HAVING trophy_count > 0
+        ORDER BY trophy_count DESC, p.name ASC
+    """)
+
+    leaderboard = []
+    for row in cursor.fetchall():
+        player_id = row['player_id']
+
+        # Get the specific trophies this player owns
+        trophies = CourseTrophy.get_trophies_owned_by_player(player_id)
+
+        leaderboard.append({
+            'player_id': player_id,
+            'player_name': row['player_name'],
+            'profile_picture': row['profile_picture'],
+            'trophy_count': row['trophy_count'],
+            'trophies': trophies
+        })
+
+    # Get total trophy count
+    cursor = conn.execute("SELECT COUNT(*) as total FROM course_trophies")
+    total_trophies = cursor.fetchone()['total']
+
+    # Get total courses with 4+ player rounds (potential trophies)
+    cursor = conn.execute("""
+        SELECT COUNT(DISTINCT r.course_id) as count
+        FROM rounds r
+        JOIN round_scores rs ON r.id = rs.round_id
+        GROUP BY r.id
+        HAVING COUNT(DISTINCT rs.player_id) >= 4
+    """)
+    total_contested_courses = len(cursor.fetchall())
+
+    return render_template('trophy_leaderboard.html',
+                         leaderboard=leaderboard,
+                         total_trophies=total_trophies,
+                         total_contested_courses=total_contested_courses)

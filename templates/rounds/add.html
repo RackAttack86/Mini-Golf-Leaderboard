@@ -68,6 +68,20 @@
                         <small class="text-muted">Enable this to enter individual scores for all 18 holes. Total score will be calculated automatically.</small>
                     </div>
 
+                    <!-- Trophy Contest Checkbox -->
+                    <div class="mb-3" id="trophyContestSection" style="display: none;">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="trophyUpForGrabs" name="trophy_up_for_grabs">
+                            <label class="form-check-label" for="trophyUpForGrabs">
+                                <i class="bi bi-trophy-fill text-warning"></i> <strong>Trophy Up For Grabs</strong>
+                            </label>
+                        </div>
+                        <small class="text-muted">
+                            <span id="trophyOwnerName"></span> currently holds this course's trophy.
+                            Check this box if the trophy is being contested in this round.
+                        </small>
+                    </div>
+
                     <div class="mb-3">
                         <label class="form-label">Player Scores *</label>
                         <div id="playerScores">
@@ -194,6 +208,9 @@
 
 {% block extra_scripts %}
 <script>
+// Trophy ownership data from Flask
+const courseTrophyOwners = {{ course_trophy_owners|tojson|safe }};
+
 function updateCoursePreview(selectElement) {
     const selectedOption = selectElement.options[selectElement.selectedIndex];
     const imageUrl = selectedOption.getAttribute('data-image-url');
@@ -210,6 +227,44 @@ function updateCoursePreview(selectElement) {
         previewDiv.style.display = 'block';
     } else {
         previewDiv.style.display = 'none';
+    }
+
+    // Check trophy contest status
+    checkTrophyContest();
+}
+
+function checkTrophyContest() {
+    const courseSelect = document.getElementById('course_id');
+    const trophySection = document.getElementById('trophyContestSection');
+    const trophyOwnerSpan = document.getElementById('trophyOwnerName');
+    const trophyCheckbox = document.getElementById('trophyUpForGrabs');
+
+    if (!courseSelect || !courseSelect.value) {
+        trophySection.style.display = 'none';
+        return;
+    }
+
+    const courseId = courseSelect.value;
+    const trophyData = courseTrophyOwners[courseId];
+
+    if (!trophyData) {
+        trophySection.style.display = 'none';
+        return;
+    }
+
+    // Check if trophy owner is in the selected players
+    const selectedPlayers = Array.from(
+        document.querySelectorAll('select[name="player_id[]"]')
+    ).map(s => s.value).filter(id => id);
+
+    if (selectedPlayers.includes(trophyData.owner_id)) {
+        // Trophy owner is playing - show checkbox
+        trophyOwnerSpan.textContent = trophyData.owner_name;
+        trophySection.style.display = 'block';
+    } else {
+        // Trophy owner not playing - hide checkbox
+        trophySection.style.display = 'none';
+        trophyCheckbox.checked = false;
     }
 }
 
@@ -326,12 +381,21 @@ function addPlayer() {
         newTotalInput.readOnly = true;
         newTotalInput.placeholder = 'Auto-calculated';
     }
+
+    // Add event listener to new player select for trophy contest check
+    const newSelect = newRow.querySelector('select[name="player_id[]"]');
+    newSelect.addEventListener('change', checkTrophyContest);
+
+    // Check trophy contest status
+    checkTrophyContest();
 }
 
 function removePlayer(button) {
     const rows = document.querySelectorAll('.player-score-row');
     if (rows.length > 1) {
         button.closest('.player-score-row').remove();
+        // Check trophy contest status after removing player
+        checkTrophyContest();
     } else {
         alert('You must have at least one player.');
     }
@@ -350,6 +414,14 @@ document.addEventListener('DOMContentLoaded', function() {
     if (courseSelect && courseSelect.value) {
         updateCoursePreview(courseSelect);
     }
+
+    // Add event listeners to existing player selects for trophy contest check
+    document.querySelectorAll('select[name="player_id[]"]').forEach(select => {
+        select.addEventListener('change', checkTrophyContest);
+    });
+
+    // Initial trophy contest check
+    checkTrophyContest();
 });
 </script>
 {% endblock %}

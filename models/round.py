@@ -274,6 +274,12 @@ class Round:
 
             scores.append(score_dict)
 
+        # Handle trophy_up_for_grabs field (may not exist in older data)
+        try:
+            trophy_up_for_grabs = bool(round_row['trophy_up_for_grabs'])
+        except (KeyError, IndexError):
+            trophy_up_for_grabs = False
+
         return {
             'id': round_row['id'],
             'course_id': round_row['course_id'],
@@ -283,6 +289,7 @@ class Round:
             'round_start_time': round_row['round_start_time'],
             'notes': round_row['notes'] or '',
             'picture_filename': round_row['picture_filename'],
+            'trophy_up_for_grabs': trophy_up_for_grabs,
             'scores': scores
         }
 

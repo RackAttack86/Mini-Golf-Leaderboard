@@ -49,6 +49,15 @@
                 <h5 class="mb-0"><i class="bi bi-trophy"></i> {% if winners|length > 1 %}Winners (Tie){% else %}Winner{% endif %}</h5>
             </div>
             <div class="card-body text-center">
+                {# Display trophy image #}
+                {% if trophy_image %}
+                <div class="mb-3">
+                    <img src="{{ url_for('static', filename=trophy_image) }}"
+                         alt="Trophy"
+                         style="max-height: 150px; object-fit: contain;">
+                </div>
+                {% endif %}
+
                 {# Display all winners on same line with & separator #}
                 <h3>
                     {% for winner in winners %}<a href="{{ url_for('players.player_detail', player_id=winner.player_id) }}">{{ winner.player_name }}</a>{% if not loop.last %} & {% endif %}{% endfor %}
@@ -59,6 +68,106 @@
     </div>
     {% endif %}
 </div>
+
+<!-- Trophy Contest -->
+{% if trophy_contest_info %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card border-warning">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="mb-0">
+                    <i class="bi bi-trophy-fill"></i> Trophy Contest
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if trophy_contest_info.is_tie %}
+                    {# Tie - Trophy stays with current owner #}
+                    <div class="alert alert-info mb-0">
+                        <div class="row align-items-center">
+                            <div class="col-md-1 text-center">
+                                <i class="bi bi-trophy text-warning" style="font-size: 3rem;"></i>
+                            </div>
+                            <div class="col-md-11">
+                                <h5 class="mb-2">
+                                    <i class="bi bi-dash-circle text-muted"></i> Trophy Stayed with Current Owner (Tie)
+                                </h5>
+                                <p class="mb-2">
+                                    The round ended in a tie between:
+                                    {% for player in trophy_contest_info.tied_players %}
+                                        <a href="{{ url_for('players.player_detail', player_id=player.player_id) }}">
+                                            <strong>{{ player.player_name }}</strong>
+                                        </a>{% if not loop.last %}, {% endif %}
+                                    {% endfor %}
+                                </p>
+                                <p class="mb-0">
+                                    <i class="bi bi-shield-fill-check text-success"></i>
+                                    Trophy remains with:
+                                    <a href="{{ url_for('players.player_detail', player_id=trophy_contest_info.current_owner.player_id) }}">
+                                        <strong>{{ trophy_contest_info.current_owner.player_name }}</strong>
+                                    </a> (Defender's Advantage)
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                {% else %}
+                    {# Clear winner - Trophy transferred or retained #}
+                    {% if trophy_contest_info.was_defended %}
+                        {# Winner was already the owner - successfully defended #}
+                        <div class="alert alert-success mb-0">
+                            <div class="row align-items-center">
+                                <div class="col-md-1 text-center">
+                                    <i class="bi bi-trophy-fill text-warning" style="font-size: 3rem;"></i>
+                                </div>
+                                <div class="col-md-11">
+                                    <h5 class="mb-2">
+                                        <i class="bi bi-shield-fill-check text-success"></i> Trophy Successfully Defended!
+                                    </h5>
+                                    <p class="mb-0">
+                                        <a href="{{ url_for('players.player_detail', player_id=trophy_contest_info.winner.player_id) }}">
+                                            <strong>{{ trophy_contest_info.winner.player_name }}</strong>
+                                        </a>
+                                        retained the trophy with a score of <strong>{{ trophy_contest_info.winner.score }}</strong>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    {% else %}
+                        {# New trophy winner #}
+                        <div class="alert alert-warning mb-0">
+                            <div class="row align-items-center">
+                                <div class="col-md-1 text-center">
+                                    <i class="bi bi-trophy-fill text-warning" style="font-size: 3rem;"></i>
+                                </div>
+                                <div class="col-md-11">
+                                    <h5 class="mb-2">
+                                        <i class="bi bi-arrow-right-circle text-success"></i> Trophy Transferred!
+                                    </h5>
+                                    <p class="mb-2">
+                                        <a href="{{ url_for('players.player_detail', player_id=trophy_contest_info.winner.player_id) }}">
+                                            <strong>{{ trophy_contest_info.winner.player_name }}</strong>
+                                        </a>
+                                        won the trophy with a score of <strong>{{ trophy_contest_info.winner.score }}</strong>
+                                    </p>
+                                    {% if trophy_contest_info.current_owner %}
+                                    <p class="mb-0">
+                                        <small class="text-muted">
+                                            Previous owner:
+                                            <a href="{{ url_for('players.player_detail', player_id=trophy_contest_info.current_owner.player_id) }}">
+                                                {{ trophy_contest_info.current_owner.player_name }}
+                                            </a>
+                                        </small>
+                                    </p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
 
 <!-- Scores -->
 <div class="row">

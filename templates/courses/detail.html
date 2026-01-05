@@ -86,6 +86,81 @@
     </div>
 </div>
 
+<!-- Course Trophy -->
+{% if trophy_owner %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card border-warning">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="mb-0">
+                    <i class="bi bi-trophy-fill"></i> Course Trophy
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col-md-4 text-center">
+                        {% if trophy_image %}
+                        <img src="{{ url_for('static', filename=trophy_image) }}"
+                             alt="{{ course.name }} Trophy"
+                             class="img-fluid"
+                             style="max-height: 250px; object-fit: contain;"
+                             onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                        <div class="text-muted" style="height: 250px; display: none; align-items: center; justify-content: center; flex-direction: column;">
+                            <i class="bi bi-trophy" style="font-size: 6rem;"></i>
+                            <p class="mt-2">Trophy Image</p>
+                        </div>
+                        {% else %}
+                        <div class="text-muted" style="height: 250px; display: flex; align-items: center; justify-content: center; flex-direction: column;">
+                            <i class="bi bi-trophy" style="font-size: 6rem;"></i>
+                            <p class="mt-2">Trophy</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-8">
+                        <h4 class="mb-3">Current Trophy Holder</h4>
+                        <div class="d-flex align-items-center mb-3">
+                            <i class="bi bi-trophy-fill text-warning me-2" style="font-size: 2rem;"></i>
+                            <div>
+                                <h3 class="mb-0">
+                                    <a href="{{ url_for('players.player_detail', player_id=trophy_owner.player_id) }}" class="text-decoration-none">
+                                        {{ trophy_owner.player_name }}
+                                    </a>
+                                </h3>
+                                <small class="text-muted">Trophy Owner</small>
+                            </div>
+                        </div>
+                        <p class="mb-2"><strong>Acquired:</strong> {{ trophy_owner.date_acquired }}</p>
+                        <p class="mb-0">
+                            <a href="{{ url_for('rounds.round_detail', round_id=trophy_owner.acquired_round_id) }}" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-arrow-right-circle"></i> View Winning Round
+                            </a>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card border-secondary">
+            <div class="card-header bg-light text-dark">
+                <h5 class="mb-0">
+                    <i class="bi bi-trophy"></i> Course Trophy
+                </h5>
+            </div>
+            <div class="card-body text-center">
+                <i class="bi bi-trophy text-muted" style="font-size: 4rem;"></i>
+                <p class="text-muted mt-3 mb-0">
+                    No trophy owner yet. Be the first to win a round with 4+ players to claim this trophy!
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
 <!-- Course Rating -->
 <div class="row mb-4">
     <div class="col-12">

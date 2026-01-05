@@ -51,11 +51,19 @@
                             <i class="bi bi-list-ol"></i> Rounds
                         </a>
                     </li>
-                    <li class="nav-item">
-                        <a class="nav-link {% if request.endpoint == 'main.trophies' %}active{% endif %}"
-                           href="{{ url_for('main.trophies') }}">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle {% if request.endpoint == 'main.trophies' or request.endpoint == 'main.trophy_leaderboard' %}active{% endif %}"
+                           href="#" id="trophiesDropdown" role="button" data-bs-toggle="dropdown">
                             <i class="bi bi-trophy-fill"></i> Trophies
                         </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="{{ url_for('main.trophy_leaderboard') }}">
+                                <i class="bi bi-trophy-fill text-warning"></i> Trophy Leaderboard
+                            </a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('main.trophies') }}">
+                                <i class="bi bi-grid-3x3-gap"></i> Trophy Gallery
+                            </a></li>
+                        </ul>
                     </li>
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle {% if request.endpoint and request.endpoint.startswith('stats.') %}active{% endif %}"
