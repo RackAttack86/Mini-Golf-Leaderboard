@@ -4,6 +4,7 @@ from models.course import Course
 from models.round import Round
 from models.course_rating import CourseRating
 from models.course_notes import CourseNotes
+from models.course_trophy import CourseTrophy
 from utils.auth_decorators import admin_required
 from utils.file_validators import validate_image_file, sanitize_filename
 import os
@@ -65,7 +66,23 @@ def list_courses():
     # Get all course ratings
     all_ratings = CourseRating.get_all_course_ratings()
 
-    # Add rating info to each course
+    # Get all trophy owners
+    all_trophy_owners = {}
+    from models.database import get_db
+    db = get_db()
+    conn = db.get_connection()
+    cursor = conn.execute("""
+        SELECT ct.course_id, p.id as player_id, p.name as player_name
+        FROM course_trophies ct
+        JOIN players p ON ct.player_id = p.id
+    """)
+    for row in cursor.fetchall():
+        all_trophy_owners[row['course_id']] = {
+            'player_id': row['player_id'],
+            'player_name': row['player_name']
+        }
+
+    # Add rating info and trophy owner to each course
     for course in courses:
         course_id = course['id']
         if course_id in all_ratings:
@@ -75,6 +92,12 @@ def list_courses():
         else:
             course['avg_rating'] = None
             course['rating_count'] = 0
+
+        # Add trophy owner info
+        if course_id in all_trophy_owners:
+            course['trophy_owner'] = all_trophy_owners[course_id]
+        else:
+            course['trophy_owner'] = None
 
     return render_template('courses/list.html', courses=courses)
 
@@ -210,6 +233,17 @@ def course_detail(course_id):
         end_idx = start_idx + per_page
         user_rounds = user_rounds_all[start_idx:end_idx]
 
+    # Get trophy owner for this course
+    trophy_owner = CourseTrophy.get_trophy_owner(course_id)
+
+    # Determine trophy image path
+    trophy_image = None
+    if trophy_owner:
+        course_name = course['name']
+        trophy_filename = course_name.replace(' ', '_') + '.png'
+        difficulty = 'hard' if 'Hard' in course_name else 'normal'
+        trophy_image = f'uploads/trophies/{difficulty}/{trophy_filename}'
+
     return render_template('courses/detail.html',
                          course=course,
                          rounds=rounds,
@@ -221,7 +255,9 @@ def course_detail(course_id):
                          user_rounds=user_rounds,
                          user_rounds_page=user_rounds_page,
                          user_rounds_total_pages=user_rounds_total_pages,
-                         user_rounds_total=user_rounds_total)
+                         user_rounds_total=user_rounds_total,
+                         trophy_owner=trophy_owner,
+                         trophy_image=trophy_image)
 
 
 @bp.route('/<course_id>/edit', methods=['POST'])

@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+
+{% block title %}Trophy Leaderboard - {{ app_name }}{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-8">
+        <h1><i class="bi bi-trophy-fill text-warning"></i> Trophy Leaderboard</h1>
+        <p class="text-muted">Players ranked by number of course trophies owned</p>
+    </div>
+    <div class="col-md-4 text-end">
+        <div class="card bg-light">
+            <div class="card-body py-2">
+                <p class="mb-1"><strong>Total Trophies:</strong> {{ total_trophies }}</p>
+                <p class="mb-0"><small class="text-muted">{{ total_contested_courses }} courses contested</small></p>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if leaderboard %}
+<div class="row">
+    {% for entry in leaderboard %}
+    <div class="col-12 mb-4">
+        <div class="card {% if loop.index == 1 %}border-warning{% elif loop.index == 2 %}border-secondary{% elif loop.index == 3 %}border-danger{% endif %}">
+            <div class="card-header {% if loop.index == 1 %}bg-warning text-dark{% elif loop.index == 2 %}bg-secondary text-white{% elif loop.index == 3 %}bg-danger text-white{% else %}bg-light{% endif %}">
+                <div class="row align-items-center">
+                    <div class="col-auto">
+                        <h2 class="mb-0">
+                            {% if loop.index == 1 %}
+                                <i class="bi bi-trophy-fill"></i>
+                            {% elif loop.index == 2 %}
+                                <i class="bi bi-trophy-fill"></i>
+                            {% elif loop.index == 3 %}
+                                <i class="bi bi-trophy-fill"></i>
+                            {% else %}
+                                #{{ loop.index }}
+                            {% endif %}
+                        </h2>
+                    </div>
+                    <div class="col">
+                        <h4 class="mb-0">
+                            {% if entry.profile_picture %}
+                            <img src="{{ url_for('static', filename='uploads/profiles/' + entry.profile_picture) }}"
+                                 alt="{{ entry.player_name }}"
+                                 class="rounded-circle me-2"
+                                 style="width: 40px; height: 40px; object-fit: cover;">
+                            {% endif %}
+                            <a href="{{ url_for('players.player_detail', player_id=entry.player_id) }}"
+                               class="text-decoration-none {% if loop.index <= 3 %}{% if loop.index == 1 %}text-dark{% else %}text-white{% endif %}{% endif %}">
+                                {{ entry.player_name }}
+                            </a>
+                        </h4>
+                    </div>
+                    <div class="col-auto">
+                        <h3 class="mb-0">
+                            <span class="badge {% if loop.index == 1 %}bg-dark{% elif loop.index == 2 %}bg-dark{% elif loop.index == 3 %}bg-dark{% else %}bg-primary{% endif %}">
+                                {{ entry.trophy_count }} {% if entry.trophy_count == 1 %}Trophy{% else %}Trophies{% endif %}
+                            </span>
+                        </h3>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <h6 class="mb-3">Course Trophies Owned:</h6>
+                <div class="row g-3">
+                    {% for trophy in entry.trophies %}
+                    <div class="col-lg-2 col-md-3 col-sm-4 col-6">
+                        <div class="card h-100 border-warning" style="background-color: #fffef7;">
+                            <div class="card-body text-center p-2">
+                                <img src="{{ url_for('static', filename='uploads/trophies/' + trophy.difficulty + '/' + trophy.trophy_image) }}"
+                                     alt="{{ trophy.course_name }} Trophy"
+                                     class="img-fluid mb-2"
+                                     style="max-height: 100px; object-fit: contain;"
+                                     onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                <div class="text-muted" style="height: 100px; display: none; align-items: center; justify-content: center; flex-direction: column;">
+                                    <i class="bi bi-trophy" style="font-size: 2.5rem;"></i>
+                                </div>
+                                <h6 class="mb-0" style="font-size: 0.75rem; line-height: 1.2;">
+                                    <a href="{{ url_for('courses.course_detail', course_id=trophy.course_id) }}"
+                                       class="text-decoration-none text-dark">
+                                        {{ trophy.course_name }}
+                                    </a>
+                                </h6>
+                                <small class="text-muted d-block" style="font-size: 0.65rem;">
+                                    {{ trophy.date_acquired }}
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Summary Stats -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card bg-light">
+            <div class="card-body">
+                <h5 class="mb-3"><i class="bi bi-graph-up"></i> Trophy Statistics</h5>
+                <div class="row">
+                    <div class="col-md-4">
+                        <p class="mb-2"><strong>Total Players with Trophies:</strong> {{ leaderboard|length }}</p>
+                    </div>
+                    <div class="col-md-4">
+                        <p class="mb-2"><strong>Total Trophies Awarded:</strong> {{ total_trophies }}</p>
+                    </div>
+                    <div class="col-md-4">
+                        <p class="mb-2"><strong>Average per Player:</strong> {{ "%.1f"|format(total_trophies / leaderboard|length) if leaderboard|length > 0 else 0 }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% else %}
+<div class="alert alert-info">
+    <i class="bi bi-info-circle"></i> No trophy owners yet. Be the first to win a round with 4+ players to claim a trophy!
+</div>
+{% endif %}
+
+{% endblock %}

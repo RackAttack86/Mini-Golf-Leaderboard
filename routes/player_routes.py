@@ -4,6 +4,7 @@ import os
 import uuid
 from models.player import Player
 from models.round import Round
+from models.course_trophy import CourseTrophy
 from services.achievement_service import AchievementService
 from utils.auth_decorators import admin_required, player_or_admin_required
 from utils.file_validators import validate_image_file, sanitize_filename
@@ -102,7 +103,10 @@ def player_detail(player_id):
         'average_score': 0,
         'best_score': None,
         'worst_score': None,
-        'wins': 0
+        'wins': 0,
+        'gold_trophies': 0,    # 1st place finishes
+        'silver_trophies': 0,  # 2nd place finishes
+        'bronze_trophies': 0   # 3rd place finishes
     }
 
     # Track personal bests per course
@@ -115,10 +119,30 @@ def player_detail(player_id):
             if score:
                 scores.append(score)
 
-                # Check if this was a win (lowest score in the round)
-                min_score = min(s['score'] for s in round_data['scores'])
-                if score == min_score:
-                    stats['wins'] += 1
+                # Only count placements for multi-player rounds (2+ players)
+                if len(round_data['scores']) >= 2:
+                    # Sort scores to determine placement
+                    sorted_scores = sorted(round_data['scores'], key=lambda x: x['score'])
+
+                    # Find this player's position
+                    position = 0
+                    last_score = None
+                    for idx, score_entry in enumerate(sorted_scores):
+                        # Handle ties - same score = same position
+                        if last_score is None or score_entry['score'] != last_score:
+                            position = idx + 1
+                        last_score = score_entry['score']
+
+                        if score_entry['player_id'] == player_id:
+                            # Increment appropriate trophy counter
+                            if position == 1:
+                                stats['wins'] += 1
+                                stats['gold_trophies'] += 1
+                            elif position == 2:
+                                stats['silver_trophies'] += 1
+                            elif position == 3:
+                                stats['bronze_trophies'] += 1
+                            break
 
                 # Track personal best for this course
                 course_id = round_data['course_id']
@@ -149,8 +173,12 @@ def player_detail(player_id):
     # Get player trophies (wins by course)
     trophies = Player.get_player_trophies(player_id)
 
+    # Get owned course trophies
+    owned_course_trophies = CourseTrophy.get_trophies_owned_by_player(player_id)
+
     return render_template('players/detail.html', player=player, rounds=rounds, stats=stats,
-                         achievements=achievements, personal_bests=personal_bests_list, trophies=trophies)
+                         achievements=achievements, personal_bests=personal_bests_list, trophies=trophies,
+                         owned_course_trophies=owned_course_trophies)
 
 
 @bp.route('/<player_id>/edit', methods=['POST'])
