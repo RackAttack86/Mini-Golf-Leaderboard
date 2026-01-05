@@ -151,8 +151,14 @@
                 </h5>
             </div>
             <div class="card-body text-center">
-                <i class="bi bi-trophy text-muted" style="font-size: 4rem;"></i>
-                <p class="text-muted mt-3 mb-0">
+                {% if trophy_image %}
+                <img src="{{ url_for('static', filename=trophy_image) }}"
+                     alt="{{ course.name }} Trophy"
+                     class="img-fluid mb-3"
+                     style="max-height: 250px; object-fit: contain;"
+                     onerror="this.style.display='none';">
+                {% endif %}
+                <p class="text-muted mb-0">
                     No trophy owner yet. Be the first to win a round with 4+ players to claim this trophy!
                 </p>
             </div>

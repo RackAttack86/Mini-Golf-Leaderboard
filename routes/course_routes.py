@@ -236,13 +236,10 @@ def course_detail(course_id):
     # Get trophy owner for this course
     trophy_owner = CourseTrophy.get_trophy_owner(course_id)
 
-    # Determine trophy image path
-    trophy_image = None
-    if trophy_owner:
-        course_name = course['name']
-        trophy_filename = course_name.replace(' ', '_') + '.png'
-        difficulty = 'hard' if 'Hard' in course_name else 'normal'
-        trophy_image = f'uploads/trophies/{difficulty}/{trophy_filename}'
+    # Always determine trophy image path (shown even without owner)
+    course_name = course['name']
+    difficulty, trophy_filename = CourseTrophy.generate_trophy_filename(course_name)
+    trophy_image = f'uploads/trophies/{difficulty}/{trophy_filename}'
 
     return render_template('courses/detail.html',
                          course=course,
