@@ -1,0 +1,164 @@
+{#
+  Reusable Jinja2 macros for Mini Golf Leaderboard templates
+  Usage: {% from 'macros.html' import macro_name %}
+#}
+
+{#
+  Profile Picture Display Macro
+  Displays player profile picture with placeholder fallback
+
+  Args:
+    player: Player dict with profile_picture and favorite_color
+    size: Size class suffix ('sm', 'md', 'lg') - default 'sm'
+#}
+{% macro profile_picture(player, size='sm') %}
+{% if player.profile_picture %}
+<img src="{{ url_for('static', filename='uploads/profiles/' + player.profile_picture) }}"
+     alt="{{ player.name }}"
+     class="profile-picture-{{ size }}"
+     style="border-color: {{ player.favorite_color or '#2e7d32' }};">
+{% else %}
+<div class="profile-picture-placeholder{% if size != 'sm' %}-{{ size }}{% endif %}{% if size == 'lg' %} d-inline-flex{% endif %}"
+     style="border-color: {{ player.favorite_color or '#2e7d32' }};">
+    <i class="bi bi-person-fill"></i>
+</div>
+{% endif %}
+{% endmacro %}
+
+
+{#
+  Course Image Display Macro
+  Displays course image handling both HTTP URLs and uploaded files
+
+  Args:
+    course: Course dict with image_url
+    css_class: CSS class for the image - default 'course-thumbnail'
+#}
+{% macro course_image(course, css_class='course-thumbnail') %}
+{% if course.image_url %}
+    {% if course.image_url.startswith('http') %}
+    <img src="{{ course.image_url }}" alt="{{ course.name }}" class="{{ css_class }}">
+    {% else %}
+    <img src="{{ url_for('static', filename='uploads/courses/' + course.image_url) }}" alt="{{ course.name }}" class="{{ css_class }}">
+    {% endif %}
+{% else %}
+<div class="{{ css_class }}-placeholder">
+    <i class="bi bi-pin-map"></i>
+</div>
+{% endif %}
+{% endmacro %}
+
+
+{#
+  Placement Trophy Macro
+  Renders Gold/Silver/Bronze trophy images with podium sizing
+
+  Args:
+    position: Integer position (1=Gold, 2=Silver, 3=Bronze)
+    size: Size variant ('large', 'medium', 'small') - default 'large'
+#}
+{% macro placement_trophy(position, size='large') %}
+{% if size == 'large' %}
+    {% set heights = {1: '360px', 2: '342px', 3: '320px'} %}
+{% elif size == 'medium' %}
+    {% set heights = {1: '180px', 2: '171px', 3: '160px'} %}
+{% else %}
+    {% set heights = {1: '90px', 2: '85px', 3: '80px'} %}
+{% endif %}
+
+{% if position == 1 %}
+<img src="{{ url_for('static', filename='images/trophies/GoldTrophy.png') }}"
+     alt="Gold Trophy - 1st Place"
+     style="height: {{ heights[1] }}; object-fit: contain;">
+{% elif position == 2 %}
+<img src="{{ url_for('static', filename='images/trophies/SilverTrophy.png') }}"
+     alt="Silver Trophy - 2nd Place"
+     style="height: {{ heights[2] }}; object-fit: contain;">
+{% elif position == 3 %}
+<img src="{{ url_for('static', filename='images/trophies/BronzeTrophy.png') }}"
+     alt="Bronze Trophy - 3rd Place"
+     style="height: {{ heights[3] }}; object-fit: contain;">
+{% endif %}
+{% endmacro %}
+
+
+{#
+  Card Header with Icon Macro
+  Standard colored header with Bootstrap icon
+
+  Args:
+    title: Header title text
+    icon: Bootstrap icon class (e.g., 'bi-trophy-fill')
+    color: Bootstrap color class - default 'primary'
+#}
+{% macro card_header(title, icon, color='primary') %}
+<div class="card-header bg-{{ color }} text-white">
+    <h5 class="mb-0">
+        <i class="bi {{ icon }}"></i> {{ title }}
+    </h5>
+</div>
+{% endmacro %}
+
+
+{#
+  Empty State Message Macro
+  Info alert with optional call-to-action link
+
+  Args:
+    message: Message to display
+    action_text: Optional link text (e.g., "Add your first!")
+    action_url: Optional URL for the action link
+#}
+{% macro empty_state(message, action_text='', action_url='') %}
+<div class="alert alert-info">
+    <i class="bi bi-info-circle"></i> {{ message }}
+    {% if action_text and action_url %}
+    <a href="{{ action_url }}">{{ action_text }}</a>
+    {% endif %}
+</div>
+{% endmacro %}
+
+
+{#
+  Delete Confirmation Modal Macro
+  Standardized delete modal across detail pages
+
+  Args:
+    item_name: Name of the item being deleted (e.g., player.name)
+    item_type: Type of item (e.g., "player", "course", "round")
+    delete_url: URL for the delete form action
+    warning_message: Optional custom warning message
+    modal_id: Optional custom modal ID - default 'deleteModal'
+#}
+{% macro delete_modal(item_name, item_type, delete_url, warning_message='', modal_id='deleteModal') %}
+<div class="modal fade" id="{{ modal_id }}" tabindex="-1" aria-labelledby="{{ modal_id }}Label" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="{{ modal_id }}Label">
+                    <i class="bi bi-exclamation-triangle-fill"></i> Confirm Delete
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete <strong>{{ item_name }}</strong>?</p>
+                {% if warning_message %}
+                <div class="alert alert-warning">
+                    <i class="bi bi-exclamation-triangle"></i> {{ warning_message }}
+                </div>
+                {% else %}
+                <p class="text-muted">This action cannot be undone.</p>
+                {% endif %}
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form method="POST" action="{{ delete_url }}" class="d-inline">
+                    <button type="submit" class="btn btn-danger">
+                        <i class="bi bi-trash"></i> Delete {{ item_type | capitalize }}
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endmacro %}

@@ -1,10 +1,16 @@
+# Standard library
+import os
+from datetime import datetime, timedelta
+
+# Third-party
 from flask import Blueprint, render_template
+
+# Local
 from models.player import Player
 from models.course import Course
 from models.round import Round
 from models.course_trophy import CourseTrophy
 from services.achievement_service import AchievementService
-import os
 
 bp = Blueprint('main', __name__)
 
@@ -12,8 +18,6 @@ bp = Blueprint('main', __name__)
 @bp.route('/')
 def index():
     """Dashboard/home page"""
-    from datetime import datetime, timedelta
-
     # Get summary statistics
     players = Player.get_all()
     courses = Course.get_all()

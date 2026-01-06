@@ -1,7 +1,10 @@
+# Standard library
 import uuid
 import json
 from datetime import datetime, UTC
 from typing import List, Optional, Dict, Any, Tuple
+
+# Local
 from models.database import get_db
 from models.player import Player
 from models.course import Course

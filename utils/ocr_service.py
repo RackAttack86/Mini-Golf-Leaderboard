@@ -1,14 +1,20 @@
 """OCR service for extracting scorecard data from Walkabout Mini Golf screenshots"""
+
+# Standard library
 import re
-import pytesseract
-from PIL import Image, ImageEnhance, ImageFilter, ImageOps
 from datetime import datetime
-from typing import Dict, List, Optional, Tuple, Any
 from pathlib import Path
-from fuzzywuzzy import fuzz
-from config import Config
-import numpy as np
+from typing import Dict, List, Optional, Tuple, Any
+
+# Third-party
 import cv2
+import numpy as np
+import pytesseract
+from fuzzywuzzy import fuzz
+from PIL import Image, ImageEnhance, ImageFilter, ImageOps
+
+# Local
+from config import Config
 
 # Set Tesseract path for Windows
 pytesseract.pytesseract.tesseract_cmd = Config.OCR_TESSERACT_PATH
