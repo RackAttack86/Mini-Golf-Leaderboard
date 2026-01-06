@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, session
+from flask import Blueprint, render_template, request, redirect, url_for, flash, session, send_from_directory
 from werkzeug.utils import secure_filename
 from models.round import Round
 from models.player import Player
@@ -313,7 +313,6 @@ def upload_picture():
 @login_required
 def serve_temp_image(filename):
     """Serve temporary uploaded image for preview"""
-    from flask import send_from_directory
     temp_dir = Path(Config.BASE_DIR) / 'data' / 'temp'
     return send_from_directory(temp_dir, filename)
 
@@ -408,7 +407,6 @@ def create_from_upload():
             Path(temp_path).rename(permanent_path)
 
             # Update round with picture filename
-            from models.database import get_db
             db = get_db()
             conn = db.get_connection()
             conn.execute(

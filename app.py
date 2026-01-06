@@ -1,24 +1,25 @@
-from flask import Flask, render_template, request
-from datetime import datetime
-from config import Config
-from flask_login import current_user
-from flask_dance.contrib.google import make_google_blueprint
-from flask_talisman import Talisman
-from flask_session import Session
-from dotenv import load_dotenv
+# Standard library
 import logging
-from logging.handlers import RotatingFileHandler
 import os
+from datetime import datetime
+from logging.handlers import RotatingFileHandler
 
-# Import Flask extensions from extensions module to avoid circular imports
+# Third-party
+from dotenv import load_dotenv
+from flask import Flask, render_template, flash
+from flask_dance.contrib.google import make_google_blueprint
+from flask_login import current_user
+from flask_session import Session
+from flask_talisman import Talisman
+
+# Local
+from config import Config
 from extensions import limiter, csrf, login_manager
+from routes import main_routes, player_routes, course_routes, round_routes, stats_routes, auth_routes
+from services.auth_service import AuthService
 
 # Load environment variables from .env file
 load_dotenv()
-
-# Import route blueprints
-from routes import main_routes, player_routes, course_routes, round_routes, stats_routes, auth_routes
-from services.auth_service import AuthService
 
 
 def create_app():
@@ -156,7 +157,6 @@ def setup_logging(app):
 def register_error_handlers(app):
     """Register global error handlers"""
     from flask_wtf.csrf import CSRFError
-    from flask import flash
 
     @app.errorhandler(CSRFError)
     def handle_csrf_error(e):

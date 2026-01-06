@@ -1,5 +1,7 @@
-from models.round import Round
 from typing import Optional, Dict, Any, List
+
+from models.round import Round
+from models.player import Player
 
 
 class TrendsService:
@@ -141,8 +143,6 @@ class TrendsService:
         Returns:
             Dictionary with player trends for comparison charts
         """
-        from models.player import Player
-
         # Build filters
         filters = {}
         if start_date:
