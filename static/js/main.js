@@ -81,3 +81,156 @@ function loadFormData(formId) {
 function clearFormData(formId) {
     localStorage.removeItem(`form_${formId}`);
 }
+
+// ===== Shared Template Functions =====
+
+/**
+ * Setup auto-submit for form inputs
+ * @param {string} formId - The form element ID
+ * @param {string} selectorType - CSS selector for inputs (default: 'input[type="checkbox"]')
+ */
+function setupAutoSubmitForm(formId, selectorType = 'input[type="checkbox"]') {
+    const form = document.getElementById(formId);
+    if (!form) return;
+
+    const inputs = form.querySelectorAll(selectorType);
+    inputs.forEach(input => {
+        input.addEventListener('change', function() {
+            form.submit();
+        });
+    });
+}
+
+/**
+ * Update course preview handling both HTTP URLs and uploaded files
+ * @param {string} imageUrl - The image URL or filename
+ * @param {string} previewElementId - ID of the preview image element
+ */
+function updateCoursePreview(imageUrl, previewElementId) {
+    const preview = document.getElementById(previewElementId);
+    if (!preview) return;
+
+    if (imageUrl) {
+        if (imageUrl.startsWith('http')) {
+            preview.src = imageUrl;
+        } else {
+            // Construct path to uploads/courses/
+            preview.src = `/static/uploads/courses/${imageUrl}`;
+        }
+        preview.style.display = 'block';
+    } else {
+        preview.style.display = 'none';
+    }
+}
+
+/**
+ * Create a Chart.js score chart with standard configuration
+ * @param {HTMLCanvasElement} ctx - Canvas context
+ * @param {Object} data - Chart data object
+ * @param {Object} options - Additional chart options (merged with defaults)
+ * @returns {Chart} Chart instance
+ */
+function createScoreChart(ctx, data, options = {}) {
+    const defaultOptions = {
+        responsive: true,
+        maintainAspectRatio: true,
+        scales: {
+            y: {
+                reverse: true,
+                beginAtZero: false,
+                title: {
+                    display: true,
+                    text: 'Score (lower is better)'
+                }
+            }
+        },
+        plugins: {
+            legend: {
+                display: data.datasets && data.datasets.length > 1
+            }
+        }
+    };
+
+    // Deep merge options
+    const mergedOptions = Object.assign({}, defaultOptions, options);
+
+    return new Chart(ctx, {
+        type: 'line',
+        data: data,
+        options: mergedOptions
+    });
+}
+
+/**
+ * Setup table filtering with visible count
+ * @param {string} inputId - Search input element ID
+ * @param {string} tableId - Table element ID
+ * @param {Object} options - Configuration options
+ */
+function setupTableFilter(inputId, tableId, options = {}) {
+    const searchInput = document.getElementById(inputId);
+    const table = document.getElementById(tableId);
+    if (!searchInput || !table) return;
+
+    const countElementId = options.countElementId || null;
+    const countElement = countElementId ? document.getElementById(countElementId) : null;
+
+    searchInput.addEventListener('input', function() {
+        const filter = this.value.toLowerCase();
+        const rows = table.querySelectorAll('tbody tr');
+        let visibleCount = 0;
+
+        rows.forEach(row => {
+            const text = row.textContent.toLowerCase();
+            if (text.includes(filter)) {
+                row.style.display = '';
+                visibleCount++;
+            } else {
+                row.style.display = 'none';
+            }
+        });
+
+        if (countElement) {
+            countElement.textContent = `Showing ${visibleCount} of ${rows.length}`;
+        }
+    });
+}
+
+/**
+ * Calculate total score from hole inputs
+ * @param {NodeList|Array} holeInputs - Input elements or array of values
+ * @returns {number} Total score
+ */
+function calculateTotalScore(holeInputs) {
+    let total = 0;
+    holeInputs.forEach(input => {
+        const value = typeof input === 'object' ? parseInt(input.value) : parseInt(input);
+        if (!isNaN(value)) {
+            total += value;
+        }
+    });
+    return total;
+}
+
+/**
+ * Set form loading state (enhanced version)
+ * @param {string} formId - Form element ID
+ * @param {string} loadingText - Text to display while loading
+ * @param {boolean} isLoading - Whether to show or hide loading state
+ */
+function setFormLoading(formId, loadingText, isLoading = true) {
+    const form = document.getElementById(formId);
+    if (!form) return;
+
+    const submitButton = form.querySelector('button[type="submit"]');
+    if (!submitButton) return;
+
+    if (isLoading) {
+        submitButton.disabled = true;
+        submitButton.dataset.originalText = submitButton.innerHTML;
+        submitButton.innerHTML = `<span class="spinner-border spinner-border-sm me-2"></span>${loadingText}`;
+    } else {
+        submitButton.disabled = false;
+        submitButton.innerHTML = submitButton.dataset.originalText || 'Submit';
+    }
+}
