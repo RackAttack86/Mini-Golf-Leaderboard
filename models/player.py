@@ -225,6 +225,10 @@ class Player:
             return True, "Player deactivated (has existing rounds)"
         else:
             # Hard delete
+            if has_rounds and force:
+                # Delete all round_scores for this player
+                conn.execute("DELETE FROM round_scores WHERE player_id = ?", (player_id,))
+
             conn.execute("DELETE FROM players WHERE id = ?", (player_id,))
             return True, "Player deleted successfully"
 

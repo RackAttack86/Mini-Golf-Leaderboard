@@ -234,15 +234,19 @@ class TestCourseRatingEdgeCases:
         """Test that date_rated timestamp is in correct format"""
         CourseRating.rate_course('test-player-1', 'test-course-1', 5)
 
-        # Get the rating data directly
-        from models.data_store import get_data_store
-        store = get_data_store()
-        data = store.read_course_ratings()
+        # Get the rating data directly from database
+        from models.database import get_db
+        db = get_db()
+        conn = db.get_connection()
+        cursor = conn.execute(
+            "SELECT date_rated FROM course_ratings WHERE player_id = ? AND course_id = ?",
+            ('test-player-1', 'test-course-1')
+        )
+        row = cursor.fetchone()
 
-        rating_data = data['ratings'][0]
         # Verify ISO 8601 format
         date_rated = datetime.strptime(
-            rating_data['date_rated'],
+            row['date_rated'],
             '%Y-%m-%dT%H:%M:%SZ'
         )
         assert date_rated is not None
@@ -252,11 +256,15 @@ class TestCourseRatingEdgeCases:
         # Create initial rating
         CourseRating.rate_course('test-player-1', 'test-course-1', 3)
 
-        # Get initial timestamp
-        from models.data_store import get_data_store
-        store = get_data_store()
-        data = store.read_course_ratings()
-        initial_timestamp = data['ratings'][0]['date_rated']
+        # Get initial timestamp from database
+        from models.database import get_db
+        db = get_db()
+        conn = db.get_connection()
+        cursor = conn.execute(
+            "SELECT date_rated FROM course_ratings WHERE player_id = ? AND course_id = ?",
+            ('test-player-1', 'test-course-1')
+        )
+        initial_timestamp = cursor.fetchone()['date_rated']
 
         # Wait a moment and update
         import time
@@ -265,9 +273,12 @@ class TestCourseRatingEdgeCases:
         # Update rating
         CourseRating.rate_course('test-player-1', 'test-course-1', 5)
 
-        # Get new timestamp
-        data = store.read_course_ratings()
-        new_timestamp = data['ratings'][0]['date_rated']
+        # Get new timestamp from database
+        cursor = conn.execute(
+            "SELECT date_rated FROM course_ratings WHERE player_id = ? AND course_id = ?",
+            ('test-player-1', 'test-course-1')
+        )
+        new_timestamp = cursor.fetchone()['date_rated']
 
         # Timestamps should be different
         assert new_timestamp >= initial_timestamp
