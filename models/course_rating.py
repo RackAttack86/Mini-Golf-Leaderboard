@@ -30,7 +30,13 @@ class CourseRating:
         date_rated = datetime.now(UTC).strftime('%Y-%m-%dT%H:%M:%SZ')
 
         try:
-            # Try to insert, if exists (primary key conflict), update instead
+            # Check if rating already exists
+            existing = conn.execute(
+                "SELECT COUNT(*) FROM course_ratings WHERE player_id = ? AND course_id = ?",
+                (player_id, course_id)
+            ).fetchone()[0]
+
+            # Insert or update rating
             conn.execute("""
                 INSERT INTO course_ratings (player_id, course_id, rating, date_rated)
                 VALUES (?, ?, ?, ?)
@@ -38,12 +44,6 @@ class CourseRating:
                     rating = excluded.rating,
                     date_rated = excluded.date_rated
             """, (player_id, course_id, rating, date_rated))
-
-            # Check if this was an insert or update
-            existing = conn.execute(
-                "SELECT COUNT(*) FROM course_ratings WHERE player_id = ? AND course_id = ?",
-                (player_id, course_id)
-            ).fetchone()[0]
 
             message = "Rating updated successfully" if existing else "Rating added successfully"
             return True, message

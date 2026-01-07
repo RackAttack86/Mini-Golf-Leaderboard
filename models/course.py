@@ -228,6 +228,10 @@ class Course:
             return True, "Course deactivated (has existing rounds)"
         else:
             # Hard delete
+            if has_rounds and force:
+                # Delete all rounds for this course (round_scores will cascade delete)
+                conn.execute("DELETE FROM rounds WHERE course_id = ?", (course_id,))
+
             conn.execute("DELETE FROM courses WHERE id = ?", (course_id,))
             return True, "Course deleted successfully"
 
