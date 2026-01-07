@@ -45,6 +45,7 @@ CREATE TABLE IF NOT EXISTS rounds (
     round_start_time TEXT,
     notes TEXT,
     picture_filename TEXT,
+    trophy_up_for_grabs INTEGER DEFAULT 0,
     FOREIGN KEY (course_id) REFERENCES courses(id)
 );
 
@@ -84,6 +85,35 @@ CREATE TABLE IF NOT EXISTS course_ratings (
 
 CREATE INDEX IF NOT EXISTS idx_ratings_course_id ON course_ratings(course_id);
 
+-- Course trophies table - tracks trophy ownership per course
+CREATE TABLE IF NOT EXISTS course_trophies (
+    course_id TEXT PRIMARY KEY,
+    player_id TEXT NOT NULL,
+    date_acquired TEXT NOT NULL,
+    acquired_round_id TEXT NOT NULL,
+    FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE,
+    FOREIGN KEY (player_id) REFERENCES players(id),
+    FOREIGN KEY (acquired_round_id) REFERENCES rounds(id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_course_trophies_player ON course_trophies(player_id);
+CREATE INDEX IF NOT EXISTS idx_course_trophies_date ON course_trophies(date_acquired);
+
+-- Course notes table - player-specific notes for courses
+CREATE TABLE IF NOT EXISTS course_notes (
+    player_id TEXT NOT NULL,
+    course_id TEXT NOT NULL,
+    notes TEXT,
+    date_created TEXT NOT NULL,
+    date_updated TEXT NOT NULL,
+    PRIMARY KEY (player_id, course_id),
+    FOREIGN KEY (player_id) REFERENCES players(id) ON DELETE CASCADE,
+    FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_course_notes_player_id ON course_notes(player_id);
+CREATE INDEX IF NOT EXISTS idx_course_notes_course_id ON course_notes(course_id);
+
 -- Tournaments table
 CREATE TABLE IF NOT EXISTS tournaments (
     id TEXT PRIMARY KEY,
@@ -115,4 +145,5 @@ CREATE TABLE IF NOT EXISTS schema_version (
     applied_at TEXT NOT NULL
 );
 
-INSERT OR IGNORE INTO schema_version (version, applied_at) VALUES (1, datetime('now'));
+-- Version 2: Added course_trophies, course_notes tables and trophy_up_for_grabs column
+INSERT OR IGNORE INTO schema_version (version, applied_at) VALUES (2, datetime('now'));
