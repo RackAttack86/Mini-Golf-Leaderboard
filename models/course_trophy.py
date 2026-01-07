@@ -88,7 +88,7 @@ class CourseTrophy:
         }
 
     @staticmethod
-    def get_all_trophy_owners_dict() -> Dict[str, Dict[str, str]]:
+    def get_owners_map() -> Dict[str, Dict[str, str]]:
         """
         Get all trophy owners as dict for easy JavaScript access.
 

@@ -177,19 +177,19 @@ class TestCourseRatingRetrieval:
         assert avg == 4.3
         assert count == 3
 
-    def test_get_all_course_ratings_empty(self, data_store):
+    def test_get_all_empty(self, data_store):
         """Test getting all course ratings when none exist"""
-        ratings = CourseRating.get_all_course_ratings()
+        ratings = CourseRating.get_all()
 
         assert ratings == {}
 
-    def test_get_all_course_ratings(self, populated_data_store):
+    def test_get_all(self, populated_data_store):
         """Test getting all course ratings"""
         CourseRating.rate_course('test-player-1', 'test-course-1', 5)
         CourseRating.rate_course('test-player-2', 'test-course-1', 4)
         CourseRating.rate_course('test-player-1', 'test-course-2', 3)
 
-        ratings = CourseRating.get_all_course_ratings()
+        ratings = CourseRating.get_all()
 
         assert 'test-course-1' in ratings
         assert 'test-course-2' in ratings

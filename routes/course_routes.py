@@ -64,7 +64,7 @@ def list_courses():
     courses = Course.get_all(active_only=False)
 
     # Get all course ratings
-    all_ratings = CourseRating.get_all_course_ratings()
+    all_ratings = CourseRating.get_all()
 
     # Get all trophy owners
     all_trophy_owners = {}

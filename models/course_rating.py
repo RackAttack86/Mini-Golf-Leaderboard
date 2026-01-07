@@ -100,7 +100,7 @@ class CourseRating:
         return round(row['avg_rating'], 1), row['count']
 
     @staticmethod
-    def get_all_course_ratings() -> Dict[str, Tuple[Optional[float], int]]:
+    def get_all() -> Dict[str, Tuple[Optional[float], int]]:
         """
         Get average ratings for all courses
 

@@ -73,7 +73,7 @@ def add_round():
     courses = Course.get_all()
 
     # Get trophy ownership data for JavaScript
-    course_trophy_owners = CourseTrophy.get_all_trophy_owners_dict()
+    course_trophy_owners = CourseTrophy.get_owners_map()
 
     if request.method == 'POST':
         course_id = request.form.get('course_id')
