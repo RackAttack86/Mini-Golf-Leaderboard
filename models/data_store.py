@@ -1,3 +1,13 @@
+"""
+DEPRECATED: This module is deprecated and will be removed in a future version.
+
+The application has migrated from JSON file storage to SQLite database.
+This module is only kept for backward compatibility with legacy tests.
+
+New code should use:
+- models/database.py for database connections
+- Individual model classes (Player, Course, Round, etc.) for data access
+"""
 import json
 import os
 import tempfile

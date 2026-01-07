@@ -128,47 +128,50 @@ class Round:
         timestamp = datetime.now(UTC).strftime('%Y-%m-%dT%H:%M:%SZ')
 
         try:
-            # Insert round
-            conn.execute("""
-                INSERT INTO rounds (
-                    id, course_id, course_name, date_played, timestamp,
-                    round_start_time, notes, picture_filename
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            """, (
-                round_id,
-                course_id,
-                course['name'],  # Denormalized
-                date_played,
-                timestamp,
-                round_start_time,
-                sanitize_html(notes) if notes else None,
-                picture_filename
-            ))
-
-            # Insert scores
-            for score_data in validated_scores:
-                # Encode hole_scores as JSON if present
-                hole_scores_json = None
-                if score_data['hole_scores']:
-                    hole_scores_json = json.dumps(score_data['hole_scores'])
-
-                conn.execute("""
-                    INSERT INTO round_scores (
-                        round_id, player_id, player_name, score, hole_scores
-                    ) VALUES (?, ?, ?, ?, ?)
+            # Use transaction to ensure round and scores are created atomically
+            with db.transaction() as trans_conn:
+                # Insert round
+                trans_conn.execute("""
+                    INSERT INTO rounds (
+                        id, course_id, course_name, date_played, timestamp,
+                        round_start_time, notes, picture_filename
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                 """, (
                     round_id,
-                    score_data['player_id'],
-                    score_data['player_name'],
-                    score_data['score'],
-                    hole_scores_json
+                    course_id,
+                    course['name'],  # Denormalized
+                    date_played,
+                    timestamp,
+                    round_start_time,
+                    sanitize_html(notes) if notes else None,
+                    picture_filename
                 ))
 
-            # Return the created round
+                # Insert scores
+                for score_data in validated_scores:
+                    # Encode hole_scores as JSON if present
+                    hole_scores_json = None
+                    if score_data['hole_scores']:
+                        hole_scores_json = json.dumps(score_data['hole_scores'])
+
+                    trans_conn.execute("""
+                        INSERT INTO round_scores (
+                            round_id, player_id, player_name, score, hole_scores
+                        ) VALUES (?, ?, ?, ?, ?)
+                    """, (
+                        round_id,
+                        score_data['player_id'],
+                        score_data['player_name'],
+                        score_data['score'],
+                        hole_scores_json
+                    ))
+
+            # Return the created round (transaction committed successfully)
             round_data = Round.get_by_id(round_id)
             return True, "Round created successfully", round_data
 
         except Exception as e:
+            # Transaction automatically rolled back on exception
             return False, f"Error creating round: {str(e)}", None
 
     @staticmethod
@@ -205,44 +208,47 @@ class Round:
             return False, error
 
         try:
-            # Update round
-            conn.execute("""
-                UPDATE rounds SET
-                    course_id = ?,
-                    course_name = ?,
-                    date_played = ?,
-                    notes = ?
-                WHERE id = ?
-            """, (
-                course_id,
-                course['name'],  # Update denormalized
-                date_played,
-                sanitize_html(notes) if notes else None,
-                round_id
-            ))
-
-            # Delete old scores
-            conn.execute("DELETE FROM round_scores WHERE round_id = ?", (round_id,))
-
-            # Insert new scores
-            for score_data in validated_scores:
-                # Encode hole_scores as JSON if present
-                hole_scores_json = None
-                if score_data.get('hole_scores'):
-                    hole_scores_json = json.dumps(score_data['hole_scores'])
-
-                conn.execute("""
-                    INSERT INTO round_scores (
-                        round_id, player_id, player_name, score, hole_scores
-                    ) VALUES (?, ?, ?, ?, ?)
+            # Use transaction to ensure round and scores are updated atomically
+            with db.transaction() as trans_conn:
+                # Update round
+                trans_conn.execute("""
+                    UPDATE rounds SET
+                        course_id = ?,
+                        course_name = ?,
+                        date_played = ?,
+                        notes = ?
+                    WHERE id = ?
                 """, (
-                    round_id,
-                    score_data['player_id'],
-                    score_data['player_name'],
-                    score_data['score'],
-                    hole_scores_json
+                    course_id,
+                    course['name'],  # Update denormalized
+                    date_played,
+                    sanitize_html(notes) if notes else None,
+                    round_id
                 ))
 
+                # Delete old scores
+                trans_conn.execute("DELETE FROM round_scores WHERE round_id = ?", (round_id,))
+
+                # Insert new scores
+                for score_data in validated_scores:
+                    # Encode hole_scores as JSON if present
+                    hole_scores_json = None
+                    if score_data.get('hole_scores'):
+                        hole_scores_json = json.dumps(score_data['hole_scores'])
+
+                    trans_conn.execute("""
+                        INSERT INTO round_scores (
+                            round_id, player_id, player_name, score, hole_scores
+                        ) VALUES (?, ?, ?, ?, ?)
+                    """, (
+                        round_id,
+                        score_data['player_id'],
+                        score_data['player_name'],
+                        score_data['score'],
+                        hole_scores_json
+                    ))
+
+            # Transaction committed successfully
             return True, "Round updated successfully"
 
         except Exception as e:

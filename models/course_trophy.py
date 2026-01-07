@@ -88,7 +88,7 @@ class CourseTrophy:
         }
 
     @staticmethod
-    def get_all_trophy_owners_dict() -> Dict[str, Dict[str, str]]:
+    def get_owners_map() -> Dict[str, Dict[str, str]]:
         """
         Get all trophy owners as dict for easy JavaScript access.
 
@@ -202,6 +202,14 @@ class CourseTrophy:
         conn = db.get_connection()
 
         try:
+            # Validate that new owner exists
+            cursor = conn.execute(
+                "SELECT id FROM players WHERE id = ?",
+                (new_owner_id,)
+            )
+            if not cursor.fetchone():
+                return False, f"Player {new_owner_id} does not exist"
+
             # Check if trophy already exists for this course
             cursor = conn.execute(
                 "SELECT player_id FROM course_trophies WHERE course_id = ?",
