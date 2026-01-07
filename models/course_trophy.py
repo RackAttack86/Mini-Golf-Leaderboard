@@ -202,6 +202,14 @@ class CourseTrophy:
         conn = db.get_connection()
 
         try:
+            # Validate that new owner exists
+            cursor = conn.execute(
+                "SELECT id FROM players WHERE id = ?",
+                (new_owner_id,)
+            )
+            if not cursor.fetchone():
+                return False, f"Player {new_owner_id} does not exist"
+
             # Check if trophy already exists for this course
             cursor = conn.execute(
                 "SELECT player_id FROM course_trophies WHERE course_id = ?",

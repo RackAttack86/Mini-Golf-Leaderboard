@@ -28,6 +28,16 @@ class CourseNotes:
         if not player_id or not course_id:
             return False, "Invalid player or course ID"
 
+        # Validate that player exists
+        cursor = conn.execute("SELECT id FROM players WHERE id = ?", (player_id,))
+        if not cursor.fetchone():
+            return False, f"Player {player_id} does not exist"
+
+        # Validate that course exists
+        cursor = conn.execute("SELECT id FROM courses WHERE id = ?", (course_id,))
+        if not cursor.fetchone():
+            return False, f"Course {course_id} does not exist"
+
         # Trim whitespace
         notes = notes.strip() if notes else ""
 
