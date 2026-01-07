@@ -465,8 +465,8 @@ class TestCourseImageHelpers:
     """Test course image helper functions"""
 
     def test_allowed_file_valid_extensions(self):
-        """Test that allowed_file function was removed (now using validate_image_file)"""
-        # This test is deprecated - allowed_file() was replaced with validate_image_file()
+        """Test that validate_image_file works with valid image files"""
+        # Tests the validate_image_file function which replaced allowed_file()
         # for better security (content-based validation)
         from utils.file_validators import validate_image_file
         import io
