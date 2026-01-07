@@ -6,7 +6,7 @@ from logging.handlers import RotatingFileHandler
 
 # Third-party
 from dotenv import load_dotenv
-from flask import Flask, render_template, flash
+from flask import Flask, render_template, flash, request
 from flask_dance.contrib.google import make_google_blueprint
 from flask_login import current_user
 from flask_session import Session
