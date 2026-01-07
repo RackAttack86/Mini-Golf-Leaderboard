@@ -2,7 +2,7 @@
 Pytest fixtures and configuration for Mini Golf Leaderboard tests.
 
 This module provides shared fixtures for testing the application,
-including test data, mock data stores, and Flask app configurations.
+including test data, SQLite database setup, and Flask app configurations.
 """
 import os
 import pytest
@@ -13,7 +13,10 @@ from datetime import datetime, UTC, timedelta
 from unittest.mock import MagicMock
 
 from app import create_app
-from models.data_store import DataStore, init_data_store
+from models.database import Database, init_database
+from models.player import Player
+from models.course import Course
+from models.round import Round
 
 
 @pytest.fixture(scope='session')
@@ -31,37 +34,61 @@ def test_data_dir():
 
 
 @pytest.fixture
-def data_store(test_data_dir):
+def database(test_data_dir):
     """
-    Create a fresh DataStore instance for each test.
+    Create a fresh SQLite database for each test.
 
-    This ensures test isolation by providing a clean data store
+    This ensures test isolation by providing a clean database
     with no pre-existing data.
 
     Args:
         test_data_dir: Temporary directory for test data
 
     Returns:
-        DataStore: Fresh DataStore instance
+        Database: Fresh Database instance
     """
-    # Create a unique subdirectory for this test
-    test_subdir = test_data_dir / f'test_{datetime.now().timestamp()}'
-    test_subdir.mkdir(parents=True, exist_ok=True)
+    # Create a unique database file for this test
+    db_file = test_data_dir / f'test_{datetime.now().timestamp()}.db'
 
-    store = init_data_store(test_subdir)
-    yield store
+    # Reset any existing database singleton
+    Database.reset()
 
-    # Cleanup test subdirectory
-    shutil.rmtree(test_subdir, ignore_errors=True)
+    # Initialize new database with schema
+    db = init_database(db_file)
+
+    yield db
+
+    # Cleanup
+    db.close()
+    Database.reset()
+    if db_file.exists():
+        db_file.unlink()
 
 
 @pytest.fixture
-def app(data_store):
+def data_store(database):
+    """
+    Alias for database fixture for backward compatibility.
+
+    Many tests still reference 'data_store' - this allows them to work
+    without immediate refactoring.
+
+    Args:
+        database: Database fixture
+
+    Returns:
+        Database: Same as database fixture
+    """
+    return database
+
+
+@pytest.fixture
+def app(database):
     """
     Create and configure a Flask application for testing.
 
     Args:
-        data_store: Test data store fixture
+        database: Test database fixture
 
     Returns:
         Flask: Configured Flask application in testing mode
@@ -76,10 +103,6 @@ def app(data_store):
     app.config['TESTING'] = True
     app.config['WTF_CSRF_ENABLED'] = False
     app.config['RATELIMIT_ENABLED'] = False  # Disable rate limiting in tests
-
-    # Re-initialize data store with test directory after create_app()
-    # This ensures tests use isolated test data instead of production data
-    init_data_store(data_store.data_dir)
 
     yield app
 
@@ -203,49 +226,66 @@ def sample_rating_data():
 
 
 @pytest.fixture
-def populated_data_store(data_store, sample_player_data, sample_course_data, sample_round_data):
+def populated_data_store(database, sample_player_data, sample_course_data, sample_round_data):
     """
-    Create a data store pre-populated with sample data.
+    Create a database pre-populated with sample data.
 
     This is useful for tests that need existing data to work with.
+    Uses direct database inserts to maintain backward compatibility with tests
+    that expect specific IDs like 'test-player-1', 'test-course-1', etc.
 
     Args:
-        data_store: Empty data store fixture
+        database: Empty database fixture
         sample_player_data: Sample player data
         sample_course_data: Sample course data
         sample_round_data: Sample round data
 
     Returns:
-        DataStore: Populated data store instance
+        Database: Populated database instance
     """
-    # Add players
-    players_data = data_store.read_players()
-    players_data['players'].append(sample_player_data)
-    players_data['players'].append({
-        **sample_player_data,
-        'id': 'test-player-2',
-        'name': 'Jane Smith',
-        'email': 'jane@example.com'
-    })
-    data_store.write_players(players_data)
+    conn = database.get_connection()
 
-    # Add courses
-    courses_data = data_store.read_courses()
-    courses_data['courses'].append(sample_course_data)
-    courses_data['courses'].append({
-        **sample_course_data,
-        'id': 'test-course-2',
-        'name': 'Mountain Course (HARD)',
-        'location': 'Mountain Valley'
-    })
-    data_store.write_courses(courses_data)
+    # Insert players with fixed IDs for test compatibility
+    conn.execute("""
+        INSERT INTO players (id, name, email, profile_picture, favorite_color, google_id, role, last_login, created_at, active)
+        VALUES ('test-player-1', 'John Doe', 'john@example.com', '', '#2e7d32', NULL, 'player', NULL, ?, 1)
+    """, (datetime.now(UTC).strftime('%Y-%m-%dT%H:%M:%SZ'),))
 
-    # Add rounds
-    rounds_data = data_store.read_rounds()
-    rounds_data['rounds'].append(sample_round_data)
-    data_store.write_rounds(rounds_data)
+    conn.execute("""
+        INSERT INTO players (id, name, email, profile_picture, favorite_color, google_id, role, last_login, created_at, active)
+        VALUES ('test-player-2', 'Jane Smith', 'jane@example.com', '', '#1976d2', NULL, 'player', NULL, ?, 1)
+    """, (datetime.now(UTC).strftime('%Y-%m-%dT%H:%M:%SZ'),))
 
-    return data_store
+    # Insert courses with fixed IDs
+    conn.execute("""
+        INSERT INTO courses (id, name, location, holes, par, image_url, created_at, active)
+        VALUES ('test-course-1', 'Sunset Golf', 'Beach Town', 18, 54, '', ?, 1)
+    """, (datetime.now(UTC).strftime('%Y-%m-%dT%H:%M:%SZ'),))
+
+    conn.execute("""
+        INSERT INTO courses (id, name, location, holes, par, image_url, created_at, active)
+        VALUES ('test-course-2', 'Mountain Course (HARD)', 'Mountain Valley', 18, 54, '', ?, 1)
+    """, (datetime.now(UTC).strftime('%Y-%m-%dT%H:%M:%SZ'),))
+
+    # Insert a round with fixed ID
+    round_timestamp = datetime.now(UTC).strftime('%Y-%m-%dT%H:%M:%SZ')
+    conn.execute("""
+        INSERT INTO rounds (id, course_id, course_name, date_played, timestamp, round_start_time, notes, picture_filename)
+        VALUES ('test-round-1', 'test-course-1', 'Sunset Golf', '2024-01-15', ?, NULL, 'Great game!', NULL)
+    """, (round_timestamp,))
+
+    # Insert round scores
+    conn.execute("""
+        INSERT INTO round_scores (round_id, player_id, player_name, score, hole_scores)
+        VALUES ('test-round-1', 'test-player-1', 'John Doe', 50, NULL)
+    """)
+
+    conn.execute("""
+        INSERT INTO round_scores (round_id, player_id, player_name, score, hole_scores)
+        VALUES ('test-round-1', 'test-player-2', 'Jane Smith', 52, NULL)
+    """)
+
+    return database
 
 
 @pytest.fixture
