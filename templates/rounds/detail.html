@@ -447,12 +447,14 @@
     <div class="col-auto pe-2">
         <div class="position-sticky" style="top: 20px;">
             <div class="d-flex flex-column gap-2">
+                {% if current_user.is_authenticated and current_user.is_admin %}
                 <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#editModal">
                     <i class="bi bi-pencil"></i><br>Edit
                 </button>
                 <button type="button" class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#deleteModal">
                     <i class="bi bi-trash"></i><br>Delete
                 </button>
+                {% endif %}
             </div>
         </div>
     </div>

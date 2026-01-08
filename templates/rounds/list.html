@@ -8,9 +8,11 @@
         <h1><i class="bi bi-list-ol"></i> Rounds</h1>
     </div>
     <div class="col-md-4 text-end">
+        {% if current_user.is_authenticated %}
         <a href="{{ url_for('rounds.add_round') }}" class="btn btn-primary">
             <i class="bi bi-plus-circle"></i> Add Round
         </a>
+        {% endif %}
     </div>
 </div>
 
@@ -150,7 +152,7 @@
 </div>
 {% else %}
 <div class="alert alert-info">
-    <i class="bi bi-info-circle"></i> No rounds found. <a href="{{ url_for('rounds.add_round') }}">Add your first round!</a>
+    <i class="bi bi-info-circle"></i> No rounds found.{% if current_user.is_authenticated %} <a href="{{ url_for('rounds.add_round') }}">Add your first round!</a>{% endif %}
 </div>
 {% endif %}
 {% endblock %}

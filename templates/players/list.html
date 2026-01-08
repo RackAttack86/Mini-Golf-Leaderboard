@@ -8,9 +8,11 @@
         <h1><i class="bi bi-people"></i> Players</h1>
     </div>
     <div class="col-md-4 text-end">
+        {% if current_user.is_authenticated and current_user.is_admin %}
         <a href="{{ url_for('players.add_player') }}" class="btn btn-primary">
             <i class="bi bi-plus-circle"></i> Add Player
         </a>
+        {% endif %}
     </div>
 </div>
 
@@ -23,7 +25,9 @@
                     <tr>
                         <th style="width: 80px;"></th>
                         <th>Name</th>
+                        {% if current_user.is_authenticated and current_user.is_admin %}
                         <th>Email</th>
+                        {% endif %}
                         <th>Status</th>
                         <th>Created</th>
                         <th></th>
@@ -50,7 +54,9 @@
                                 <strong style="font-size: 1.1rem;">{{ player.name }}</strong> <small class="text-muted">({{ player.achievement_score }} pts)</small>
                             </a>
                         </td>
+                        {% if current_user.is_authenticated and current_user.is_admin %}
                         <td>{{ player.email or '-' }}</td>
+                        {% endif %}
                         <td>
                             {% if player.active %}
                                 <span class="badge bg-success">Active</span>
@@ -75,7 +81,7 @@
 </div>
 {% else %}
 <div class="alert alert-info">
-    <i class="bi bi-info-circle"></i> No players yet. <a href="{{ url_for('players.add_player') }}">Add your first player!</a>
+    <i class="bi bi-info-circle"></i> No players yet.{% if current_user.is_authenticated and current_user.is_admin %} <a href="{{ url_for('players.add_player') }}">Add your first player!</a>{% endif %}
 </div>
 {% endif %}
 {% endblock %}

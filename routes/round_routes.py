@@ -1,4 +1,5 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session, send_from_directory
+from flask_login import current_user
 from werkzeug.utils import secure_filename
 from models.round import Round
 from models.player import Player
@@ -15,6 +16,31 @@ import os
 import sqlite3
 
 bp = Blueprint('rounds', __name__)
+
+
+def filter_email_from_players(players, allow_all=False):
+    """
+    Filter email addresses from player dictionaries based on authorization.
+
+    Args:
+        players: Single player dict or list of player dicts
+        allow_all: If True, allow all emails (for admins)
+
+    Returns:
+        Filtered player dict or list of dicts
+    """
+    is_list = isinstance(players, list)
+    player_list = players if is_list else [players]
+
+    # Check if user is admin
+    is_admin = current_user.is_authenticated and current_user.is_admin
+
+    # Filter emails
+    for player in player_list:
+        if player and not (is_admin or allow_all):
+            player['email'] = None
+
+    return player_list if is_list else (player_list[0] if player_list else None)
 
 
 @bp.route('/')
@@ -44,6 +70,7 @@ def list_rounds():
         if round_data['scores']:
             winner_score = min(round_data['scores'], key=lambda x: x['score'])
             winner_player = Player.get_by_id(winner_score['player_id'])
+            winner_player = filter_email_from_players(winner_player)
             round_data['winner_player'] = winner_player
 
         # Add course image data
@@ -52,6 +79,7 @@ def list_rounds():
 
     # Get all players and courses for filter dropdowns
     players = Player.get_all()
+    players = filter_email_from_players(players)
     courses = Course.get_all()
 
     return render_template('rounds/list.html',
@@ -70,6 +98,7 @@ def add_round():
     """Add new round"""
     # Get active players and courses
     players = Player.get_all()
+    players = filter_email_from_players(players)
     courses = Course.get_all()
 
     # Get trophy ownership data for JavaScript
@@ -284,6 +313,7 @@ def upload_picture():
 
         # Get all players for manual selection
         players = Player.get_all()
+        players = filter_email_from_players(players)
 
         # Store temporary file path in session for later use
         session['temp_scorecard_path'] = str(temp_path)
@@ -458,11 +488,13 @@ def round_detail(round_id):
     # Add player data to each score
     for score in round_data['scores']:
         player = Player.get_by_id(score['player_id'])
+        player = filter_email_from_players(player)
         score['player_data'] = player
 
     # Get all courses and players for edit modal
     courses = Course.get_all()
     players = Player.get_all()
+    players = filter_email_from_players(players)
 
     # Filter out players already in this round for the "add player" dropdown
     existing_player_ids = {score['player_id'] for score in round_data['scores']}

@@ -114,7 +114,7 @@
                                     <option value="{{ player.id }}"
                                             {% if player.email == google_email %}selected{% endif %}>
                                         {{ player.name }}
-                                        {% if player.email %}
+                                        {% if current_user.is_authenticated and current_user.is_admin and player.email %}
                                             ({{ player.email }})
                                             {% if player.email == google_email %}
                                                 ✓

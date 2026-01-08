@@ -21,9 +21,11 @@
                     </div>
                 </div>
             </a>
+            {% if current_user.is_authenticated and current_user.is_admin %}
             <div class="card-footer bg-transparent border-0 p-2">
                 <a href="{{ url_for('players.add_player') }}" class="btn btn-sm btn-outline-primary w-100">Add Player</a>
             </div>
+            {% endif %}
         </div>
 
         <div class="card border-success mb-3">
@@ -36,9 +38,11 @@
                     </div>
                 </div>
             </a>
+            {% if current_user.is_authenticated and current_user.is_admin %}
             <div class="card-footer bg-transparent border-0 p-2">
                 <a href="{{ url_for('courses.add_course') }}" class="btn btn-sm btn-outline-success w-100">Add Course</a>
             </div>
+            {% endif %}
         </div>
 
         <div class="card border-info mb-3">
@@ -51,9 +55,11 @@
                     </div>
                 </div>
             </a>
+            {% if current_user.is_authenticated %}
             <div class="card-footer bg-transparent border-0 p-2">
                 <a href="{{ url_for('rounds.add_round') }}" class="btn btn-sm btn-outline-info w-100">Add Round</a>
             </div>
+            {% endif %}
         </div>
             </div>
         </div>
@@ -204,7 +210,7 @@
                 </div>
                 {% else %}
                 <div class="alert alert-info">
-                    <i class="bi bi-info-circle"></i> No rounds recorded yet. <a href="{{ url_for('rounds.add_round') }}">Add your first round!</a>
+                    <i class="bi bi-info-circle"></i> No rounds recorded yet.{% if current_user.is_authenticated %} <a href="{{ url_for('rounds.add_round') }}">Add your first round!</a>{% endif %}
                 </div>
                 {% endif %}
             </div>
