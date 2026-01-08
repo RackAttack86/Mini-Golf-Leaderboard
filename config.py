@@ -19,6 +19,9 @@ class Config:
     MAX_CONTENT_LENGTH = 5 * 1024 * 1024  # 5MB max file size
     UPLOAD_EXTENSIONS = {'.png', '.jpg', '.jpeg', '.gif'}
 
+    # OCR Configuration (Tesseract)
+    OCR_TESSERACT_PATH = os.environ.get('TESSERACT_PATH', r'C:\Program Files\Tesseract-OCR\tesseract.exe')
+
     # Pagination
     ROUNDS_PER_PAGE = 20
 
@@ -91,7 +94,3 @@ class Config:
         'payment': '\'none\'',
     }
 
-    # OCR Settings
-    OCR_CONFIDENCE_THRESHOLD = 0.70  # Auto-accept OCR results if >= 70%
-    FUZZY_MATCH_THRESHOLD = 85  # Minimum similarity for course name auto-matching
-    OCR_TESSERACT_PATH = r'C:\Program Files\Tesseract-OCR\tesseract.exe'  # Windows default
