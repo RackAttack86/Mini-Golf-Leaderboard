@@ -104,7 +104,9 @@ def create_app():
     def inject_globals():
         return {
             'app_name': 'Mini Golf Leaderboard',
-            'current_year': datetime.now().year
+            'current_year': datetime.now().year,
+            'is_admin': current_user.is_authenticated and current_user.is_admin,
+            'is_logged_in': current_user.is_authenticated
         }
 
     # Setup logging
