@@ -1,4 +1,5 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app
+from flask_login import current_user
 import os
 import uuid
 from models.player import Player
@@ -10,6 +11,33 @@ from utils.file_validators import validate_image_file, sanitize_filename
 from extensions import limiter
 
 bp = Blueprint('players', __name__)
+
+
+def filter_email_from_players(players, allow_all=False, allowed_player_id=None):
+    """
+    Filter email addresses from player dictionaries based on authorization.
+
+    Args:
+        players: Single player dict or list of player dicts
+        allow_all: If True, allow all emails (for admins)
+        allowed_player_id: Specific player ID whose email is allowed (for viewing own profile)
+
+    Returns:
+        Filtered player dict or list of dicts
+    """
+    is_list = isinstance(players, list)
+    player_list = players if is_list else [players]
+
+    # Check if user is admin
+    is_admin = current_user.is_authenticated and current_user.is_admin
+
+    # Filter emails
+    for player in player_list:
+        # Allow email if: admin, allow_all flag, or viewing own profile
+        if not (is_admin or allow_all or (allowed_player_id and player['id'] == allowed_player_id)):
+            player['email'] = None
+
+    return player_list if is_list else player_list[0]
 
 def save_profile_picture(file, upload_folder):
     """Save uploaded profile picture with validation"""
@@ -38,6 +66,9 @@ def list_players():
     # Add achievement scores to each player
     for player in players:
         player['achievement_score'] = AchievementService.get_achievement_score(player['id'])
+
+    # Filter emails based on user permissions
+    players = filter_email_from_players(players)
 
     return render_template('players/list.html', players=players)
 
@@ -91,6 +122,9 @@ def player_detail(player_id):
     if not player:
         flash('Player not found', 'error')
         return redirect(url_for('players.list_players'))
+
+    # Filter email (allow if admin or viewing own profile)
+    player = filter_email_from_players(player, allowed_player_id=player_id)
 
     # Get player's rounds
     rounds = Round.get_by_player(player_id)

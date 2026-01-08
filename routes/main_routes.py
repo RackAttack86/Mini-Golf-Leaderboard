@@ -4,6 +4,7 @@ from datetime import datetime, timedelta
 
 # Third-party
 from flask import Blueprint, render_template
+from flask_login import current_user
 
 # Local
 from models.player import Player
@@ -13,6 +14,31 @@ from models.course_trophy import CourseTrophy
 from services.achievement_service import AchievementService
 
 bp = Blueprint('main', __name__)
+
+
+def filter_email_from_players(players, allow_all=False):
+    """
+    Filter email addresses from player dictionaries based on authorization.
+
+    Args:
+        players: Single player dict or list of player dicts
+        allow_all: If True, allow all emails (for admins)
+
+    Returns:
+        Filtered player dict or list of dicts
+    """
+    is_list = isinstance(players, list)
+    player_list = players if is_list else [players]
+
+    # Check if user is admin
+    is_admin = current_user.is_authenticated and current_user.is_admin
+
+    # Filter emails
+    for player in player_list:
+        if player and not (is_admin or allow_all):
+            player['email'] = None
+
+    return player_list if is_list else (player_list[0] if player_list else None)
 
 
 @bp.route('/')
@@ -42,6 +68,7 @@ def index():
         if round_data['scores']:
             winner_score = min(round_data['scores'], key=lambda x: x['score'])
             winner_player = Player.get_by_id(winner_score['player_id'])
+            winner_player = filter_email_from_players(winner_player)
             round_data['winner_player'] = winner_player
 
         # Add course image data
@@ -84,6 +111,10 @@ def index():
     # Sort by average position (lower is better - 1st is better than 2nd)
     player_stats.sort(key=lambda x: x['avg_position'])
     top_players = player_stats[:3]
+
+    # Filter emails from top players
+    for player_stat in top_players:
+        player_stat['player'] = filter_email_from_players(player_stat['player'])
 
     return render_template('index.html',
                            total_players=len(players),

@@ -1,9 +1,35 @@
 from flask import Blueprint, render_template, request, jsonify
+from flask_login import current_user
 from models.player import Player
 from models.course import Course
 from models.round import Round
 
 bp = Blueprint('stats', __name__)
+
+
+def filter_email_from_players(players, allow_all=False):
+    """
+    Filter email addresses from player dictionaries based on authorization.
+
+    Args:
+        players: Single player dict or list of player dicts
+        allow_all: If True, allow all emails (for admins)
+
+    Returns:
+        Filtered player dict or list of dicts
+    """
+    is_list = isinstance(players, list)
+    player_list = players if is_list else [players]
+
+    # Check if user is admin
+    is_admin = current_user.is_authenticated and current_user.is_admin
+
+    # Filter emails
+    for player in player_list:
+        if player and not (is_admin or allow_all):
+            player['email'] = None
+
+    return player_list if is_list else (player_list[0] if player_list else None)
 
 
 @bp.route('/leaderboard')
@@ -62,12 +88,14 @@ def trends():
     end_date = request.args.get('end_date')
 
     players = Player.get_all()
+    players = filter_email_from_players(players)
 
     # If player selected, get their trends
     player_trends = None
     selected_player = None
     if player_id:
         selected_player = Player.get_by_id(player_id)
+        selected_player = filter_email_from_players(selected_player)
         if selected_player:
             player_trends = TrendsService.get_player_trends(player_id, start_date, end_date)
 
@@ -98,6 +126,7 @@ def comparison():
     player2_id = request.args.get('player2_id')
 
     players = Player.get_all()
+    players = filter_email_from_players(players)
 
     # If both players selected, get comparison
     comparison_data = None
@@ -106,7 +135,9 @@ def comparison():
 
     if player1_id and player2_id:
         player1 = Player.get_by_id(player1_id)
+        player1 = filter_email_from_players(player1)
         player2 = Player.get_by_id(player2_id)
+        player2 = filter_email_from_players(player2)
 
         if player1 and player2:
             comparison_data = ComparisonService.compare_players(player1_id, player2_id)
@@ -130,6 +161,7 @@ def courses_played():
     sort_order = request.args.get('sort', 'desc')
 
     players = Player.get_all()
+    players = filter_email_from_players(players)
 
     # Get courses played data if players selected
     courses_data = None
@@ -137,6 +169,7 @@ def courses_played():
 
     if selected_player_ids:
         selected_players = [Player.get_by_id(pid) for pid in selected_player_ids if Player.get_by_id(pid)]
+        selected_players = filter_email_from_players(selected_players)
         courses_data = CoursesPlayedService.get_courses_played_by_players(selected_player_ids, sort_order)
 
     return render_template('stats/courses_played.html',
