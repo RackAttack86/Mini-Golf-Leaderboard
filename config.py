@@ -19,9 +19,6 @@ class Config:
     MAX_CONTENT_LENGTH = 5 * 1024 * 1024  # 5MB max file size
     UPLOAD_EXTENSIONS = {'.png', '.jpg', '.jpeg', '.gif'}
 
-    # OCR Configuration (Tesseract)
-    OCR_TESSERACT_PATH = os.environ.get('TESSERACT_PATH', r'C:\Program Files\Tesseract-OCR\tesseract.exe')
-
     # Pagination
     ROUNDS_PER_PAGE = 20
 

@@ -9,10 +9,5 @@ Flask-Session==0.6.0
 blinker==1.7.0
 python-dotenv==1.0.0
 
-# OCR dependencies
-pytesseract==0.3.10
+# Image handling (for profile pictures, trophy images, etc.)
 Pillow==10.1.0
-fuzzywuzzy==0.18.0
-python-Levenshtein==0.23.0
-opencv-python==4.12.0.88
-easyocr==1.7.2

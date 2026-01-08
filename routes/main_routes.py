@@ -12,6 +12,7 @@ from models.course import Course
 from models.round import Round
 from models.course_trophy import CourseTrophy
 from services.achievement_service import AchievementService
+from extensions import limiter, csrf
 
 bp = Blueprint('main', __name__)
 
@@ -123,6 +124,41 @@ def index():
                            recent_rounds=recent_rounds,  # Last 15 days for activity trends
                            last_10_rounds=last_10_rounds,  # Last 10 non-solo rounds for table
                            top_players=top_players)
+
+
+@bp.route('/health')
+@csrf.exempt
+@limiter.exempt
+def health_check():
+    """Health check endpoint for Fly.io monitoring and Docker health checks
+
+    This endpoint must:
+    - Not require authentication
+    - Not require CSRF token
+    - Not redirect to HTTPS (Fly.io uses internal HTTP)
+    - Return 200 OK when healthy
+    """
+    from models.database import get_db
+    from flask import jsonify
+
+    try:
+        # Check database connectivity
+        db = get_db()
+        conn = db.get_connection()
+        cursor = conn.execute("SELECT 1")
+        cursor.fetchone()
+
+        return jsonify({
+            'status': 'healthy',
+            'timestamp': datetime.utcnow().isoformat(),
+            'database': 'connected'
+        }), 200
+    except Exception as e:
+        return jsonify({
+            'status': 'unhealthy',
+            'timestamp': datetime.utcnow().isoformat(),
+            'error': str(e)
+        }), 503
 
 
 @bp.route('/trophies')

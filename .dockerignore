@@ -12,10 +12,33 @@ venv/
 .idea
 *.swp
 .DS_Store
-data/
+
+# Exclude actual data but keep structure
+data/*.db
+data/round_pictures/*
+data/backups/*
+data/archive/*
+data/temp/*
+!data/.gitkeep
+
+# All environment files (use Fly.io secrets instead)
+.env*
+
+# Test files
+tests/
 test_stats.py
+.pytest_cache/
+.coverage
+htmlcov/
+
+# CI/CD
+.github/
 .claude/
-.env
-.env.*
-!.env.production
-.env.production.example
+
+# Local development
+.flask_session/
+logs/
+*.log
+
+# Documentation
+docs/

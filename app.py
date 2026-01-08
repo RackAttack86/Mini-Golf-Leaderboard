@@ -10,7 +10,7 @@ from flask import Flask, render_template, flash, request
 from flask_dance.contrib.google import make_google_blueprint
 from flask_login import current_user
 from flask_session import Session
-from flask_talisman import Talisman
+# from flask_talisman import Talisman  # Disabled for Fly.io - not needed
 
 # Local
 from config import Config
@@ -48,20 +48,12 @@ def create_app():
     # Initialize CSRF protection
     csrf.init_app(app)
 
-    # Initialize security headers (Talisman) - only in non-debug mode
-    if not app.debug:
-        Talisman(
-            app,
-            force_https=app.config['TALISMAN_FORCE_HTTPS'],
-            strict_transport_security=True,
-            strict_transport_security_max_age=31536000,  # 1 year
-            content_security_policy=app.config['CONTENT_SECURITY_POLICY'],
-            feature_policy=app.config['FEATURE_POLICY'],
-            referrer_policy='strict-origin-when-cross-origin',
-            x_content_type_options=True,
-            x_frame_options='SAMEORIGIN',
-            x_xss_protection=True
-        )
+    # Note: Talisman disabled for Fly.io deployment
+    # Fly.io handles HTTPS at the load balancer level (force_https=true in fly.toml)
+    # We keep CSRF protection and rate limiting for security
+    # If you need Talisman for local production, uncomment below:
+    # if not app.debug:
+    #     Talisman(app, force_https=False, content_security_policy=app.config['CONTENT_SECURITY_POLICY'])
 
     # Initialize Flask-Login
     login_manager.init_app(app)
@@ -192,6 +184,9 @@ def register_error_handlers(app):
         return render_template('errors/500.html'), 500
 
 
+# Create app instance for production servers (Gunicorn, etc.)
+app = create_app()
+
 if __name__ == '__main__':
-    app = create_app()
+    # Development server
     app.run(debug=True, port=5001)

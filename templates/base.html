@@ -95,11 +95,6 @@
                             <i class="bi bi-plus-circle"></i> Add Round
                         </a>
                     </li>
-                    <li class="nav-item me-2">
-                        <a class="btn btn-primary btn-sm" href="{{ url_for('rounds.upload_picture') }}">
-                            <i class="bi bi-cloud-upload"></i> Upload Scorecard
-                        </a>
-                    </li>
                     {% if current_user.is_authenticated %}
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
