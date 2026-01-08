@@ -409,6 +409,7 @@
                                required
                                maxlength="100">
                     </div>
+                    {% if current_user.is_authenticated and (current_user.is_admin or current_user.id == player.id) %}
                     <div class="mb-3">
                         <label for="edit_email" class="form-label">Email</label>
                         <input type="email"
@@ -418,6 +419,7 @@
                                value="{{ player.email or '' }}"
                                maxlength="100">
                     </div>
+                    {% endif %}
                     <div class="mb-3">
                         <label for="edit_meta_quest_username" class="form-label">
                             Meta Quest Username
