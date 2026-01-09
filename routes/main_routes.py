@@ -161,6 +161,73 @@ def health_check():
         }), 503
 
 
+@bp.route('/admin/cleanup-test-data')
+@csrf.exempt
+@limiter.exempt
+def cleanup_test_data():
+    """Admin endpoint to clean up test data from production database"""
+    from flask import jsonify
+    from models.database import get_db
+    from pathlib import Path
+
+    db = get_db()
+    conn = db.get_connection()
+
+    # Get counts before cleanup
+    cursor = conn.execute("SELECT COUNT(*) as count FROM players")
+    players_before = cursor.fetchone()[0]
+    cursor = conn.execute("SELECT COUNT(*) as count FROM courses")
+    courses_before = cursor.fetchone()[0]
+    cursor = conn.execute("SELECT COUNT(*) as count FROM rounds")
+    rounds_before = cursor.fetchone()[0]
+
+    # Load cleanup script
+    cleanup_file = Path(__file__).parent.parent / 'migrations' / 'cleanup_test_data.sql'
+    if not cleanup_file.exists():
+        return jsonify({
+            'error': f'Cleanup file not found: {cleanup_file}'
+        }), 404
+
+    with open(cleanup_file, 'r', encoding='utf-8') as f:
+        cleanup_sql = f.read()
+
+    try:
+        conn.executescript(cleanup_sql)
+        conn.commit()
+
+        # Get counts after cleanup
+        cursor = conn.execute("SELECT COUNT(*) as count FROM players")
+        players_after = cursor.fetchone()[0]
+        cursor = conn.execute("SELECT COUNT(*) as count FROM courses")
+        courses_after = cursor.fetchone()[0]
+        cursor = conn.execute("SELECT COUNT(*) as count FROM rounds")
+        rounds_after = cursor.fetchone()[0]
+
+        return jsonify({
+            'status': 'success',
+            'players': {
+                'before': players_before,
+                'after': players_after,
+                'deleted': players_before - players_after
+            },
+            'courses': {
+                'before': courses_before,
+                'after': courses_after,
+                'deleted': courses_before - courses_after
+            },
+            'rounds': {
+                'before': rounds_before,
+                'after': rounds_after,
+                'deleted': rounds_before - rounds_after
+            }
+        }), 200
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'error': str(e)
+        }), 500
+
+
 @bp.route('/trophies')
 def trophies():
     """Display all course trophies"""

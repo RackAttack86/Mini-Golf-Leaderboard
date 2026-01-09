@@ -59,18 +59,30 @@ class Database:
         conn.executescript(schema_sql)
         conn.commit()
 
-        # Load seed data if courses table is empty
+        # Load seed data if tables are empty
+        cursor = conn.execute("SELECT COUNT(*) as count FROM players")
+        player_count = cursor.fetchone()[0]
+
+        if player_count == 0:
+            player_seed_file = Path(__file__).parent.parent / 'migrations' / 'seed_players.sql'
+            if player_seed_file.exists():
+                with open(player_seed_file, 'r', encoding='utf-8') as f:
+                    seed_sql = f.read()
+                conn.executescript(seed_sql)
+                conn.commit()
+                print(f"Loaded player seed data from {player_seed_file}")
+
         cursor = conn.execute("SELECT COUNT(*) as count FROM courses")
         course_count = cursor.fetchone()[0]
 
         if course_count == 0:
-            seed_file = Path(__file__).parent.parent / 'migrations' / 'seed_courses.sql'
-            if seed_file.exists():
-                with open(seed_file, 'r', encoding='utf-8') as f:
+            course_seed_file = Path(__file__).parent.parent / 'migrations' / 'seed_courses.sql'
+            if course_seed_file.exists():
+                with open(course_seed_file, 'r', encoding='utf-8') as f:
                     seed_sql = f.read()
                 conn.executescript(seed_sql)
                 conn.commit()
-                print(f"Loaded seed data from {seed_file}")
+                print(f"Loaded course seed data from {course_seed_file}")
 
     def get_connection(self) -> sqlite3.Connection:
         """
