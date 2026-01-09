@@ -161,6 +161,39 @@ def health_check():
         }), 503
 
 
+@bp.route('/debug-trophies')
+@csrf.exempt
+@limiter.exempt
+def debug_trophies():
+    """Debug endpoint to check trophy directory contents"""
+    from flask import jsonify
+    import os
+
+    normal_trophy_dir = os.path.join('static', 'uploads', 'trophies', 'normal')
+    hard_trophy_dir = os.path.join('static', 'uploads', 'trophies', 'hard')
+
+    result = {
+        'cwd': os.getcwd(),
+        'normal_dir': {
+            'path': normal_trophy_dir,
+            'absolute_path': os.path.abspath(normal_trophy_dir),
+            'exists': os.path.exists(normal_trophy_dir),
+            'files': list(os.listdir(normal_trophy_dir)) if os.path.exists(normal_trophy_dir) else []
+        },
+        'hard_dir': {
+            'path': hard_trophy_dir,
+            'absolute_path': os.path.abspath(hard_trophy_dir),
+            'exists': os.path.exists(hard_trophy_dir),
+            'files': list(os.listdir(hard_trophy_dir)) if os.path.exists(hard_trophy_dir) else []
+        },
+        'static_dir_exists': os.path.exists('static'),
+        'static_uploads_exists': os.path.exists('static/uploads'),
+        'static_uploads_trophies_exists': os.path.exists('static/uploads/trophies')
+    }
+
+    return jsonify(result), 200
+
+
 @bp.route('/trophies')
 def trophies():
     """Display all course trophies"""
