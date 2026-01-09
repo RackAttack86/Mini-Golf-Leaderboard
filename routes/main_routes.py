@@ -432,6 +432,19 @@ def load_rounds_data():
         }), 500
 
 
+@bp.route('/admin/tracked-errors')
+@csrf.exempt
+@limiter.exempt
+def tracked_errors():
+    """Show errors tracked in memory"""
+    from flask import jsonify
+    from utils.error_tracker import error_tracker
+
+    return jsonify({
+        'errors': error_tracker.get_recent_errors(20)
+    })
+
+
 @bp.route('/admin/recent-errors')
 @csrf.exempt
 @limiter.exempt

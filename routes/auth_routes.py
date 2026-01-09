@@ -4,6 +4,7 @@ from flask_dance.contrib.google import google
 from services.auth_service import AuthService
 from urllib.parse import urlparse, urljoin
 from extensions import limiter
+from utils.error_tracker import error_tracker
 
 
 auth_bp = Blueprint('auth', __name__, url_prefix='/auth')
@@ -67,6 +68,9 @@ def google_callback():
             return redirect(url_for('auth.login'))
     except Exception as e:
         current_app.logger.error(f"Error checking OAuth authorization: {str(e)}", exc_info=True)
+        error_tracker.log_error('oauth_authorization_check', str(e), e, {
+            'google_authorized': google.authorized if hasattr(google, 'authorized') else None
+        })
         flash(f'OAuth error: {str(e)}', 'danger')
         return redirect(url_for('auth.login'))
 
@@ -95,6 +99,9 @@ def google_callback():
 
     except Exception as e:
         current_app.logger.error(f"Exception in OAuth callback: {str(e)}", exc_info=True)
+        error_tracker.log_error('oauth_user_info_fetch', str(e), e, {
+            'google_authorized': google.authorized
+        })
         flash(f'An error occurred during authentication: {str(e)}', 'danger')
         return redirect(url_for('auth.login'))
 
@@ -125,6 +132,10 @@ def google_callback():
             return redirect(url_for('auth.register'))
     except Exception as e:
         current_app.logger.error(f"Error processing user login: {str(e)}", exc_info=True)
+        error_tracker.log_error('oauth_user_login_processing', str(e), e, {
+            'google_id': google_id if 'google_id' in locals() else None,
+            'email': email if 'email' in locals() else None
+        })
         flash(f'Login error: {str(e)}', 'danger')
         return redirect(url_for('auth.login'))
 
