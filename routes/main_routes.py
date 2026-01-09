@@ -279,6 +279,19 @@ def restore_missing_players():
             'created_at': '2025-12-27T02:14:32Z',
             'active': 1,
             'meta_quest_username': None
+        },
+        {
+            'id': '7fad5756-6327-4093-bafe-7884fe957749',
+            'name': 'Matthew Rackley Test',
+            'email': 'matthew.rackley86@gmail.com',
+            'profile_picture': None,
+            'favorite_color': '#ff00ea',
+            'google_id': '110738743856864182140',
+            'role': 'player',
+            'last_login': '2026-01-08T05:21:06Z',
+            'created_at': '2025-12-26T06:22:25Z',
+            'active': 1,
+            'meta_quest_username': None
         }
     ]
 
