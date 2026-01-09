@@ -432,6 +432,50 @@ def load_rounds_data():
         }), 500
 
 
+@bp.route('/admin/test-oauth-exchange')
+@csrf.exempt
+@limiter.exempt
+def test_oauth_exchange():
+    """Test OAuth token exchange directly"""
+    from flask import jsonify, request, current_app
+    import traceback
+
+    code = request.args.get('code', 'test-code')
+
+    try:
+        from flask_dance.contrib.google import google
+        from flask_dance.consumer import OAuth2ConsumerBlueprint
+
+        # Try to manually create and test the OAuth client
+        import requests
+        from urllib.parse import urlencode
+
+        token_url = 'https://oauth2.googleapis.com/token'
+        data = {
+            'code': code,
+            'client_id': current_app.config['GOOGLE_OAUTH_CLIENT_ID'],
+            'client_secret': current_app.config['GOOGLE_OAUTH_CLIENT_SECRET'],
+            'redirect_uri': 'https://mini-golf-leaderboard.fly.dev/login/google/authorized',
+            'grant_type': 'authorization_code'
+        }
+
+        resp = requests.post(token_url, data=data, timeout=10)
+
+        return jsonify({
+            'status': 'test_complete',
+            'token_exchange_status': resp.status_code,
+            'token_exchange_ok': resp.ok,
+            'response_text': resp.text[:500]  # First 500 chars
+        })
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'error': str(e),
+            'error_type': type(e).__name__,
+            'traceback': traceback.format_exc()
+        })
+
+
 @bp.route('/admin/test-google-api')
 @csrf.exempt
 @limiter.exempt

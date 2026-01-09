@@ -38,13 +38,14 @@ def create_app():
     # Set max upload size
     app.config['MAX_CONTENT_LENGTH'] = Config.MAX_CONTENT_LENGTH
 
+    # Disable Flask-Session for OAuth compatibility - use Flask's default cookie sessions
     # Ensure session directory exists
-    session_dir = app.config.get('SESSION_FILE_DIR')
-    if session_dir and not os.path.exists(session_dir):
-        os.makedirs(session_dir, exist_ok=True)
+    # session_dir = app.config.get('SESSION_FILE_DIR')
+    # if session_dir and not os.path.exists(session_dir):
+    #     os.makedirs(session_dir, exist_ok=True)
 
     # Initialize server-side sessions
-    Session(app)
+    # Session(app)  # Disabled - causes OAuth token serialization issues
 
     # Initialize rate limiter
     limiter.init_app(app)
