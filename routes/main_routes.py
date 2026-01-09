@@ -385,12 +385,12 @@ def load_rounds_data():
 
             production_course_id = course_map[course_name]
 
-            # Insert round
-            debug_logs.append(f"Inserting round {round_data['id']} with course_id {production_course_id}")
+            # Insert round (include course_name for production schema)
+            debug_logs.append(f"Inserting round {round_data['id']} with course_id {production_course_id}, course_name {course_name}")
             insert_cursor = conn.execute("""
-                INSERT OR IGNORE INTO rounds (id, course_id, date_played)
-                VALUES (?, ?, ?)
-            """, (round_data['id'], production_course_id, round_data['date_played']))
+                INSERT OR IGNORE INTO rounds (id, course_id, course_name, date_played)
+                VALUES (?, ?, ?, ?)
+            """, (round_data['id'], production_course_id, course_name, round_data['date_played']))
             debug_logs.append(f"INSERT rowcount: {insert_cursor.rowcount}")
 
             # Check if insert succeeded
