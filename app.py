@@ -105,6 +105,30 @@ def create_app():
     google_bp.authorized = wrapped_authorized
     app.register_blueprint(google_bp, url_prefix='/login')
 
+    # Also wrap the view function after registration
+    try:
+        original_view = app.view_functions.get('google.authorized')
+        if original_view:
+            def wrapped_view(*args, **kwargs):
+                try:
+                    error_tracker.log_error('view_function_called', 'Flask view function called for /authorized', None, {})
+                    result = original_view(*args, **kwargs)
+                    error_tracker.log_error('view_function_success', 'View function completed', None, {
+                        'result_type': str(type(result))
+                    })
+                    return result
+                except Exception as e:
+                    error_tracker.log_error('view_function_exception', f'Exception in view: {str(e)}', e, {
+                        'exception_type': type(e).__name__
+                    })
+                    app.logger.error(f"View function exception: {str(e)}")
+                    app.logger.error(tb.format_exc())
+                    raise
+            app.view_functions['google.authorized'] = wrapped_view
+            error_tracker.log_error('view_wrapped', 'Successfully wrapped google.authorized view', None, {})
+    except Exception as e:
+        error_tracker.log_error('view_wrap_failed', f'Failed to wrap view: {str(e)}', e, {})
+
     # OAuth error handler
     from flask_dance.consumer import oauth_authorized, oauth_error
     from flask import flash, redirect, url_for, request, session
@@ -201,11 +225,18 @@ def create_app():
     def track_oauth_response(response):
         """Track OAuth responses"""
         if '/login/google' in request.path or '/auth/google' in request.path:
-            error_tracker.log_error('oauth_response_sent', f"{response.status_code} for {request.path}", None, {
+            context = {
                 'status_code': response.status_code,
                 'path': request.path,
                 'location': response.headers.get('Location')
-            })
+            }
+            # If 500 error, try to get response data
+            if response.status_code == 500:
+                try:
+                    context['response_data'] = response.get_data(as_text=True)[:500]  # First 500 chars
+                except:
+                    context['response_data'] = 'Could not read response'
+            error_tracker.log_error('oauth_response_sent', f"{response.status_code} for {request.path}", None, context)
         return response
 
     # Global exception handler
