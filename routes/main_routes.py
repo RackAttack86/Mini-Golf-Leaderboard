@@ -385,14 +385,19 @@ def load_rounds_data():
             production_course_id = course_map[course_name]
 
             # Insert round
-            conn.execute("""
+            print(f"[DEBUG] Inserting round {round_data['id']} with course_id {production_course_id}")
+            insert_cursor = conn.execute("""
                 INSERT OR IGNORE INTO rounds (id, course_id, date_played)
                 VALUES (?, ?, ?)
             """, (round_data['id'], production_course_id, round_data['date_played']))
+            print(f"[DEBUG] INSERT rowcount: {insert_cursor.rowcount}")
 
             # Check if insert succeeded
             cursor = conn.execute("SELECT id FROM rounds WHERE id = ?", (round_data['id'],))
-            if cursor.fetchone():
+            result = cursor.fetchone()
+            print(f"[DEBUG] SELECT result: {result}")
+
+            if result:
                 inserted_rounds += 1
 
                 # Insert scores for this round
@@ -403,6 +408,8 @@ def load_rounds_data():
                     """, (score['round_id'], score['player_id'], score['player_name'],
                           score['score'], score['hole_scores'] or ''))
                     inserted_scores += 1
+            else:
+                print(f"[DEBUG] Round {round_data['id']} not found after INSERT")
 
         conn.commit()
 
