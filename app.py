@@ -70,12 +70,12 @@ def create_app():
         """Load user by player ID"""
         return AuthService.load_user(player_id)
 
-    # Initialize Google OAuth - use default storage for now
+    # Initialize Google OAuth - let Flask-Dance handle the redirect
     google_bp = make_google_blueprint(
         client_id=app.config['GOOGLE_OAUTH_CLIENT_ID'],
         client_secret=app.config['GOOGLE_OAUTH_CLIENT_SECRET'],
-        scope=['profile', 'email'],
-        redirect_to='auth.google_callback'
+        scope=['profile', 'email']
+        # No redirect_to - Flask-Dance will redirect to index by default
     )
     app.register_blueprint(google_bp, url_prefix='/login')
 
@@ -98,7 +98,7 @@ def create_app():
 
     @oauth_authorized.connect_via(google_bp)
     def google_logged_in(blueprint, token):
-        """Called when OAuth flow completes successfully"""
+        """Called when OAuth flow completes successfully - process login here"""
         try:
             app.logger.info(f"OAuth authorized signal received. Token: {bool(token)}")
             error_tracker.log_error('oauth_signal_fired', f"Token received: {bool(token)}", None, {
@@ -112,9 +112,44 @@ def create_app():
                 flash("Failed to receive authentication token from Google.", "danger")
                 return False
 
-            # Let Flask-Dance store token normally - don't return False
-            # Return True or None to allow default storage behavior
-            return True
+            # Get user info from Google
+            from flask_dance.contrib.google import google
+            resp = google.get('/oauth2/v2/userinfo')
+
+            if not resp.ok:
+                error_tracker.log_error('google_api_error', f"Failed to get user info: {resp.status_code}", None, {})
+                flash('Failed to fetch user information from Google.', 'danger')
+                return False
+
+            google_info = resp.json()
+            google_id = google_info.get('id')
+            email = google_info.get('email')
+            name = google_info.get('name')
+
+            if not google_id or not email:
+                flash('Failed to get required information from Google.', 'danger')
+                return False
+
+            # Check if user already has a linked account
+            user = AuthService.get_user_from_google(google_id, email, name)
+
+            if user:
+                # User exists, log them in
+                from flask_login import login_user
+                login_user(user, remember=True)
+                flash(f'Welcome back, {user.name}!', 'success')
+            else:
+                # No linked account, store info in session for registration
+                session['google_id'] = google_id
+                session['google_email'] = email
+                session['google_name'] = name
+                flash('Please link your Google account to an existing player profile.', 'info')
+                # Redirect to registration
+                return redirect(url_for('auth.register'))
+
+            # Don't let Flask-Dance store token - we handled everything
+            return False
+
         except Exception as e:
             app.logger.error(f"Error in oauth_authorized handler: {str(e)}")
             app.logger.error(tb.format_exc())
