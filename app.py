@@ -77,13 +77,18 @@ def create_app():
 
     # OAuth error handler
     from flask_dance.consumer import oauth_authorized, oauth_error
-    from flask import flash, redirect, url_for
+    from flask import flash, redirect, url_for, request
+    from utils.error_tracker import error_tracker
     import traceback as tb
 
     @oauth_error.connect_via(google_bp)
     def google_error(blueprint, message, response):
         app.logger.error(f"OAuth error from {blueprint.name}: {message}")
         app.logger.error(f"OAuth error response: {response}")
+        error_tracker.log_error('flask_dance_oauth_error', message, None, {
+            'blueprint': blueprint.name,
+            'response': str(response)
+        })
         flash(f"OAuth error: {message}", "danger")
         return redirect(url_for('auth.login'))
 
@@ -94,6 +99,7 @@ def create_app():
             app.logger.info(f"OAuth authorized signal received. Token: {bool(token)}")
             if not token:
                 app.logger.error("No token received from Google")
+                error_tracker.log_error('flask_dance_no_token', 'No token received', None, {})
                 flash("Failed to receive authentication token from Google.", "danger")
                 return False
             # Return False to prevent Flask-Dance from storing token (we handle it manually)
@@ -101,8 +107,23 @@ def create_app():
         except Exception as e:
             app.logger.error(f"Error in oauth_authorized handler: {str(e)}")
             app.logger.error(tb.format_exc())
+            error_tracker.log_error('flask_dance_handler_exception', str(e), e, {})
             flash(f"Authentication error: {str(e)}", "danger")
             return False
+
+    # Global error handler for 500 errors
+    @app.errorhandler(500)
+    def handle_500_error(e):
+        """Catch all 500 errors"""
+        app.logger.error(f"500 Internal Server Error: {str(e)}")
+        app.logger.error(tb.format_exc())
+        error_tracker.log_error('500_internal_server_error', str(e), e, {
+            'request_url': request.url if request else None,
+            'request_method': request.method if request else None
+        })
+        # Show error message to user
+        flash(f'An internal server error occurred: {str(e)}', 'danger')
+        return redirect(url_for('auth.login'))
 
     # Register blueprints
     app.register_blueprint(main_routes.bp)
