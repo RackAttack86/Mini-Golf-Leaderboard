@@ -12,6 +12,8 @@ primary_region = 'iad'
 [env]
   FLASK_ENV = "production"
   PORT = "8080"
+  OAUTHLIB_RELAX_TOKEN_SCOPE = "1"
+  OAUTHLIB_INSECURE_TRANSPORT = "0"
 
 [http_service]
   internal_port = 8080
