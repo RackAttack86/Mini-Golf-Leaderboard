@@ -41,10 +41,11 @@ class Config:
     SESSION_COOKIE_NAME = 'minigolf_session'
 
     # Server-side session storage
-    SESSION_TYPE = 'filesystem'
+    # Use null (cookie-based) for OAuth compatibility
+    SESSION_TYPE = 'null'
     SESSION_PERMANENT = True
-    SESSION_USE_SIGNER = True
-    SESSION_FILE_DIR = BASE_DIR / '.flask_session'
+    SESSION_USE_SIGNER = False  # Let Flask handle signing via secret key
+    # SESSION_FILE_DIR = BASE_DIR / '.flask_session'  # Not needed for cookie sessions
 
     # CSRF Protection
     WTF_CSRF_ENABLED = True
