@@ -174,8 +174,18 @@ def trophies():
     # Check which courses have trophy images (normal and hard)
     normal_trophy_dir = os.path.join('static', 'uploads', 'trophies', 'normal')
     hard_trophy_dir = os.path.join('static', 'uploads', 'trophies', 'hard')
+
+    # Debug logging
+    import logging
+    logger = logging.getLogger(__name__)
+    logger.info(f"Trophy directories - Normal exists: {os.path.exists(normal_trophy_dir)}, Hard exists: {os.path.exists(hard_trophy_dir)}")
+    logger.info(f"Current working directory: {os.getcwd()}")
+    logger.info(f"Normal trophy dir absolute: {os.path.abspath(normal_trophy_dir)}")
+
     normal_trophy_files = set(os.listdir(normal_trophy_dir)) if os.path.exists(normal_trophy_dir) else set()
     hard_trophy_files = set(os.listdir(hard_trophy_dir)) if os.path.exists(hard_trophy_dir) else set()
+
+    logger.info(f"Found {len(normal_trophy_files)} normal trophies, {len(hard_trophy_files)} hard trophies")
 
     # Build list of courses with trophy info
     course_trophies = []
