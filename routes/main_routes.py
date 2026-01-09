@@ -439,6 +439,45 @@ def load_rounds_data():
         }), 500
 
 
+@bp.route('/admin/debug-course-names')
+@csrf.exempt
+@limiter.exempt
+def debug_course_names():
+    """Debug endpoint to check course names for mapping"""
+    from flask import jsonify
+    from models.database import get_db
+    from pathlib import Path
+    import json
+
+    db = get_db()
+    conn = db.get_connection()
+
+    # Get all course names from production
+    cursor = conn.execute("SELECT id, name FROM courses ORDER BY name")
+    production_courses = [{'id': row['id'], 'name': row['name']} for row in cursor.fetchall()]
+
+    # Load JSON and get unique course names
+    rounds_file = Path(__file__).parent.parent / 'migrations' / 'rounds_data.json'
+    with open(rounds_file, 'r', encoding='utf-8') as f:
+        rounds_data = json.load(f)
+
+    json_courses = list(set(r['course_name'] for r in rounds_data['rounds']))
+
+    # Find matches
+    prod_names = {c['name'] for c in production_courses}
+    matches = [c for c in json_courses if c in prod_names]
+    mismatches = [c for c in json_courses if c not in prod_names]
+
+    return jsonify({
+        'production_courses': production_courses[:10],  # First 10
+        'json_course_names': sorted(json_courses),
+        'matches': matches,
+        'mismatches': mismatches,
+        'total_production': len(production_courses),
+        'total_json_unique': len(json_courses)
+    })
+
+
 @bp.route('/admin/debug-rounds-status')
 @csrf.exempt
 @limiter.exempt
