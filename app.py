@@ -70,15 +70,12 @@ def create_app():
         """Load user by player ID"""
         return AuthService.load_user(player_id)
 
-    # Initialize Google OAuth with custom storage backend
-    from utils.oauth_storage import DebugSessionStorage
-
+    # Initialize Google OAuth - use default storage for now
     google_bp = make_google_blueprint(
         client_id=app.config['GOOGLE_OAUTH_CLIENT_ID'],
         client_secret=app.config['GOOGLE_OAUTH_CLIENT_SECRET'],
         scope=['profile', 'email'],
-        redirect_to='auth.google_callback',
-        storage=DebugSessionStorage()
+        redirect_to='auth.google_callback'
     )
     app.register_blueprint(google_bp, url_prefix='/login')
 
@@ -115,12 +112,9 @@ def create_app():
                 flash("Failed to receive authentication token from Google.", "danger")
                 return False
 
-            # Store token in session manually
-            from flask import session
-            session['google_oauth_token'] = token
-
-            # Return False to prevent Flask-Dance from storing token again
-            return False
+            # Let Flask-Dance store token normally - don't return False
+            # Return True or None to allow default storage behavior
+            return True
         except Exception as e:
             app.logger.error(f"Error in oauth_authorized handler: {str(e)}")
             app.logger.error(tb.format_exc())

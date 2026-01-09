@@ -432,6 +432,40 @@ def load_rounds_data():
         }), 500
 
 
+@bp.route('/admin/error-log-file')
+@csrf.exempt
+@limiter.exempt
+def error_log_file():
+    """Read persistent error log file"""
+    from flask import jsonify
+    from pathlib import Path
+    import json
+
+    log_file = Path('/app/logs/error_tracker.log')
+    errors = []
+
+    try:
+        if log_file.exists():
+            with open(log_file, 'r') as f:
+                lines = f.readlines()
+                # Get last 50 lines
+                for line in lines[-50:]:
+                    try:
+                        errors.append(json.loads(line.strip()))
+                    except:
+                        pass
+
+        return jsonify({
+            'log_file_exists': log_file.exists(),
+            'errors': errors[-20:]  # Last 20 errors
+        })
+    except Exception as e:
+        return jsonify({
+            'error': str(e),
+            'log_file_exists': False
+        })
+
+
 @bp.route('/admin/tracked-errors')
 @csrf.exempt
 @limiter.exempt
