@@ -97,12 +97,22 @@ def create_app():
         """Called when OAuth flow completes successfully"""
         try:
             app.logger.info(f"OAuth authorized signal received. Token: {bool(token)}")
+            error_tracker.log_error('oauth_signal_fired', f"Token received: {bool(token)}", None, {
+                'has_token': bool(token),
+                'token_type': str(type(token)) if token else None
+            })
+
             if not token:
                 app.logger.error("No token received from Google")
                 error_tracker.log_error('flask_dance_no_token', 'No token received', None, {})
                 flash("Failed to receive authentication token from Google.", "danger")
                 return False
-            # Return False to prevent Flask-Dance from storing token (we handle it manually)
+
+            # Store token in session manually
+            from flask import session
+            session['google_oauth_token'] = token
+
+            # Return False to prevent Flask-Dance from storing token again
             return False
         except Exception as e:
             app.logger.error(f"Error in oauth_authorized handler: {str(e)}")
@@ -110,6 +120,40 @@ def create_app():
             error_tracker.log_error('flask_dance_handler_exception', str(e), e, {})
             flash(f"Authentication error: {str(e)}", "danger")
             return False
+
+    # Track OAuth-related requests
+    @app.before_request
+    def track_oauth_requests():
+        """Track OAuth callback requests for debugging"""
+        if '/login/google' in request.path or '/auth/google' in request.path:
+            error_tracker.log_error('oauth_request_received', f"{request.method} {request.path}", None, {
+                'url': request.url,
+                'path': request.path,
+                'method': request.method,
+                'args': dict(request.args)
+            })
+
+    # Global exception handler
+    @app.errorhandler(Exception)
+    def handle_exception(e):
+        """Catch all exceptions"""
+        app.logger.error(f"Unhandled exception: {str(e)}")
+        app.logger.error(tb.format_exc())
+        error_tracker.log_error('unhandled_exception', str(e), e, {
+            'request_url': request.url if request else None,
+            'request_method': request.method if request else None,
+            'request_path': request.path if request else None,
+            'exception_type': type(e).__name__
+        })
+
+        # If it's an HTTP exception, pass it through
+        from werkzeug.exceptions import HTTPException
+        if isinstance(e, HTTPException):
+            return e
+
+        # For all other exceptions, show error and redirect
+        flash(f'An error occurred: {str(e)}', 'danger')
+        return redirect(url_for('auth.login')), 500
 
     # Global error handler for 500 errors
     @app.errorhandler(500)
@@ -119,7 +163,8 @@ def create_app():
         app.logger.error(tb.format_exc())
         error_tracker.log_error('500_internal_server_error', str(e), e, {
             'request_url': request.url if request else None,
-            'request_method': request.method if request else None
+            'request_method': request.method if request else None,
+            'request_path': request.path if request else None
         })
         # Show error message to user
         flash(f'An internal server error occurred: {str(e)}', 'danger')
