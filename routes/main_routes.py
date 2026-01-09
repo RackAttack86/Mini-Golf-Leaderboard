@@ -172,19 +172,39 @@ def debug_trophies():
     normal_trophy_dir = os.path.join('static', 'uploads', 'trophies', 'normal')
     hard_trophy_dir = os.path.join('static', 'uploads', 'trophies', 'hard')
 
+    # Get courses and trophy matching info
+    courses = Course.get_all()
+
+    def course_to_trophy_name(course_name):
+        return course_name.replace("'", "").replace(",", "").replace(" ", "_")
+
+    course_matches = []
+    for course in courses[:10]:  # First 10 courses
+        is_hard = '(HARD)' in course['name']
+        base_name = course['name'].replace(' (HARD)', '')
+        trophy_filename = course_to_trophy_name(base_name) + '.png'
+        course_matches.append({
+            'course_name': course['name'],
+            'base_name': base_name,
+            'trophy_filename': trophy_filename,
+            'is_hard': is_hard
+        })
+
     result = {
         'cwd': os.getcwd(),
+        'total_courses': len(courses),
+        'first_10_course_matches': course_matches,
         'normal_dir': {
             'path': normal_trophy_dir,
             'absolute_path': os.path.abspath(normal_trophy_dir),
             'exists': os.path.exists(normal_trophy_dir),
-            'files': list(os.listdir(normal_trophy_dir)) if os.path.exists(normal_trophy_dir) else []
+            'files': sorted(list(os.listdir(normal_trophy_dir))) if os.path.exists(normal_trophy_dir) else []
         },
         'hard_dir': {
             'path': hard_trophy_dir,
             'absolute_path': os.path.abspath(hard_trophy_dir),
             'exists': os.path.exists(hard_trophy_dir),
-            'files': list(os.listdir(hard_trophy_dir)) if os.path.exists(hard_trophy_dir) else []
+            'files': sorted(list(os.listdir(hard_trophy_dir))) if os.path.exists(hard_trophy_dir) else []
         },
         'static_dir_exists': os.path.exists('static'),
         'static_uploads_exists': os.path.exists('static/uploads'),
