@@ -358,49 +358,38 @@ def load_rounds_data():
     with open(rounds_file, 'r', encoding='utf-8') as f:
         rounds_data = json.load(f)
 
-    # Debug logging
+    # Load and map rounds
     total_rounds_in_file = len(rounds_data.get('rounds', []))
-    debug_logs = []
-    debug_logs.append(f"Found {total_rounds_in_file} rounds in JSON file")
 
     try:
         # Build course name -> ID mapping from production
         cursor = conn.execute("SELECT id, name FROM courses")
         course_map = {row['name']: row['id'] for row in cursor.fetchall()}
-        debug_logs.append(f"Course map has {len(course_map)} courses")
 
         # Insert rounds with mapped course IDs
         inserted_rounds = 0
         inserted_scores = 0
         skipped_rounds = 0
 
+        from datetime import datetime
+
         for round_data in rounds_data['rounds']:
             course_name = round_data['course_name']
             if course_name not in course_map:
-                debug_logs.append(f"Skipping round - course '{course_name}' not found in production")
                 skipped_rounds += 1
                 continue
-
-            debug_logs.append(f"Processing round {round_data['id']} for course '{course_name}'")
 
             production_course_id = course_map[course_name]
 
             # Insert round (include course_name and timestamp for production schema)
-            from datetime import datetime
             timestamp = datetime.fromisoformat(round_data['date_played']).isoformat() if 'T' not in round_data['date_played'] else round_data['date_played']
-            debug_logs.append(f"Inserting round {round_data['id']} with course_id {production_course_id}, course_name {course_name}")
             insert_cursor = conn.execute("""
                 INSERT OR IGNORE INTO rounds (id, course_id, course_name, date_played, timestamp)
                 VALUES (?, ?, ?, ?, ?)
             """, (round_data['id'], production_course_id, course_name, round_data['date_played'], timestamp))
-            debug_logs.append(f"INSERT rowcount: {insert_cursor.rowcount}")
 
             # Check if insert succeeded
-            cursor = conn.execute("SELECT id FROM rounds WHERE id = ?", (round_data['id'],))
-            result = cursor.fetchone()
-            debug_logs.append(f"SELECT result: {result}")
-
-            if result:
+            if insert_cursor.rowcount > 0:
                 inserted_rounds += 1
 
                 # Insert scores for this round
@@ -411,12 +400,6 @@ def load_rounds_data():
                     """, (score['round_id'], score['player_id'], score['player_name'],
                           score['score'], score['hole_scores'] or ''))
                     inserted_scores += 1
-            else:
-                debug_logs.append(f"Round {round_data['id']} not found after INSERT")
-
-            # Only show first 2 rounds to avoid huge response
-            if len(debug_logs) > 20:
-                break
 
         conn.commit()
 
@@ -428,11 +411,6 @@ def load_rounds_data():
 
         return jsonify({
             'status': 'success',
-            'debug': {
-                'total_rounds_in_file': total_rounds_in_file,
-                'course_map_size': len(course_map),
-                'logs': debug_logs
-            },
             'rounds': {
                 'before': rounds_before,
                 'after': rounds_after,
