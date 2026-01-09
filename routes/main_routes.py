@@ -500,6 +500,7 @@ def debug_rounds_status():
     from models.database import get_db
     from pathlib import Path
     import os
+    import json
 
     db = get_db()
     conn = db.get_connection()
@@ -514,6 +515,15 @@ def debug_rounds_status():
     cursor = conn.execute("SELECT COUNT(*) as count FROM courses")
     courses_count = cursor.fetchone()[0]
 
+    # Check FOREIGN KEY enforcement
+    cursor = conn.execute("PRAGMA foreign_keys")
+    fk_enabled = cursor.fetchone()[0]
+
+    # Get a sample course ID to test
+    cursor = conn.execute("SELECT id, name FROM courses WHERE name = 'Crystal Lair' LIMIT 1")
+    row = cursor.fetchone()
+    crystal_lair = dict(row) if row else None
+
     # Check if JSON file exists
     rounds_file = Path(__file__).parent.parent / 'migrations' / 'rounds_data.json'
     file_exists = rounds_file.exists()
@@ -521,13 +531,28 @@ def debug_rounds_status():
 
     # Get sample round if any exist
     cursor = conn.execute("SELECT id, course_id, date_played FROM rounds LIMIT 1")
-    sample_round = dict(cursor.fetchone()) if cursor.fetchone() else None
+    row = cursor.fetchone()
+    sample_round = dict(row) if row else None
+
+    # Try a test insert
+    test_result = None
+    try:
+        test_cursor = conn.execute("""
+            INSERT INTO rounds (id, course_id, date_played)
+            VALUES (?, ?, ?)
+        """, ('test-round-id-123', crystal_lair['id'] if crystal_lair else 'fake-id', '2025-01-01'))
+        test_result = f"INSERT succeeded, rowcount: {test_cursor.rowcount}"
+        conn.rollback()  # Don't actually commit the test
+    except Exception as e:
+        test_result = f"INSERT failed: {str(e)}"
+        conn.rollback()
 
     return jsonify({
         'database': {
             'rounds': rounds_count,
             'scores': scores_count,
-            'courses': courses_count
+            'courses': courses_count,
+            'foreign_keys_enabled': bool(fk_enabled)
         },
         'json_file': {
             'exists': file_exists,
@@ -535,6 +560,8 @@ def debug_rounds_status():
             'size_bytes': file_size
         },
         'sample_round': sample_round,
+        'crystal_lair_course': crystal_lair,
+        'test_insert': test_result,
         'working_directory': os.getcwd()
     })
 
