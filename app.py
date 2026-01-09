@@ -80,6 +80,29 @@ def create_app():
         storage=NullStorage()
         # No redirect_to - Flask-Dance will redirect to index by default
     )
+
+    # Wrap Flask-Dance's authorized view to catch exceptions
+    from utils.error_tracker import error_tracker
+    import traceback as tb
+    original_authorized = google_bp.authorized
+
+    def wrapped_authorized():
+        try:
+            error_tracker.log_error('flask_dance_authorized_called', 'Entering Flask-Dance authorized handler', None, {})
+            result = original_authorized()
+            error_tracker.log_error('flask_dance_authorized_success', 'Flask-Dance authorized completed', None, {
+                'result_type': str(type(result))
+            })
+            return result
+        except Exception as e:
+            error_tracker.log_error('flask_dance_authorized_exception', f'Exception in Flask-Dance: {str(e)}', e, {
+                'exception_type': type(e).__name__
+            })
+            app.logger.error(f"Flask-Dance exception: {str(e)}")
+            app.logger.error(tb.format_exc())
+            raise
+
+    google_bp.authorized = wrapped_authorized
     app.register_blueprint(google_bp, url_prefix='/login')
 
     # OAuth error handler
