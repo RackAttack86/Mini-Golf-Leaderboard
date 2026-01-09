@@ -432,6 +432,25 @@ def load_rounds_data():
         }), 500
 
 
+@bp.route('/admin/check-oauth-config')
+@csrf.exempt
+@limiter.exempt
+def check_oauth_config():
+    """Check OAuth configuration status"""
+    from flask import jsonify, current_app
+
+    client_id = current_app.config.get('GOOGLE_OAUTH_CLIENT_ID', '')
+    client_secret = current_app.config.get('GOOGLE_OAUTH_CLIENT_SECRET', '')
+
+    return jsonify({
+        'client_id_set': bool(client_id),
+        'client_id_length': len(client_id) if client_id else 0,
+        'client_secret_set': bool(client_secret),
+        'client_secret_length': len(client_secret) if client_secret else 0,
+        'client_id_prefix': client_id[:20] + '...' if len(client_id) > 20 else client_id
+    })
+
+
 @bp.route('/admin/verify-rounds')
 @csrf.exempt
 @limiter.exempt
