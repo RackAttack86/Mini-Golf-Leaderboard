@@ -52,16 +52,26 @@ def google_callback():
     """Handle Google OAuth callback"""
     # Note: Flask-Dance validates the OAuth state parameter automatically
     # If state validation fails, google.authorized will be False
+    from flask import current_app
+
+    # Log for debugging
+    current_app.logger.info(f"Google callback invoked, authorized: {google.authorized}")
 
     # Check if OAuth was successful
     if not google.authorized:
-        flash('Google authentication failed. Please try again.', 'danger')
+        error_msg = 'Google authentication failed. Please try again.'
+        current_app.logger.error(f"OAuth not authorized. Token: {google.token}")
+        flash(error_msg, 'danger')
         return redirect(url_for('auth.login'))
 
     # Get user info from Google
     try:
+        current_app.logger.info("Fetching user info from Google...")
         resp = google.get('/oauth2/v2/userinfo')
+        current_app.logger.info(f"Google API response status: {resp.status_code}")
+
         if not resp.ok:
+            current_app.logger.error(f"Google API error: {resp.text}")
             flash('Failed to fetch user information from Google.', 'danger')
             return redirect(url_for('auth.login'))
 
@@ -70,12 +80,16 @@ def google_callback():
         email = google_info.get('email')
         name = google_info.get('name')
 
+        current_app.logger.info(f"Got user info - ID: {google_id}, Email: {email}, Name: {name}")
+
         if not google_id or not email:
+            current_app.logger.error("Missing required Google info")
             flash('Failed to get required information from Google.', 'danger')
             return redirect(url_for('auth.login'))
 
     except Exception as e:
-        flash('An error occurred during authentication. Please try again.', 'danger')
+        current_app.logger.error(f"Exception in OAuth callback: {str(e)}", exc_info=True)
+        flash(f'An error occurred during authentication: {str(e)}', 'danger')
         return redirect(url_for('auth.login'))
 
     # Check if user already has a linked account

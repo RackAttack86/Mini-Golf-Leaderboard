@@ -75,6 +75,17 @@ def create_app():
     )
     app.register_blueprint(google_bp, url_prefix='/login')
 
+    # OAuth error handler
+    from flask_dance.consumer import oauth_authorized, oauth_error
+    from flask import flash, redirect, url_for
+
+    @oauth_error.connect_via(google_bp)
+    def google_error(blueprint, message, response):
+        app.logger.error(f"OAuth error from {blueprint.name}: {message}")
+        app.logger.error(f"OAuth error response: {response}")
+        flash(f"OAuth error: {message}", "danger")
+        return redirect(url_for('auth.login'))
+
     # Register blueprints
     app.register_blueprint(main_routes.bp)
     app.register_blueprint(player_routes.bp, url_prefix='/players')
