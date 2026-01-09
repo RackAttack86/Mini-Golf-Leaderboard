@@ -84,7 +84,7 @@ def create_app():
 
     # OAuth error handler
     from flask_dance.consumer import oauth_authorized, oauth_error
-    from flask import flash, redirect, url_for, request
+    from flask import flash, redirect, url_for, request, session
     from utils.error_tracker import error_tracker
     import traceback as tb
 
@@ -137,8 +137,21 @@ def create_app():
                 'url': request.url,
                 'path': request.path,
                 'method': request.method,
-                'args': dict(request.args)
+                'args': dict(request.args),
+                'session_keys': list(session.keys()) if session else []
             })
+
+    # Track after each request
+    @app.after_request
+    def track_oauth_response(response):
+        """Track OAuth responses"""
+        if '/login/google' in request.path or '/auth/google' in request.path:
+            error_tracker.log_error('oauth_response_sent', f"{response.status_code} for {request.path}", None, {
+                'status_code': response.status_code,
+                'path': request.path,
+                'location': response.headers.get('Location')
+            })
+        return response
 
     # Global exception handler
     @app.errorhandler(Exception)
