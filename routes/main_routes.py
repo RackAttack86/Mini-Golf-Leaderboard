@@ -303,6 +303,64 @@ def restore_missing_players():
         }), 500
 
 
+@bp.route('/admin/load-rounds-data')
+@csrf.exempt
+@limiter.exempt
+def load_rounds_data():
+    """Admin endpoint to load rounds data into production"""
+    from flask import jsonify
+    from models.database import get_db
+    from pathlib import Path
+
+    db = get_db()
+    conn = db.get_connection()
+
+    # Get counts before loading
+    cursor = conn.execute("SELECT COUNT(*) as count FROM rounds")
+    rounds_before = cursor.fetchone()[0]
+    cursor = conn.execute("SELECT COUNT(*) as count FROM round_scores")
+    scores_before = cursor.fetchone()[0]
+
+    # Load rounds data
+    rounds_file = Path(__file__).parent.parent / 'migrations' / 'seed_rounds.sql'
+    if not rounds_file.exists():
+        return jsonify({
+            'error': f'Rounds seed file not found: {rounds_file}'
+        }), 404
+
+    with open(rounds_file, 'r', encoding='utf-8') as f:
+        rounds_sql = f.read()
+
+    try:
+        conn.executescript(rounds_sql)
+        conn.commit()
+
+        # Get counts after loading
+        cursor = conn.execute("SELECT COUNT(*) as count FROM rounds")
+        rounds_after = cursor.fetchone()[0]
+        cursor = conn.execute("SELECT COUNT(*) as count FROM round_scores")
+        scores_after = cursor.fetchone()[0]
+
+        return jsonify({
+            'status': 'success',
+            'rounds': {
+                'before': rounds_before,
+                'after': rounds_after,
+                'added': rounds_after - rounds_before
+            },
+            'scores': {
+                'before': scores_before,
+                'after': scores_after,
+                'added': scores_after - scores_before
+            }
+        }), 200
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'error': str(e)
+        }), 500
+
+
 @bp.route('/trophies')
 def trophies():
     """Display all course trophies"""
