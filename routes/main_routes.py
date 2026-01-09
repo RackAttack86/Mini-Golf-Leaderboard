@@ -534,15 +534,18 @@ def debug_rounds_status():
     row = cursor.fetchone()
     sample_round = dict(row) if row else None
 
-    # Try a test insert
+    # Try a test insert with exact same format as real insert
     test_result = None
     try:
-        test_cursor = conn.execute("""
-            INSERT INTO rounds (id, course_id, date_played)
-            VALUES (?, ?, ?)
-        """, ('test-round-id-123', crystal_lair['id'] if crystal_lair else 'fake-id', '2025-01-01'))
-        test_result = f"INSERT succeeded, rowcount: {test_cursor.rowcount}"
-        conn.rollback()  # Don't actually commit the test
+        if crystal_lair:
+            test_cursor = conn.execute("""
+                INSERT INTO rounds (id, course_id, course_name, date_played)
+                VALUES (?, ?, ?, ?)
+            """, ('test-round-id-123', crystal_lair['id'], 'Crystal Lair', '2025-12-19'))
+            test_result = f"INSERT succeeded, rowcount: {test_cursor.rowcount}"
+            conn.rollback()  # Don't actually commit the test
+        else:
+            test_result = "Crystal Lair course not found"
     except Exception as e:
         test_result = f"INSERT failed: {str(e)}"
         conn.rollback()
