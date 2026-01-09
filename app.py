@@ -1,8 +1,12 @@
 # Standard library
 import logging
 import os
+import warnings
 from datetime import datetime
 from logging.handlers import RotatingFileHandler
+
+# Suppress oauthlib scope change warnings
+warnings.filterwarnings('ignore', message='Scope has changed')
 
 # Third-party
 from dotenv import load_dotenv
