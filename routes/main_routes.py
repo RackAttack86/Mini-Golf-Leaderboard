@@ -161,6 +161,53 @@ def health_check():
         }), 503
 
 
+@bp.route('/admin/load-seed-data')
+@csrf.exempt
+@limiter.exempt
+def load_seed_data():
+    """Admin endpoint to manually load course seed data"""
+    from flask import jsonify
+    from models.database import get_db
+    from pathlib import Path
+
+    db = get_db()
+    conn = db.get_connection()
+
+    # Check current course count
+    cursor = conn.execute("SELECT COUNT(*) as count FROM courses")
+    before_count = cursor.fetchone()[0]
+
+    # Load seed data
+    seed_file = Path(__file__).parent.parent / 'migrations' / 'seed_courses.sql'
+    if not seed_file.exists():
+        return jsonify({
+            'error': f'Seed file not found: {seed_file}'
+        }), 404
+
+    with open(seed_file, 'r', encoding='utf-8') as f:
+        seed_sql = f.read()
+
+    try:
+        conn.executescript(seed_sql)
+        conn.commit()
+
+        # Check new course count
+        cursor = conn.execute("SELECT COUNT(*) as count FROM courses")
+        after_count = cursor.fetchone()[0]
+
+        return jsonify({
+            'status': 'success',
+            'courses_before': before_count,
+            'courses_after': after_count,
+            'courses_added': after_count - before_count
+        }), 200
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'error': str(e)
+        }), 500
+
+
 @bp.route('/debug-trophies')
 @csrf.exempt
 @limiter.exempt
