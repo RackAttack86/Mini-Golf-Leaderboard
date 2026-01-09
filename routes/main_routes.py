@@ -232,7 +232,7 @@ def cleanup_test_data():
 @csrf.exempt
 @limiter.exempt
 def restore_missing_players():
-    """Admin endpoint to restore Michael and Samwise Gamgee"""
+    """Admin endpoint to restore missing players (Michael, Sam, Max)"""
     from flask import jsonify
     from models.database import get_db
 
@@ -266,6 +266,19 @@ def restore_missing_players():
             'created_at': '2025-12-22T19:27:13Z',
             'active': 1,
             'meta_quest_username': 'NikeOne07'
+        },
+        {
+            'id': '8380075d-145f-43b3-9b0c-8efc420e48ba',
+            'name': 'Max',
+            'email': None,
+            'profile_picture': None,
+            'favorite_color': '#f9f110',
+            'google_id': None,
+            'role': 'player',
+            'last_login': None,
+            'created_at': '2025-12-27T02:14:32Z',
+            'active': 1,
+            'meta_quest_username': None
         }
     ]
 
