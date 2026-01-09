@@ -427,6 +427,54 @@ def load_rounds_data():
         }), 500
 
 
+@bp.route('/admin/debug-rounds-status')
+@csrf.exempt
+@limiter.exempt
+def debug_rounds_status():
+    """Debug endpoint to check rounds migration status"""
+    from flask import jsonify
+    from models.database import get_db
+    from pathlib import Path
+    import os
+
+    db = get_db()
+    conn = db.get_connection()
+
+    # Check counts
+    cursor = conn.execute("SELECT COUNT(*) as count FROM rounds")
+    rounds_count = cursor.fetchone()[0]
+
+    cursor = conn.execute("SELECT COUNT(*) as count FROM round_scores")
+    scores_count = cursor.fetchone()[0]
+
+    cursor = conn.execute("SELECT COUNT(*) as count FROM courses")
+    courses_count = cursor.fetchone()[0]
+
+    # Check if JSON file exists
+    rounds_file = Path(__file__).parent.parent / 'migrations' / 'rounds_data.json'
+    file_exists = rounds_file.exists()
+    file_size = rounds_file.stat().st_size if file_exists else 0
+
+    # Get sample round if any exist
+    cursor = conn.execute("SELECT id, course_id, date_played FROM rounds LIMIT 1")
+    sample_round = dict(cursor.fetchone()) if cursor.fetchone() else None
+
+    return jsonify({
+        'database': {
+            'rounds': rounds_count,
+            'scores': scores_count,
+            'courses': courses_count
+        },
+        'json_file': {
+            'exists': file_exists,
+            'path': str(rounds_file),
+            'size_bytes': file_size
+        },
+        'sample_round': sample_round,
+        'working_directory': os.getcwd()
+    })
+
+
 @bp.route('/trophies')
 def trophies():
     """Display all course trophies"""
