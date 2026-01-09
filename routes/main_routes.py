@@ -228,6 +228,81 @@ def cleanup_test_data():
         }), 500
 
 
+@bp.route('/admin/restore-missing-players')
+@csrf.exempt
+@limiter.exempt
+def restore_missing_players():
+    """Admin endpoint to restore Michael and Samwise Gamgee"""
+    from flask import jsonify
+    from models.database import get_db
+
+    db = get_db()
+    conn = db.get_connection()
+
+    # Players to restore
+    players_to_restore = [
+        {
+            'id': 'aa156ad0-1875-42a3-84ff-6261142bcca3',
+            'name': 'Michael',
+            'email': 'popeage0906@gmail.com',
+            'profile_picture': '',
+            'favorite_color': '#00ff2a',
+            'google_id': '',
+            'role': 'player',
+            'last_login': '',
+            'created_at': '2025-12-22T19:26:45Z',
+            'active': 1,
+            'meta_quest_username': 'Popeage'
+        },
+        {
+            'id': '952e9b12-23b0-4775-b810-4fef626e20c6',
+            'name': 'Samwise Gamgee',
+            'email': 'riverpines.sam@gmail.com',
+            'profile_picture': 'e1f00e25baaa4216a951b17017e28dcd.jpg',
+            'favorite_color': '#ff8000',
+            'google_id': '',
+            'role': 'player',
+            'last_login': '',
+            'created_at': '2025-12-22T19:27:13Z',
+            'active': 1,
+            'meta_quest_username': 'NikeOne07'
+        }
+    ]
+
+    try:
+        restored = []
+        for player in players_to_restore:
+            # Check if player already exists
+            cursor = conn.execute("SELECT COUNT(*) as count FROM players WHERE id = ?", (player['id'],))
+            if cursor.fetchone()[0] == 0:
+                # Insert player
+                conn.execute("""
+                    INSERT INTO players (id, name, email, profile_picture, favorite_color, google_id, role, last_login, created_at, active, meta_quest_username)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """, (player['id'], player['name'], player['email'], player['profile_picture'],
+                      player['favorite_color'], player['google_id'], player['role'],
+                      player['last_login'], player['created_at'], player['active'],
+                      player['meta_quest_username']))
+                restored.append(player['name'])
+
+        conn.commit()
+
+        # Get current player count
+        cursor = conn.execute("SELECT COUNT(*) as count FROM players")
+        total_players = cursor.fetchone()[0]
+
+        return jsonify({
+            'status': 'success',
+            'restored': restored,
+            'total_players': total_players
+        }), 200
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'error': str(e)
+        }), 500
+
+
 @bp.route('/trophies')
 def trophies():
     """Display all course trophies"""
