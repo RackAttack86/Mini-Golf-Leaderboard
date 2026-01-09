@@ -358,10 +358,15 @@ def load_rounds_data():
     with open(rounds_file, 'r', encoding='utf-8') as f:
         rounds_data = json.load(f)
 
+    # Debug logging
+    total_rounds_in_file = len(rounds_data.get('rounds', []))
+    print(f"[DEBUG] Found {total_rounds_in_file} rounds in JSON file")
+
     try:
         # Build course name -> ID mapping from production
         cursor = conn.execute("SELECT id, name FROM courses")
         course_map = {row['name']: row['id'] for row in cursor.fetchall()}
+        print(f"[DEBUG] Course map has {len(course_map)} courses")
 
         # Insert rounds with mapped course IDs
         inserted_rounds = 0
@@ -371,8 +376,11 @@ def load_rounds_data():
         for round_data in rounds_data['rounds']:
             course_name = round_data['course_name']
             if course_name not in course_map:
+                print(f"[DEBUG] Skipping round - course '{course_name}' not found in production")
                 skipped_rounds += 1
                 continue
+
+            print(f"[DEBUG] Processing round {round_data['id']} for course '{course_name}'")
 
             production_course_id = course_map[course_name]
 
@@ -406,6 +414,10 @@ def load_rounds_data():
 
         return jsonify({
             'status': 'success',
+            'debug': {
+                'total_rounds_in_file': total_rounds_in_file,
+                'course_map_size': len(course_map)
+            },
             'rounds': {
                 'before': rounds_before,
                 'after': rounds_after,
