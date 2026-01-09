@@ -432,6 +432,46 @@ def load_rounds_data():
         }), 500
 
 
+@bp.route('/admin/verify-rounds')
+@csrf.exempt
+@limiter.exempt
+def verify_rounds():
+    """Verify rounds data loaded correctly"""
+    from flask import jsonify
+    from models.database import get_db
+
+    db = get_db()
+    conn = db.get_connection()
+
+    # Get sample rounds with course and player info
+    cursor = conn.execute("""
+        SELECT r.id, r.course_name, r.date_played,
+               COUNT(rs.player_id) as num_players,
+               GROUP_CONCAT(rs.player_name) as players
+        FROM rounds r
+        LEFT JOIN round_scores rs ON r.id = rs.round_id
+        GROUP BY r.id
+        ORDER BY r.date_played DESC
+        LIMIT 5
+    """)
+    sample_rounds = [dict(row) for row in cursor.fetchall()]
+
+    # Get player round counts
+    cursor = conn.execute("""
+        SELECT player_name, COUNT(DISTINCT round_id) as round_count
+        FROM round_scores
+        GROUP BY player_name
+        ORDER BY round_count DESC
+    """)
+    player_stats = [dict(row) for row in cursor.fetchall()]
+
+    return jsonify({
+        'total_rounds': len(sample_rounds),
+        'sample_rounds': sample_rounds,
+        'player_round_counts': player_stats
+    })
+
+
 @bp.route('/admin/debug-course-names')
 @csrf.exempt
 @limiter.exempt
