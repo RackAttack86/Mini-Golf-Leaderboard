@@ -71,11 +71,13 @@ def create_app():
         """Load user by player ID"""
         return AuthService.load_user(player_id)
 
-    # Initialize Google OAuth - let Flask-Dance handle the redirect
+    # Initialize Google OAuth with null storage (we don't store tokens)
+    from utils.null_oauth_storage import NullStorage
     google_bp = make_google_blueprint(
         client_id=app.config['GOOGLE_OAUTH_CLIENT_ID'],
         client_secret=app.config['GOOGLE_OAUTH_CLIENT_SECRET'],
-        scope=['profile', 'email']
+        scope=['profile', 'email'],
+        storage=NullStorage()
         # No redirect_to - Flask-Dance will redirect to index by default
     )
     app.register_blueprint(google_bp, url_prefix='/login')

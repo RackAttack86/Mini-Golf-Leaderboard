@@ -40,7 +40,18 @@
       "Bash(python3.12 -m pip install:*)",
       "Bash(git reset:*)",
       "Bash(git stash:*)",
-      "Bash(git merge:*)"
+      "Bash(git merge:*)",
+      "Bash(git pull:*)",
+      "Bash(git branch:*)",
+      "Bash(flyctl logs:*)",
+      "Bash(cmd.exe /c \"taskkill /F /PID 43240\")",
+      "Bash(flyctl deploy:*)",
+      "Bash(flyctl ssh console:*)",
+      "Bash(fly ssh console:*)",
+      "Bash(gh run list:*)",
+      "Bash(timeout /t 45)",
+      "Bash(flyctl status:*)",
+      "Bash(echo:*)"
     ]
   }
 }
