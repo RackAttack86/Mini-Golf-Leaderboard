@@ -432,6 +432,49 @@ def load_rounds_data():
         }), 500
 
 
+@bp.route('/admin/recent-errors')
+@csrf.exempt
+@limiter.exempt
+def recent_errors():
+    """Show recent application errors from log file"""
+    from flask import jsonify
+    from pathlib import Path
+
+    log_file = Path('/app/logs/app.log')
+    errors = []
+
+    try:
+        if log_file.exists():
+            with open(log_file, 'r') as f:
+                lines = f.readlines()
+                # Get last 100 lines
+                recent_lines = lines[-100:] if len(lines) > 100 else lines
+
+                # Filter for ERROR and exception traces
+                for i, line in enumerate(recent_lines):
+                    if 'ERROR' in line or 'Exception' in line or 'Traceback' in line:
+                        # Include context (5 lines before and after)
+                        start = max(0, i - 5)
+                        end = min(len(recent_lines), i + 10)
+                        context = ''.join(recent_lines[start:end])
+                        errors.append({
+                            'line_number': len(lines) - len(recent_lines) + i,
+                            'context': context
+                        })
+
+        return jsonify({
+            'log_file_exists': log_file.exists(),
+            'log_file_path': str(log_file),
+            'errors_found': len(errors),
+            'recent_errors': errors[-3:] if errors else []  # Last 3 errors
+        })
+    except Exception as e:
+        return jsonify({
+            'error': str(e),
+            'log_file_exists': log_file.exists() if 'log_file' in locals() else False
+        })
+
+
 @bp.route('/admin/test-oauth-flow')
 @csrf.exempt
 @limiter.exempt
