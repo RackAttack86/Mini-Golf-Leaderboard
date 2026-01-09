@@ -432,6 +432,50 @@ def load_rounds_data():
         }), 500
 
 
+@bp.route('/admin/check-session-storage')
+@csrf.exempt
+@limiter.exempt
+def check_session_storage():
+    """Check session storage configuration"""
+    from flask import jsonify, current_app
+    import os
+    from pathlib import Path
+
+    session_dir = current_app.config.get('SESSION_FILE_DIR')
+    session_type = current_app.config.get('SESSION_TYPE')
+
+    if session_dir:
+        dir_exists = session_dir.exists() if isinstance(session_dir, Path) else os.path.exists(session_dir)
+        dir_writable = os.access(session_dir, os.W_OK) if dir_exists else False
+
+        # Try to create a test file
+        test_file_path = Path(session_dir) / 'test_write.txt'
+        write_test = False
+        write_error = None
+        try:
+            test_file_path.write_text('test')
+            test_file_path.unlink()
+            write_test = True
+        except Exception as e:
+            write_error = str(e)
+
+        return jsonify({
+            'session_type': session_type,
+            'session_dir': str(session_dir),
+            'dir_exists': dir_exists,
+            'dir_writable': dir_writable,
+            'write_test_passed': write_test,
+            'write_test_error': write_error,
+            'files_in_dir': len(list(Path(session_dir).iterdir())) if dir_exists else None
+        })
+    else:
+        return jsonify({
+            'session_type': session_type,
+            'session_dir': None,
+            'note': 'Filesystem session storage not configured'
+        })
+
+
 @bp.route('/admin/check-oauth-config')
 @csrf.exempt
 @limiter.exempt
