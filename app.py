@@ -70,12 +70,15 @@ def create_app():
         """Load user by player ID"""
         return AuthService.load_user(player_id)
 
-    # Initialize Google OAuth
+    # Initialize Google OAuth with custom storage backend
+    from utils.oauth_storage import DebugSessionStorage
+
     google_bp = make_google_blueprint(
         client_id=app.config['GOOGLE_OAUTH_CLIENT_ID'],
         client_secret=app.config['GOOGLE_OAUTH_CLIENT_SECRET'],
         scope=['profile', 'email'],
-        redirect_to='auth.google_callback'
+        redirect_to='auth.google_callback',
+        storage=DebugSessionStorage()
     )
     app.register_blueprint(google_bp, url_prefix='/login')
 
