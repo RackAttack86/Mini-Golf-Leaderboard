@@ -333,9 +333,10 @@ def restore_missing_players():
 @csrf.exempt
 @limiter.exempt
 def load_rounds_data():
-    """Admin endpoint to load rounds data into production"""
+    """Admin endpoint to load rounds data with course mapping"""
     from flask import jsonify
     from models.database import get_db
+    import json
     from pathlib import Path
 
     db = get_db()
@@ -347,18 +348,54 @@ def load_rounds_data():
     cursor = conn.execute("SELECT COUNT(*) as count FROM round_scores")
     scores_before = cursor.fetchone()[0]
 
-    # Load rounds data
-    rounds_file = Path(__file__).parent.parent / 'migrations' / 'seed_rounds.sql'
+    # Load rounds JSON data with course names
+    rounds_file = Path(__file__).parent.parent / 'migrations' / 'rounds_data.json'
     if not rounds_file.exists():
         return jsonify({
-            'error': f'Rounds seed file not found: {rounds_file}'
+            'error': f'Rounds data file not found: {rounds_file}'
         }), 404
 
     with open(rounds_file, 'r', encoding='utf-8') as f:
-        rounds_sql = f.read()
+        rounds_data = json.load(f)
 
     try:
-        conn.executescript(rounds_sql)
+        # Build course name -> ID mapping from production
+        cursor = conn.execute("SELECT id, name FROM courses")
+        course_map = {row['name']: row['id'] for row in cursor.fetchall()}
+
+        # Insert rounds with mapped course IDs
+        inserted_rounds = 0
+        inserted_scores = 0
+        skipped_rounds = 0
+
+        for round_data in rounds_data['rounds']:
+            course_name = round_data['course_name']
+            if course_name not in course_map:
+                skipped_rounds += 1
+                continue
+
+            production_course_id = course_map[course_name]
+
+            # Insert round
+            conn.execute("""
+                INSERT OR IGNORE INTO rounds (id, course_id, date_played)
+                VALUES (?, ?, ?)
+            """, (round_data['id'], production_course_id, round_data['date_played']))
+
+            # Check if insert succeeded
+            cursor = conn.execute("SELECT id FROM rounds WHERE id = ?", (round_data['id'],))
+            if cursor.fetchone():
+                inserted_rounds += 1
+
+                # Insert scores for this round
+                for score in round_data['scores']:
+                    conn.execute("""
+                        INSERT OR IGNORE INTO round_scores (round_id, player_id, player_name, score, hole_scores)
+                        VALUES (?, ?, ?, ?, ?)
+                    """, (score['round_id'], score['player_id'], score['player_name'],
+                          score['score'], score['hole_scores'] or ''))
+                    inserted_scores += 1
+
         conn.commit()
 
         # Get counts after loading
@@ -372,18 +409,21 @@ def load_rounds_data():
             'rounds': {
                 'before': rounds_before,
                 'after': rounds_after,
-                'added': rounds_after - rounds_before
+                'inserted': inserted_rounds,
+                'skipped': skipped_rounds
             },
             'scores': {
                 'before': scores_before,
                 'after': scores_after,
-                'added': scores_after - scores_before
+                'inserted': inserted_scores
             }
         }), 200
     except Exception as e:
+        import traceback
         return jsonify({
             'status': 'error',
-            'error': str(e)
+            'error': str(e),
+            'traceback': traceback.format_exc()
         }), 500
 
 
