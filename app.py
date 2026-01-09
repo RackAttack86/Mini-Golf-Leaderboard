@@ -27,6 +27,10 @@ def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
 
+    # Set OAuth environment variables before initializing Flask-Dance
+    os.environ['OAUTHLIB_RELAX_TOKEN_SCOPE'] = '1'
+    os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1' if app.config['DEBUG'] else '0'
+
     # Trust proxy headers from Fly.io (fixes HTTPS detection for OAuth)
     from werkzeug.middleware.proxy_fix import ProxyFix
     app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
