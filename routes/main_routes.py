@@ -432,6 +432,31 @@ def load_rounds_data():
         }), 500
 
 
+@bp.route('/admin/test-google-api')
+@csrf.exempt
+@limiter.exempt
+def test_google_api():
+    """Test if we can make HTTPS requests to Google"""
+    from flask import jsonify
+    import traceback
+
+    try:
+        import requests
+        resp = requests.get('https://www.googleapis.com/oauth2/v2/certs', timeout=5)
+        return jsonify({
+            'status': 'success',
+            'status_code': resp.status_code,
+            'can_reach_google': resp.ok,
+            'response_length': len(resp.text)
+        })
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'error': str(e),
+            'traceback': traceback.format_exc()
+        })
+
+
 @bp.route('/admin/error-log-file')
 @csrf.exempt
 @limiter.exempt
