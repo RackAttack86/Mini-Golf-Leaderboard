@@ -432,6 +432,37 @@ def load_rounds_data():
         }), 500
 
 
+@bp.route('/admin/test-oauth-flow')
+@csrf.exempt
+@limiter.exempt
+def test_oauth_flow():
+    """Test OAuth flow and capture any errors"""
+    from flask import jsonify, current_app, session
+    from flask_dance.contrib.google import google
+    import traceback
+
+    result = {
+        'google_authorized': google.authorized,
+        'has_token': bool(google.token),
+        'session_keys': list(session.keys()) if session else []
+    }
+
+    if google.authorized:
+        try:
+            resp = google.get('/oauth2/v2/userinfo')
+            result['api_status_code'] = resp.status_code
+            result['api_ok'] = resp.ok
+            if resp.ok:
+                result['user_info'] = resp.json()
+            else:
+                result['api_error'] = resp.text
+        except Exception as e:
+            result['api_exception'] = str(e)
+            result['api_traceback'] = traceback.format_exc()
+
+    return jsonify(result)
+
+
 @bp.route('/admin/check-session-storage')
 @csrf.exempt
 @limiter.exempt

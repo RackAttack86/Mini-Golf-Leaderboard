@@ -78,6 +78,7 @@ def create_app():
     # OAuth error handler
     from flask_dance.consumer import oauth_authorized, oauth_error
     from flask import flash, redirect, url_for
+    import traceback as tb
 
     @oauth_error.connect_via(google_bp)
     def google_error(blueprint, message, response):
@@ -85,6 +86,23 @@ def create_app():
         app.logger.error(f"OAuth error response: {response}")
         flash(f"OAuth error: {message}", "danger")
         return redirect(url_for('auth.login'))
+
+    @oauth_authorized.connect_via(google_bp)
+    def google_logged_in(blueprint, token):
+        """Called when OAuth flow completes successfully"""
+        try:
+            app.logger.info(f"OAuth authorized signal received. Token: {bool(token)}")
+            if not token:
+                app.logger.error("No token received from Google")
+                flash("Failed to receive authentication token from Google.", "danger")
+                return False
+            # Return False to prevent Flask-Dance from storing token (we handle it manually)
+            return False
+        except Exception as e:
+            app.logger.error(f"Error in oauth_authorized handler: {str(e)}")
+            app.logger.error(tb.format_exc())
+            flash(f"Authentication error: {str(e)}", "danger")
+            return False
 
     # Register blueprints
     app.register_blueprint(main_routes.bp)

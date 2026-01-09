@@ -53,15 +53,21 @@ def google_callback():
     # Note: Flask-Dance validates the OAuth state parameter automatically
     # If state validation fails, google.authorized will be False
     from flask import current_app
+    import traceback
 
-    # Log for debugging
-    current_app.logger.info(f"Google callback invoked, authorized: {google.authorized}")
+    try:
+        # Log for debugging
+        current_app.logger.info(f"Google callback invoked, authorized: {google.authorized}")
 
-    # Check if OAuth was successful
-    if not google.authorized:
-        error_msg = 'Google authentication failed. Please try again.'
-        current_app.logger.error(f"OAuth not authorized. Token: {google.token}")
-        flash(error_msg, 'danger')
+        # Check if OAuth was successful
+        if not google.authorized:
+            error_msg = 'Google authentication failed. Please try again.'
+            current_app.logger.error(f"OAuth not authorized. Token: {google.token}")
+            flash(error_msg, 'danger')
+            return redirect(url_for('auth.login'))
+    except Exception as e:
+        current_app.logger.error(f"Error checking OAuth authorization: {str(e)}", exc_info=True)
+        flash(f'OAuth error: {str(e)}', 'danger')
         return redirect(url_for('auth.login'))
 
     # Get user info from Google
@@ -93,29 +99,34 @@ def google_callback():
         return redirect(url_for('auth.login'))
 
     # Check if user already has a linked account
-    user = AuthService.get_user_from_google(google_id, email, name)
+    try:
+        user = AuthService.get_user_from_google(google_id, email, name)
 
-    if user:
-        # User exists, log them in
-        # Regenerate session to prevent session fixation attacks
-        session.permanent = True
-        session.modified = True
+        if user:
+            # User exists, log them in
+            # Regenerate session to prevent session fixation attacks
+            session.permanent = True
+            session.modified = True
 
-        login_user(user, remember=True)
-        flash(f'Welcome back, {user.name}!', 'success')
+            login_user(user, remember=True)
+            flash(f'Welcome back, {user.name}!', 'success')
 
-        # Redirect to next page or dashboard (validate URL to prevent open redirect)
-        next_page = request.args.get('next')
-        if next_page and not is_safe_url(next_page):
-            next_page = None
-        return redirect(next_page) if next_page else redirect(url_for('main.index'))
-    else:
-        # No linked account, redirect to registration
-        session['google_id'] = google_id
-        session['google_email'] = email
-        session['google_name'] = name
-        flash('Please link your Google account to an existing player profile.', 'info')
-        return redirect(url_for('auth.register'))
+            # Redirect to next page or dashboard (validate URL to prevent open redirect)
+            next_page = request.args.get('next')
+            if next_page and not is_safe_url(next_page):
+                next_page = None
+            return redirect(next_page) if next_page else redirect(url_for('main.index'))
+        else:
+            # No linked account, redirect to registration
+            session['google_id'] = google_id
+            session['google_email'] = email
+            session['google_name'] = name
+            flash('Please link your Google account to an existing player profile.', 'info')
+            return redirect(url_for('auth.register'))
+    except Exception as e:
+        current_app.logger.error(f"Error processing user login: {str(e)}", exc_info=True)
+        flash(f'Login error: {str(e)}', 'danger')
+        return redirect(url_for('auth.login'))
 
 
 @auth_bp.route('/register', methods=['GET', 'POST'])
