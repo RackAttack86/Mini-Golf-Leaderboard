@@ -13,7 +13,7 @@
 #}
 {% macro profile_picture(player, size='sm') %}
 {% if player.profile_picture %}
-<img src="{{ url_for('static', filename='uploads/profiles/' + player.profile_picture) }}"
+<img src="{{ url_for('main.serve_profile_picture', filename=player.profile_picture) }}"
      alt="{{ player.name }}"
      class="profile-picture-{{ size }}"
      style="border-color: {{ player.favorite_color or '#2e7d32' }};">

@@ -7,7 +7,7 @@
     <div class="col-md-8">
         <div class="d-flex align-items-center">
             {% if player.profile_picture %}
-            <img src="{{ url_for('static', filename='uploads/profiles/' + player.profile_picture) }}"
+            <img src="{{ url_for('main.serve_profile_picture', filename=player.profile_picture) }}"
                  alt="{{ player.name }}"
                  class="profile-picture-lg me-3"
                  style="border-color: {{ player.favorite_color or '#2e7d32' }};">
@@ -440,7 +440,7 @@
                         <label for="edit_profile_picture" class="form-label">Profile Picture</label>
                         {% if player.profile_picture %}
                         <div class="mb-2">
-                            <img src="{{ url_for('static', filename='uploads/profiles/' + player.profile_picture) }}"
+                            <img src="{{ url_for('main.serve_profile_picture', filename=player.profile_picture) }}"
                                  alt="{{ player.name }}"
                                  class="profile-picture-preview">
                             <div class="form-check mt-2">

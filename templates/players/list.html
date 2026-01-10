@@ -38,7 +38,7 @@
                     <tr {% if not player.active %}class="table-secondary"{% endif %} onclick="window.location='{{ url_for('players.player_detail', player_id=player.id) }}';" style="cursor: pointer;">
                         <td>
                             {% if player.profile_picture %}
-                            <img src="{{ url_for('static', filename='uploads/profiles/' + player.profile_picture) }}"
+                            <img src="{{ url_for('main.serve_profile_picture', filename=player.profile_picture) }}"
                                  alt="{{ player.name }}"
                                  class="profile-picture-sm"
                                  style="border-color: {{ player.favorite_color or '#2e7d32' }};">

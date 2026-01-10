@@ -41,7 +41,7 @@
                     <div class="col">
                         <h4 class="mb-0">
                             {% if entry.profile_picture %}
-                            <img src="{{ url_for('static', filename='uploads/profiles/' + entry.profile_picture) }}"
+                            <img src="{{ url_for('main.serve_profile_picture', filename=entry.profile_picture) }}"
                                  alt="{{ entry.player_name }}"
                                  class="rounded-circle me-2"
                                  style="width: 40px; height: 40px; object-fit: cover;">

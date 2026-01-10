@@ -215,7 +215,7 @@
                                 </td>
                                 <td>
                                     {% if score.player_data and score.player_data.profile_picture %}
-                                    <img src="{{ url_for('static', filename='uploads/profiles/' + score.player_data.profile_picture) }}"
+                                    <img src="{{ url_for('main.serve_profile_picture', filename=score.player_data.profile_picture) }}"
                                          alt="{{ score.player_name }}"
                                          class="profile-picture-xs"
                                          style="border-color: {{ score.player_data.favorite_color or '#2e7d32' }};">

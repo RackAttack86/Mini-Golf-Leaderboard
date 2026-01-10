@@ -116,7 +116,7 @@
                         {% if not is_solo %}
                         <td style="background-color: {{ bg_color }} !important;">
                             {% if round.winner_player and round.winner_player.profile_picture %}
-                            <img src="{{ url_for('static', filename='uploads/profiles/' + round.winner_player.profile_picture) }}"
+                            <img src="{{ url_for('main.serve_profile_picture', filename=round.winner_player.profile_picture) }}"
                                  alt="{{ winner.player_name }}"
                                  class="profile-picture-sm"
                                  style="border-color: {{ winner_color }};">
