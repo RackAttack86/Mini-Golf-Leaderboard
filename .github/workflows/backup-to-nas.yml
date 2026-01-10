@@ -21,7 +21,7 @@ jobs:
       - name: Create backup on Fly.io VM
         run: |
           echo "Creating backup on Fly.io VM..."
-          flyctl ssh console --app mini-golf-leaderboard -C "tar -czf /tmp/minigolf-backup.tar.gz /app/data/minigolf.db /app/data/round_pictures"
+          flyctl ssh console --app mini-golf-leaderboard -C "tar -czf /tmp/minigolf-backup.tar.gz -C /app data"
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
 
