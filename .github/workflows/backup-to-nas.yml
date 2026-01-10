@@ -1,0 +1,98 @@
+name: Weekly Backup to Synology NAS
+
+on:
+  schedule:
+    # Run every Sunday at 3 AM UTC
+    - cron: '0 3 * * 0'
+  workflow_dispatch:  # Allow manual triggering
+
+jobs:
+  backup:
+    name: Backup Database to NAS
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Fly.io CLI
+        uses: superfly/flyctl-actions/setup-flyctl@master
+
+      - name: Create backup on Fly.io VM
+        run: |
+          echo "Creating backup on Fly.io VM..."
+          flyctl ssh console --app mini-golf-leaderboard -C "cd /app/data && tar -czf /tmp/minigolf-backup-$(date +%Y%m%d-%H%M%S).tar.gz minigolf.db round_pictures/"
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+
+      - name: Download backup from Fly.io
+        run: |
+          echo "Downloading backup from Fly.io..."
+          BACKUP_FILE=$(flyctl ssh console --app mini-golf-leaderboard -C "ls -t /tmp/minigolf-backup-*.tar.gz | head -1" | tr -d '\r')
+          echo "Backup file: $BACKUP_FILE"
+
+          # Download using flyctl ssh sftp
+          flyctl ssh sftp shell --app mini-golf-leaderboard <<EOF
+          get $BACKUP_FILE ./minigolf-backup.tar.gz
+          exit
+          EOF
+
+          ls -lh minigolf-backup.tar.gz
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+
+      - name: Set up SSH key for Synology NAS
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.NAS_SSH_KEY }}" > ~/.ssh/nas_key
+          chmod 600 ~/.ssh/nas_key
+
+          # Add NAS to known hosts to avoid prompt
+          ssh-keyscan -H ${{ secrets.NAS_HOST }} >> ~/.ssh/known_hosts 2>/dev/null || true
+
+      - name: Upload backup to Synology NAS via SCP
+        run: |
+          BACKUP_NAME="minigolf-backup-$(date +%Y%m%d-%H%M%S).tar.gz"
+          echo "Uploading $BACKUP_NAME to Synology NAS..."
+
+          scp -i ~/.ssh/nas_key \
+              -o StrictHostKeyChecking=no \
+              minigolf-backup.tar.gz \
+              ${{ secrets.NAS_USER }}@${{ secrets.NAS_HOST }}:${{ secrets.NAS_BACKUP_PATH }}/$BACKUP_NAME
+
+          echo "Backup uploaded successfully!"
+
+      - name: Verify backup on NAS
+        run: |
+          echo "Verifying backup exists on NAS..."
+          ssh -i ~/.ssh/nas_key \
+              -o StrictHostKeyChecking=no \
+              ${{ secrets.NAS_USER }}@${{ secrets.NAS_HOST }} \
+              "ls -lh ${{ secrets.NAS_BACKUP_PATH }}/minigolf-backup-*.tar.gz | tail -5"
+
+      - name: Clean up old backups (keep last 8 weeks)
+        run: |
+          echo "Cleaning up old backups (keeping last 8)..."
+          ssh -i ~/.ssh/nas_key \
+              -o StrictHostKeyChecking=no \
+              ${{ secrets.NAS_USER }}@${{ secrets.NAS_HOST }} \
+              "cd ${{ secrets.NAS_BACKUP_PATH }} && ls -t minigolf-backup-*.tar.gz | tail -n +9 | xargs -r rm -f"
+
+          echo "Remaining backups:"
+          ssh -i ~/.ssh/nas_key \
+              -o StrictHostKeyChecking=no \
+              ${{ secrets.NAS_USER }}@${{ secrets.NAS_HOST }} \
+              "ls -lh ${{ secrets.NAS_BACKUP_PATH }}/minigolf-backup-*.tar.gz"
+
+      - name: Clean up Fly.io temp files
+        run: |
+          echo "Cleaning up temporary backup files on Fly.io..."
+          flyctl ssh console --app mini-golf-leaderboard -C "rm -f /tmp/minigolf-backup-*.tar.gz"
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+
+      - name: Notify on failure
+        if: failure()
+        run: |
+          echo "❌ Backup failed! Check the logs above for details."
+          exit 1
