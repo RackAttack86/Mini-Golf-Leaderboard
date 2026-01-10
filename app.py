@@ -88,69 +88,17 @@ def create_app():
         storage=NullStorage()
         # No redirect_to - Flask-Dance will redirect to index by default
     )
-
-    # Wrap Flask-Dance's authorized view to catch exceptions
-    from utils.error_tracker import error_tracker
-    import traceback as tb
-    original_authorized = google_bp.authorized
-
-    def wrapped_authorized():
-        try:
-            error_tracker.log_error('flask_dance_authorized_called', 'Entering Flask-Dance authorized handler', None, {})
-            result = original_authorized()
-            error_tracker.log_error('flask_dance_authorized_success', 'Flask-Dance authorized completed', None, {
-                'result_type': str(type(result))
-            })
-            return result
-        except Exception as e:
-            error_tracker.log_error('flask_dance_authorized_exception', f'Exception in Flask-Dance: {str(e)}', e, {
-                'exception_type': type(e).__name__
-            })
-            app.logger.error(f"Flask-Dance exception: {str(e)}")
-            app.logger.error(tb.format_exc())
-            raise
-
-    google_bp.authorized = wrapped_authorized
     app.register_blueprint(google_bp, url_prefix='/login')
-
-    # Also wrap the view function after registration
-    try:
-        original_view = app.view_functions.get('google.authorized')
-        if original_view:
-            def wrapped_view(*args, **kwargs):
-                try:
-                    error_tracker.log_error('view_function_called', 'Flask view function called for /authorized', None, {})
-                    result = original_view(*args, **kwargs)
-                    error_tracker.log_error('view_function_success', 'View function completed', None, {
-                        'result_type': str(type(result))
-                    })
-                    return result
-                except Exception as e:
-                    error_tracker.log_error('view_function_exception', f'Exception in view: {str(e)}', e, {
-                        'exception_type': type(e).__name__
-                    })
-                    app.logger.error(f"View function exception: {str(e)}")
-                    app.logger.error(tb.format_exc())
-                    raise
-            app.view_functions['google.authorized'] = wrapped_view
-            error_tracker.log_error('view_wrapped', 'Successfully wrapped google.authorized view', None, {})
-    except Exception as e:
-        error_tracker.log_error('view_wrap_failed', f'Failed to wrap view: {str(e)}', e, {})
 
     # OAuth error handler
     from flask_dance.consumer import oauth_authorized, oauth_error
     from flask import flash, redirect, url_for, request, session
-    from utils.error_tracker import error_tracker
     import traceback as tb
 
     @oauth_error.connect_via(google_bp)
     def google_error(blueprint, message, response):
         app.logger.error(f"OAuth error from {blueprint.name}: {message}")
         app.logger.error(f"OAuth error response: {response}")
-        error_tracker.log_error('flask_dance_oauth_error', message, None, {
-            'blueprint': blueprint.name,
-            'response': str(response)
-        })
         flash(f"OAuth error: {message}", "danger")
         return redirect(url_for('auth.login'))
 
@@ -159,14 +107,9 @@ def create_app():
         """Called when OAuth flow completes successfully - process login here"""
         try:
             app.logger.info(f"OAuth authorized signal received. Token: {bool(token)}")
-            error_tracker.log_error('oauth_signal_fired', f"Token received: {bool(token)}", None, {
-                'has_token': bool(token),
-                'token_type': str(type(token)) if token else None
-            })
 
             if not token:
                 app.logger.error("No token received from Google")
-                error_tracker.log_error('flask_dance_no_token', 'No token received', None, {})
                 flash("Failed to receive authentication token from Google.", "danger")
                 return False
 
@@ -175,7 +118,7 @@ def create_app():
             resp = google.get('/oauth2/v2/userinfo')
 
             if not resp.ok:
-                error_tracker.log_error('google_api_error', f"Failed to get user info: {resp.status_code}", None, {})
+                app.logger.error(f"Failed to get user info from Google: {resp.status_code}")
                 flash('Failed to fetch user information from Google.', 'danger')
                 return False
 
@@ -211,78 +154,8 @@ def create_app():
         except Exception as e:
             app.logger.error(f"Error in oauth_authorized handler: {str(e)}")
             app.logger.error(tb.format_exc())
-            error_tracker.log_error('flask_dance_handler_exception', str(e), e, {})
             flash(f"Authentication error: {str(e)}", "danger")
             return False
-
-    # Track OAuth-related requests
-    @app.before_request
-    def track_oauth_requests():
-        """Track OAuth callback requests for debugging"""
-        if '/login/google' in request.path or '/auth/google' in request.path:
-            error_tracker.log_error('oauth_request_received', f"{request.method} {request.path}", None, {
-                'url': request.url,
-                'path': request.path,
-                'method': request.method,
-                'args': dict(request.args),
-                'session_keys': list(session.keys()) if session else []
-            })
-
-    # Track after each request
-    @app.after_request
-    def track_oauth_response(response):
-        """Track OAuth responses"""
-        if '/login/google' in request.path or '/auth/google' in request.path:
-            context = {
-                'status_code': response.status_code,
-                'path': request.path,
-                'location': response.headers.get('Location')
-            }
-            # If 500 error, try to get response data
-            if response.status_code == 500:
-                try:
-                    context['response_data'] = response.get_data(as_text=True)[:500]  # First 500 chars
-                except:
-                    context['response_data'] = 'Could not read response'
-            error_tracker.log_error('oauth_response_sent', f"{response.status_code} for {request.path}", None, context)
-        return response
-
-    # Global exception handler
-    @app.errorhandler(Exception)
-    def handle_exception(e):
-        """Catch all exceptions"""
-        app.logger.error(f"Unhandled exception: {str(e)}")
-        app.logger.error(tb.format_exc())
-        error_tracker.log_error('unhandled_exception', str(e), e, {
-            'request_url': request.url if request else None,
-            'request_method': request.method if request else None,
-            'request_path': request.path if request else None,
-            'exception_type': type(e).__name__
-        })
-
-        # If it's an HTTP exception, pass it through
-        from werkzeug.exceptions import HTTPException
-        if isinstance(e, HTTPException):
-            return e
-
-        # For all other exceptions, show error and redirect
-        flash(f'An error occurred: {str(e)}', 'danger')
-        return redirect(url_for('auth.login')), 500
-
-    # Global error handler for 500 errors
-    @app.errorhandler(500)
-    def handle_500_error(e):
-        """Catch all 500 errors"""
-        app.logger.error(f"500 Internal Server Error: {str(e)}")
-        app.logger.error(tb.format_exc())
-        error_tracker.log_error('500_internal_server_error', str(e), e, {
-            'request_url': request.url if request else None,
-            'request_method': request.method if request else None,
-            'request_path': request.path if request else None
-        })
-        # Show error message to user
-        flash(f'An internal server error occurred: {str(e)}', 'danger')
-        return redirect(url_for('auth.login'))
 
     # Register blueprints
     app.register_blueprint(main_routes.bp)
