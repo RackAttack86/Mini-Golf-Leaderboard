@@ -3,7 +3,7 @@ import os
 from datetime import datetime, timedelta
 
 # Third-party
-from flask import Blueprint, render_template
+from flask import Blueprint, render_template, send_from_directory
 from flask_login import current_user
 
 # Local
@@ -13,6 +13,7 @@ from models.round import Round
 from models.course_trophy import CourseTrophy
 from services.achievement_service import AchievementService
 from extensions import limiter, csrf
+from config import Config
 
 bp = Blueprint('main', __name__)
 
@@ -40,6 +41,12 @@ def filter_email_from_players(players, allow_all=False):
             player['email'] = None
 
     return player_list if is_list else (player_list[0] if player_list else None)
+
+
+@bp.route('/uploads/profiles/<path:filename>')
+def serve_profile_picture(filename):
+    """Serve profile pictures from data directory"""
+    return send_from_directory(Config.PROFILE_PICTURES_DIR, filename)
 
 
 @bp.route('/')

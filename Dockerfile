@@ -11,7 +11,7 @@ RUN pip install --no-cache-dir -r requirements.txt \
 COPY . .
 
 # Create necessary directories
-RUN mkdir -p data/round_pictures logs .flask_session
+RUN mkdir -p data/round_pictures data/profile_pictures logs .flask_session
 
 # Expose port
 EXPOSE 8080

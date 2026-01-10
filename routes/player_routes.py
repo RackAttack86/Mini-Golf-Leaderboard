@@ -94,8 +94,8 @@ def add_player():
                     flash(error, 'error')
                     return render_template('players/add.html', name=name, email=email, favorite_color=favorite_color)
 
-                upload_folder = os.path.join('static', 'uploads', 'profiles')
-                profile_picture = save_profile_picture(file, upload_folder)
+                from config import Config
+                profile_picture = save_profile_picture(file, str(Config.PROFILE_PICTURES_DIR))
 
         success, message, player = Player.create(
             name,
@@ -238,7 +238,8 @@ def edit_player(player_id):
         profile_picture = ''
         # Delete old file
         if player.get('profile_picture'):
-            old_file = os.path.join('static', 'uploads', 'profiles', player['profile_picture'])
+            from config import Config
+            old_file = os.path.join(str(Config.PROFILE_PICTURES_DIR), player['profile_picture'])
             try:
                 os.remove(old_file)
             except OSError:
@@ -255,12 +256,12 @@ def edit_player(player_id):
                 flash(error, 'error')
                 return redirect(url_for('players.player_detail', player_id=player_id))
 
-            upload_folder = os.path.join('static', 'uploads', 'profiles')
-            new_picture = save_profile_picture(file, upload_folder)
+            from config import Config
+            new_picture = save_profile_picture(file, str(Config.PROFILE_PICTURES_DIR))
             if new_picture:
                 # Delete old file if exists
                 if player.get('profile_picture'):
-                    old_file = os.path.join('static', 'uploads', 'profiles', player['profile_picture'])
+                    old_file = os.path.join(str(Config.PROFILE_PICTURES_DIR), player['profile_picture'])
                     try:
                         os.remove(old_file)
                     except OSError:

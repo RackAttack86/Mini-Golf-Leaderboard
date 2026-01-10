@@ -14,6 +14,7 @@ class Config:
     DATA_DIR = BASE_DIR / 'data'
     DATABASE_PATH = BASE_DIR / 'data' / 'minigolf.db'
     ROUND_PICTURES_DIR = BASE_DIR / 'data' / 'round_pictures'
+    PROFILE_PICTURES_DIR = BASE_DIR / 'data' / 'profile_pictures'
 
     # File Upload Security
     MAX_CONTENT_LENGTH = 5 * 1024 * 1024  # 5MB max file size
