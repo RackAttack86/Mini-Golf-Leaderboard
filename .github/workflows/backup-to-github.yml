@@ -1,0 +1,66 @@
+name: Weekly Backup to GitHub Artifacts
+
+on:
+  schedule:
+    # Run every Sunday at 3 AM UTC
+    - cron: '0 3 * * 0'
+  workflow_dispatch:  # Allow manual triggering
+
+jobs:
+  backup:
+    name: Backup Database to GitHub Artifacts
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Fly.io CLI
+        uses: superfly/flyctl-actions/setup-flyctl@master
+
+      - name: Create backup on Fly.io VM
+        run: |
+          echo "Creating backup on Fly.io VM..."
+          flyctl ssh console --app mini-golf-leaderboard -C "tar -czf /tmp/minigolf-backup.tar.gz -C /app data"
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+
+      - name: Download backup from Fly.io
+        run: |
+          echo "Downloading backup from Fly.io..."
+
+          # Download using flyctl ssh sftp
+          flyctl ssh sftp shell --app mini-golf-leaderboard <<EOF
+          get /tmp/minigolf-backup.tar.gz ./minigolf-backup.tar.gz
+          exit
+          EOF
+
+          # Rename with timestamp
+          BACKUP_NAME="minigolf-backup-$(date +%Y%m%d-%H%M%S).tar.gz"
+          mv minigolf-backup.tar.gz $BACKUP_NAME
+
+          ls -lh $BACKUP_NAME
+          echo "BACKUP_NAME=$BACKUP_NAME" >> $GITHUB_ENV
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+
+      - name: Upload backup to GitHub Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.BACKUP_NAME }}
+          path: ${{ env.BACKUP_NAME }}
+          retention-days: 90  # Keep for 90 days
+
+      - name: Clean up Fly.io temp files
+        run: |
+          echo "Cleaning up temporary backup files on Fly.io..."
+          flyctl ssh console --app mini-golf-leaderboard -C "rm -f /tmp/minigolf-backup.tar.gz"
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+
+      - name: Summary
+        run: |
+          echo "✅ Backup created successfully!"
+          echo "📦 Backup file: ${{ env.BACKUP_NAME }}"
+          echo "📥 Download from: Actions > This workflow run > Artifacts"
+          echo "💾 Retention: 90 days"
