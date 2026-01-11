@@ -1,0 +1,70 @@
+name: Security Check
+
+on:
+  push:
+    branches:
+      - '**'
+  pull_request:
+    branches:
+      - main
+      - develop
+
+jobs:
+  secret-scan:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Full history for better secret detection
+
+    - name: Check for secrets
+      run: |
+        echo "Scanning for potential secrets in commits..."
+
+        # Check for common secret patterns
+        if git log --all --full-history --source -- .env | grep -q "."; then
+          echo "❌ ERROR: .env file found in git history!"
+          exit 1
+        fi
+
+        # Check for OAuth secrets (not placeholders)
+        if git diff --cached | grep -E "GOCSPX-[a-zA-Z0-9_-]{28}" | grep -v "your-client-secret" | grep -v "placeholder"; then
+          echo "❌ ERROR: Google OAuth Client Secret found in changes!"
+          exit 1
+        fi
+
+        # Check for AWS keys
+        if git diff --cached | grep -E "AKIA[0-9A-Z]{16}"; then
+          echo "❌ ERROR: AWS Access Key found in changes!"
+          exit 1
+        fi
+
+        # Check for private keys
+        if git diff --cached | grep -E "BEGIN (RSA|DSA|EC|OPENSSH) PRIVATE KEY"; then
+          echo "❌ ERROR: Private key found in changes!"
+          exit 1
+        fi
+
+        echo "✅ No secrets detected in commits"
+
+    - name: Verify .env is gitignored
+      run: |
+        if ! grep -q "^\.env$" .gitignore; then
+          echo "❌ ERROR: .env is not in .gitignore!"
+          exit 1
+        fi
+        echo "✅ .env is properly gitignored"
+
+    - name: Check for hardcoded credentials in code
+      run: |
+        echo "Checking for hardcoded credentials in Python files..."
+
+        # Look for suspicious patterns in Python files
+        if grep -r -E "password\s*=\s*['\"][^'\"]+['\"]" --include="*.py" .; then
+          echo "⚠️  WARNING: Found hardcoded password patterns"
+          echo "Please verify these are not real credentials"
+        fi
+
+        echo "✅ Security scan complete"
