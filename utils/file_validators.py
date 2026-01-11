@@ -1,5 +1,4 @@
 import os
-import imghdr
 from typing import Tuple
 from werkzeug.utils import secure_filename
 from werkzeug.datastructures import FileStorage
@@ -41,16 +40,44 @@ def validate_image_file(file: FileStorage, max_size: int = 5 * 1024 * 1024) -> T
     if file_size == 0:
         return False, "File is empty"
 
-    # Verify file is actually an image (content-based validation)
+    # Verify file is actually an image (content-based validation using magic numbers)
     file_header = file.read(512)
     file.seek(0)  # Reset again
 
-    # Try to detect image type from content
-    image_type = imghdr.what(None, h=file_header)
+    # Detect image type from magic numbers (file signatures)
+    image_type = _detect_image_type(file_header)
     if image_type not in ['png', 'jpeg', 'gif']:
         return False, "File content doesn't match expected image format"
 
     return True, ""
+
+
+def _detect_image_type(header: bytes) -> str:
+    """
+    Detect image type from file header (magic numbers)
+
+    Args:
+        header: First bytes of the file
+
+    Returns:
+        Image type string ('png', 'jpeg', 'gif') or empty string if not recognized
+    """
+    if len(header) < 12:
+        return ""
+
+    # PNG: 89 50 4E 47 0D 0A 1A 0A
+    if header[:8] == b'\x89PNG\r\n\x1a\n':
+        return 'png'
+
+    # JPEG: FF D8 FF
+    if header[:3] == b'\xff\xd8\xff':
+        return 'jpeg'
+
+    # GIF: GIF87a or GIF89a
+    if header[:6] in (b'GIF87a', b'GIF89a'):
+        return 'gif'
+
+    return ""
 
 
 def sanitize_filename(filename: str, max_length: int = 100) -> str:

@@ -32,7 +32,7 @@ class Config:
     GOOGLE_OAUTH_CLIENT_SECRET = os.environ.get('GOOGLE_OAUTH_CLIENT_SECRET')
     # Only allow insecure transport in development (disable HTTPS requirement for OAuth)
     OAUTHLIB_INSECURE_TRANSPORT = '1' if DEBUG else '0'
-    OAUTHLIB_RELAX_TOKEN_SCOPE = '1'
+    # SECURITY: Removed OAUTHLIB_RELAX_TOKEN_SCOPE - we now validate scopes explicitly
 
     # Session configuration
     PERMANENT_SESSION_LIFETIME = timedelta(days=7)
