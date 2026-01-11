@@ -5,8 +5,8 @@ import warnings
 from datetime import datetime
 from logging.handlers import RotatingFileHandler
 
-# Suppress oauthlib scope change warnings
-warnings.filterwarnings('ignore', message='Scope has changed')
+# SECURITY: Removed scope change warning suppression - we now validate scopes explicitly
+# If scope warnings appear, they indicate a real security issue that should be investigated
 
 # Third-party
 from dotenv import load_dotenv
@@ -14,7 +14,7 @@ from flask import Flask, render_template, flash, request
 from flask_dance.contrib.google import make_google_blueprint
 from flask_login import current_user
 from flask_session import Session
-# from flask_talisman import Talisman  # Disabled for Fly.io - not needed
+from flask_talisman import Talisman
 
 # Local
 from config import Config
@@ -32,7 +32,7 @@ def create_app():
     app.config.from_object(Config)
 
     # Set OAuth environment variables before initializing Flask-Dance
-    os.environ['OAUTHLIB_RELAX_TOKEN_SCOPE'] = '1'
+    # SECURITY: Removed OAUTHLIB_RELAX_TOKEN_SCOPE - we validate scopes explicitly in auth_routes.py
     os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1' if app.config['DEBUG'] else '0'
 
     # Trust proxy headers from Fly.io (fixes HTTPS detection for OAuth)
@@ -61,12 +61,22 @@ def create_app():
     # Initialize CSRF protection
     csrf.init_app(app)
 
-    # Note: Talisman disabled for Fly.io deployment
-    # Fly.io handles HTTPS at the load balancer level (force_https=true in fly.toml)
-    # We keep CSRF protection and rate limiting for security
-    # If you need Talisman for local production, uncomment below:
-    # if not app.debug:
-    #     Talisman(app, force_https=False, content_security_policy=app.config['CONTENT_SECURITY_POLICY'])
+    # Initialize Talisman for security headers (CSP, HSTS, etc.)
+    # Note: Fly.io handles HTTPS termination, so we disable force_https and HSTS
+    # Fly.io's load balancer already sets HTTPS and HSTS headers
+    if not app.debug:
+        Talisman(app,
+            force_https=False,  # Fly.io handles HTTPS termination
+            strict_transport_security=False,  # Fly.io sets HSTS headers
+            content_security_policy=app.config['CONTENT_SECURITY_POLICY'],
+            content_security_policy_nonce_in=['script-src'],
+            frame_options='SAMEORIGIN',
+            frame_options_allow_from=None,
+            content_type_options=True,
+            referrer_policy='strict-origin-when-cross-origin',
+            feature_policy=app.config.get('FEATURE_POLICY', {})
+        )
+        app.logger.info("Talisman security headers enabled")
 
     # Initialize Flask-Login
     login_manager.init_app(app)
@@ -84,7 +94,12 @@ def create_app():
     google_bp = make_google_blueprint(
         client_id=app.config['GOOGLE_OAUTH_CLIENT_ID'],
         client_secret=app.config['GOOGLE_OAUTH_CLIENT_SECRET'],
-        scope=['profile', 'email'],
+        # SECURITY: Use full scope URLs for proper OAuth validation (no OAUTHLIB_RELAX_TOKEN_SCOPE)
+        scope=[
+            'https://www.googleapis.com/auth/userinfo.profile',
+            'https://www.googleapis.com/auth/userinfo.email',
+            'openid'
+        ],
         storage=NullStorage()
         # No redirect_to - Flask-Dance will redirect to index by default
     )

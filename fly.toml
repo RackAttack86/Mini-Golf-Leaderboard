@@ -12,7 +12,8 @@ primary_region = 'iad'
 [env]
   FLASK_ENV = "production"
   PORT = "8080"
-  OAUTHLIB_RELAX_TOKEN_SCOPE = "1"
+  # SECURITY: Removed OAUTHLIB_RELAX_TOKEN_SCOPE - we now validate scopes explicitly
+  # OAUTHLIB_INSECURE_TRANSPORT should be "0" in production (HTTPS required)
   OAUTHLIB_INSECURE_TRANSPORT = "0"
 
 [http_service]
