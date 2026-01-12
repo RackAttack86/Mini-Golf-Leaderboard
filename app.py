@@ -72,7 +72,7 @@ def create_app():
             content_security_policy_nonce_in=['script-src'],
             frame_options='SAMEORIGIN',
             frame_options_allow_from=None,
-            content_type_options=True,
+            x_content_type_options=True,  # Correct parameter name for Flask-Talisman
             referrer_policy='strict-origin-when-cross-origin',
             feature_policy=app.config.get('FEATURE_POLICY', {})
         )
