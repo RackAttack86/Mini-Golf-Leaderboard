@@ -4,6 +4,9 @@ from flask_dance.contrib.google import google
 from services.auth_service import AuthService
 from urllib.parse import urlparse, urljoin
 from extensions import limiter
+import secrets
+from datetime import datetime, timedelta
+import traceback
 
 
 auth_bp = Blueprint('auth', __name__, url_prefix='/auth')
@@ -38,9 +41,14 @@ def login():
 @auth_bp.route('/google')
 @limiter.limit("10 per minute")
 def google_login():
-    """Initiate Google OAuth flow"""
-    # Note: Flask-Dance handles OAuth state parameter validation internally
-    # We don't need to manually generate/validate state tokens
+    """Initiate Google OAuth flow with CSRF protection via state parameter"""
+    # Generate secure state token for CSRF protection
+    state = secrets.token_urlsafe(32)
+    session['oauth_state'] = state
+    session['oauth_state_expires'] = datetime.utcnow() + timedelta(minutes=10)
+
+    current_app.logger.info(f"Generated OAuth state token for new login attempt")
+
     if not google.authorized:
         return redirect(url_for('google.login'))
     return redirect(url_for('auth.google_callback'))
@@ -49,15 +57,36 @@ def google_login():
 @auth_bp.route('/google/callback')
 @limiter.limit("5 per minute")
 def google_callback():
-    """Handle Google OAuth callback"""
-    # Note: Flask-Dance validates the OAuth state parameter automatically
-    # If state validation fails, google.authorized will be False
-    from flask import current_app
-    import traceback
-
+    """Handle Google OAuth callback with state validation"""
     try:
-        # Log for debugging
-        current_app.logger.info(f"Google callback invoked, authorized: {google.authorized}")
+        # CRITICAL: Validate OAuth state parameter to prevent CSRF attacks
+        received_state = request.args.get('state')
+        expected_state = session.pop('oauth_state', None)
+        state_expires = session.pop('oauth_state_expires', None)
+
+        # Check state parameter exists
+        if not received_state or not expected_state:
+            current_app.logger.warning("OAuth callback missing state parameter")
+            flash("Invalid authentication state. Please try again.", "danger")
+            return redirect(url_for('auth.login'))
+
+        # Validate state matches
+        if received_state != expected_state:
+            current_app.logger.error(f"OAuth state mismatch. Expected: {expected_state[:10]}..., Got: {received_state[:10]}...")
+            flash("Invalid authentication state. Possible CSRF attack detected.", "danger")
+            return redirect(url_for('auth.login'))
+
+        # Check state hasn't expired
+        if state_expires:
+            try:
+                if datetime.utcnow() > state_expires:
+                    current_app.logger.warning("OAuth state token expired")
+                    flash("Authentication session expired. Please try again.", "danger")
+                    return redirect(url_for('auth.login'))
+            except (TypeError, ValueError) as e:
+                current_app.logger.error(f"Error checking state expiration: {e}")
+
+        current_app.logger.info("OAuth state validation successful")
 
         # Check if OAuth was successful
         if not google.authorized:
@@ -66,7 +95,7 @@ def google_callback():
             flash(error_msg, 'danger')
             return redirect(url_for('auth.login'))
     except Exception as e:
-        current_app.logger.error(f"Error checking OAuth authorization: {str(e)}", exc_info=True)
+        current_app.logger.error(f"Error in OAuth callback: {str(e)}", exc_info=True)
         flash(f'OAuth error: {str(e)}', 'danger')
         return redirect(url_for('auth.login'))
 
@@ -88,9 +117,10 @@ def google_callback():
 
         current_app.logger.info(f"Got user info - ID: {google_id}, Email: {email}, Name: {name}")
 
+        # Validate we received the required scopes (id and email)
         if not google_id or not email:
-            current_app.logger.error("Missing required Google info")
-            flash('Failed to get required information from Google.', 'danger')
+            current_app.logger.error(f"Insufficient permissions from Google. ID: {bool(google_id)}, Email: {bool(email)}")
+            flash('Insufficient permissions from Google. Please grant access to your profile and email.', 'danger')
             return redirect(url_for('auth.login'))
 
     except Exception as e:
@@ -104,11 +134,19 @@ def google_callback():
 
         if user:
             # User exists, log them in
-            # Regenerate session to prevent session fixation attacks
-            session.permanent = True
+            # CRITICAL: Regenerate session ID to prevent session fixation attacks
+            # Preserve necessary session data before regeneration
+            old_session_data = {k: session[k] for k in list(session.keys())}
+            session.clear()
+            # Restore preserved data (but not oauth_state which was already consumed)
+            for key, value in old_session_data.items():
+                if key not in ('oauth_state', 'oauth_state_expires'):
+                    session[key] = value
             session.modified = True
+            session.permanent = True
 
             login_user(user, remember=True)
+            current_app.logger.info(f"User {user.id} logged in successfully, session regenerated")
             flash(f'Welcome back, {user.name}!', 'success')
 
             # Redirect to next page or dashboard (validate URL to prevent open redirect)
@@ -164,17 +202,16 @@ def register():
             )
 
             if success:
-                # Clear session data
-                session.pop('google_id', None)
-                session.pop('google_email', None)
-                session.pop('google_name', None)
-
-                # Regenerate session to prevent session fixation attacks
-                session.permanent = True
+                # CRITICAL: Regenerate session ID to prevent session fixation attacks
+                old_session_data = {k: session[k] for k in list(session.keys())}
+                session.clear()
+                # Don't restore Google info - user is now authenticated
                 session.modified = True
+                session.permanent = True
 
                 # Log user in
                 login_user(user, remember=True)
+                current_app.logger.info(f"New user {user.id} created and logged in, session regenerated")
                 flash(f'Profile created successfully! Welcome, {user.name}!', 'success')
                 return redirect(url_for('main.index'))
             else:
@@ -193,17 +230,16 @@ def register():
             success, message, user = AuthService.link_google_to_player(google_id, player_id)
 
             if success:
-                # Clear session data
-                session.pop('google_id', None)
-                session.pop('google_email', None)
-                session.pop('google_name', None)
-
-                # Regenerate session to prevent session fixation attacks
-                session.permanent = True
+                # CRITICAL: Regenerate session ID to prevent session fixation attacks
+                old_session_data = {k: session[k] for k in list(session.keys())}
+                session.clear()
+                # Don't restore Google info - user is now authenticated
                 session.modified = True
+                session.permanent = True
 
                 # Log user in
                 login_user(user, remember=True)
+                current_app.logger.info(f"User {user.id} linked Google account and logged in, session regenerated")
                 flash(f'Account linked successfully! Welcome, {user.name}!', 'success')
                 return redirect(url_for('main.index'))
             else:
