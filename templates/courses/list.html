@@ -132,7 +132,7 @@
 {% endblock %}
 
 {% block extra_scripts %}
-<script>
+<script nonce="{{ csp_nonce() }}">
 function filterCourses() {
     const searchInput = document.getElementById('courseSearch');
     const filter = searchInput.value.toLowerCase();

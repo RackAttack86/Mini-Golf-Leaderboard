@@ -202,7 +202,7 @@
 </div>
 
 <!-- Chart.js Scripts -->
-<script>
+<script nonce="{{ csp_nonce() }}">
 {% if all_players_trends %}
 const allPlayersData = {{ all_players_trends | tojson }};
 

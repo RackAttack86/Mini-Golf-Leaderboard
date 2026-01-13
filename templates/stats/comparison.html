@@ -222,7 +222,7 @@
 
 {% block extra_scripts %}
 {% if comparison %}
-<script>
+<script nonce="{{ csp_nonce() }}">
 const player1Color = "{{ player1.favorite_color or '#2e7d32' }}";
 const player2Color = "{{ player2.favorite_color or '#1976d2' }}";
 const player1Name = "{{ player1.name }}";

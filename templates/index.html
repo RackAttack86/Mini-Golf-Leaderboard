@@ -222,7 +222,7 @@
 
 {% block extra_scripts %}
 {% if recent_rounds %}
-<script>
+<script nonce="{{ csp_nonce() }}">
 // Parse rounds data for activity trends
 const recentRounds = {{ recent_rounds | tojson }};
 

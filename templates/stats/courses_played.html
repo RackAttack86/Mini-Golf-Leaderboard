@@ -127,7 +127,7 @@
 {% endblock %}
 
 {% block extra_scripts %}
-<script>
+<script nonce="{{ csp_nonce() }}">
     // Auto-submit form when checkboxes or sort dropdown change
     document.addEventListener('DOMContentLoaded', function() {
         const form = document.getElementById('playerForm');

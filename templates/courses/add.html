@@ -99,7 +99,7 @@
 {% endblock %}
 
 {% block extra_scripts %}
-<script>
+<script nonce="{{ csp_nonce() }}">
 function previewCourseImage(input) {
     const preview = document.getElementById('courseImagePreview');
     const previewImg = document.getElementById('courseImagePreviewImg');

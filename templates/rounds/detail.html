@@ -462,7 +462,7 @@
 {% endblock %}
 
 {% block extra_scripts %}
-<script>
+<script nonce="{{ csp_nonce() }}">
 // Available players data for adding new players
 const availablePlayers = [
     {% for player in available_players %}

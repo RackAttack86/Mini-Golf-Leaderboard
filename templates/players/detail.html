@@ -508,7 +508,7 @@
 
 {% block extra_scripts %}
 {% if rounds %}
-<script>
+<script nonce="{{ csp_nonce() }}">
 // Prepare data from rounds
 const rounds = {{ rounds | tojson }};
 const playerId = "{{ player.id }}";
