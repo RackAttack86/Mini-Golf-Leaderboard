@@ -33,7 +33,7 @@
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                     <div class="mb-3">
                         <label for="course_id" class="form-label">Course *</label>
-                        <select class="form-select" id="course_id" name="course_id" required onchange="updateCoursePreview(this)">
+                        <select class="form-select" id="course_id" name="course_id" required>
                             <option value="">Select a course...</option>
                             {% for course in courses %}
                             <option value="{{ course.id }}"
@@ -60,7 +60,7 @@
 
                     <div class="mb-3">
                         <div class="form-check form-switch">
-                            <input class="form-check-input" type="checkbox" id="recordHoleScores" onchange="toggleHoleScores()">
+                            <input class="form-check-input" type="checkbox" id="recordHoleScores">
                             <label class="form-check-label" for="recordHoleScores">
                                 <i class="bi bi-grid-3x3-gap"></i> Record hole-by-hole scores (18 holes)
                             </label>
@@ -105,7 +105,7 @@
                                                    value="{{ score.score }}" required>
                                         </div>
                                         <div class="col-md-2">
-                                            <button type="button" class="btn btn-danger btn-sm remove-player" onclick="removePlayer(this)">
+                                            <button type="button" class="btn btn-danger btn-sm remove-player">
                                                 <i class="bi bi-trash"></i>
                                             </button>
                                         </div>
@@ -121,8 +121,7 @@
                                                             <input type="number" class="form-control form-control-sm hole-score-input"
                                                                    name="hole_{{ hole }}_[]"
                                                                    min="1" max="20"
-                                                                   onchange="calculateTotalScore(this)"
-                                                                   style="width: 45px; text-align: center; padding: 4px;">
+                                                                                                                                      style="width: 45px; text-align: center; padding: 4px;">
                                                         </div>
                                                         {% endfor %}
                                                     </div>
@@ -148,7 +147,7 @@
                                                    placeholder="Total Score" min="-50" max="500" required>
                                         </div>
                                         <div class="col-md-2">
-                                            <button type="button" class="btn btn-danger btn-sm remove-player" onclick="removePlayer(this)">
+                                            <button type="button" class="btn btn-danger btn-sm remove-player">
                                                 <i class="bi bi-trash"></i>
                                             </button>
                                         </div>
@@ -164,8 +163,7 @@
                                                             <input type="number" class="form-control form-control-sm hole-score-input"
                                                                    name="hole_{{ hole }}_[]"
                                                                    min="1" max="20"
-                                                                   onchange="calculateTotalScore(this)"
-                                                                   style="width: 45px; text-align: center; padding: 4px;">
+                                                                                                                                      style="width: 45px; text-align: center; padding: 4px;">
                                                         </div>
                                                         {% endfor %}
                                                     </div>
@@ -176,7 +174,7 @@
                                 </div>
                             {% endif %}
                         </div>
-                        <button type="button" class="btn btn-sm btn-outline-primary mt-2" onclick="addPlayer()">
+                        <button type="button" class="btn btn-sm btn-outline-primary mt-2" id="addPlayerBtn">
                             <i class="bi bi-plus"></i> Add Player
                         </button>
                     </div>
@@ -322,12 +320,9 @@ function calculateTotalScore(holeInput) {
 }
 
 function addPlayer() {
-    try {
-        console.log('addPlayer called');
-        const container = document.getElementById('playerScores');
-        console.log('container:', container);
-        const newRow = document.createElement('div');
-        newRow.className = 'player-score-row mb-3';
+    const container = document.getElementById('playerScores');
+    const newRow = document.createElement('div');
+    newRow.className = 'player-score-row mb-3';
 
     const holeInputsHtml = Array.from({length: 18}, (_, i) => {
         const hole = i + 1;
@@ -337,8 +332,7 @@ function addPlayer() {
                 <input type="number" class="form-control form-control-sm hole-score-input"
                        name="hole_${hole}_[]"
                        min="1" max="20"
-                       onchange="calculateTotalScore(this)"
-                       style="width: 45px; text-align: center; padding: 4px;">
+                                              style="width: 45px; text-align: center; padding: 4px;">
             </div>`;
     }).join('');
 
@@ -357,7 +351,7 @@ function addPlayer() {
                        placeholder="Total Score" min="-50" max="500" required>
             </div>
             <div class="col-md-2">
-                <button type="button" class="btn btn-danger btn-sm remove-player" onclick="removePlayer(this)">
+                <button type="button" class="btn btn-danger btn-sm remove-player">
                     <i class="bi bi-trash"></i>
                 </button>
             </div>
@@ -391,11 +385,6 @@ function addPlayer() {
 
     // Check trophy contest status
     checkTrophyContest();
-        console.log('addPlayer completed successfully');
-    } catch (error) {
-        console.error('Error in addPlayer:', error);
-        alert('Error adding player: ' + error.message);
-    }
 }
 
 function removePlayer(button) {
@@ -417,10 +406,47 @@ document.addEventListener('DOMContentLoaded', function() {
         dateInput.value = today;
     }
 
-    // Show course preview if a course is already selected
+    // Course select change handler
     const courseSelect = document.getElementById('course_id');
-    if (courseSelect && courseSelect.value) {
-        updateCoursePreview(courseSelect);
+    if (courseSelect) {
+        courseSelect.addEventListener('change', function() {
+            updateCoursePreview(this);
+        });
+        // Show course preview if a course is already selected
+        if (courseSelect.value) {
+            updateCoursePreview(courseSelect);
+        }
+    }
+
+    // Record hole scores checkbox handler
+    const recordHoleScoresCheckbox = document.getElementById('recordHoleScores');
+    if (recordHoleScoresCheckbox) {
+        recordHoleScoresCheckbox.addEventListener('change', toggleHoleScores);
+    }
+
+    // Add Player button handler
+    const addPlayerBtn = document.getElementById('addPlayerBtn');
+    if (addPlayerBtn) {
+        addPlayerBtn.addEventListener('click', addPlayer);
+    }
+
+    // Event delegation for dynamically created elements
+    const playerScoresContainer = document.getElementById('playerScores');
+    if (playerScoresContainer) {
+        // Handle remove player button clicks
+        playerScoresContainer.addEventListener('click', function(e) {
+            const removeBtn = e.target.closest('.remove-player');
+            if (removeBtn) {
+                removePlayer(removeBtn);
+            }
+        });
+
+        // Handle hole score input changes
+        playerScoresContainer.addEventListener('change', function(e) {
+            if (e.target.classList.contains('hole-score-input')) {
+                calculateTotalScore(e.target);
+            }
+        });
     }
 
     // Add event listeners to existing player selects for trophy contest check
