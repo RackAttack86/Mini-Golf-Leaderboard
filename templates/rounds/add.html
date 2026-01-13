@@ -322,9 +322,12 @@ function calculateTotalScore(holeInput) {
 }
 
 function addPlayer() {
-    const container = document.getElementById('playerScores');
-    const newRow = document.createElement('div');
-    newRow.className = 'player-score-row mb-3';
+    try {
+        console.log('addPlayer called');
+        const container = document.getElementById('playerScores');
+        console.log('container:', container);
+        const newRow = document.createElement('div');
+        newRow.className = 'player-score-row mb-3';
 
     const holeInputsHtml = Array.from({length: 18}, (_, i) => {
         const hole = i + 1;
@@ -388,6 +391,11 @@ function addPlayer() {
 
     // Check trophy contest status
     checkTrophyContest();
+        console.log('addPlayer completed successfully');
+    } catch (error) {
+        console.error('Error in addPlayer:', error);
+        alert('Error adding player: ' + error.message);
+    }
 }
 
 function removePlayer(button) {
