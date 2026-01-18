@@ -132,14 +132,13 @@
                         </thead>
                         <tbody>
                             {% for pb in personal_bests %}
-                            <tr onclick="window.location='{{ url_for('rounds.round_detail', round_id=pb.round_id) }}';" style="cursor: pointer;">
+                            <tr class="clickable-row" data-href="{{ url_for('rounds.round_detail', round_id=pb.round_id) }}" style="cursor: pointer;">
                                 <td>{{ pb.course_name | format_course_name | safe }}</td>
                                 <td><span class="badge bg-success" style="font-size: 1rem;">{{ pb.score }}</span></td>
                                 <td>{{ pb.date }}</td>
                                 <td class="text-end">
                                     <a href="{{ url_for('rounds.round_detail', round_id=pb.round_id) }}"
-                                       class="btn btn-sm btn-outline-primary"
-                                       onclick="event.stopPropagation();">
+                                       class="btn btn-sm btn-outline-primary stop-propagation">
                                         View Round
                                     </a>
                                 </td>
@@ -507,6 +506,23 @@
 {% endblock %}
 
 {% block extra_scripts %}
+<script nonce="{{ csp_nonce() }}">
+document.addEventListener('DOMContentLoaded', function() {
+    // Clickable rows
+    document.querySelectorAll('.clickable-row').forEach(function(row) {
+        row.addEventListener('click', function() {
+            window.location = this.dataset.href;
+        });
+    });
+
+    // Stop propagation on links inside rows
+    document.querySelectorAll('.stop-propagation').forEach(function(el) {
+        el.addEventListener('click', function(e) {
+            e.stopPropagation();
+        });
+    });
+});
+</script>
 {% if rounds %}
 <script nonce="{{ csp_nonce() }}">
 // Prepare data from rounds

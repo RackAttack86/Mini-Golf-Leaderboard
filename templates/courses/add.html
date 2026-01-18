@@ -63,8 +63,7 @@
                                class="form-control"
                                id="course_image"
                                name="course_image"
-                               accept="image/png,image/jpeg,image/jpg,image/gif"
-                               onchange="previewCourseImage(this)">
+                               accept="image/png,image/jpeg,image/jpg,image/gif">
                         <small class="text-muted">Upload image (JPG, PNG, GIF - max 5MB) or enter URL below</small>
                     </div>
 
@@ -117,5 +116,14 @@ function previewCourseImage(input) {
         preview.style.display = 'none';
     }
 }
+
+document.addEventListener('DOMContentLoaded', function() {
+    const courseImageInput = document.getElementById('course_image');
+    if (courseImageInput) {
+        courseImageInput.addEventListener('change', function() {
+            previewCourseImage(this);
+        });
+    }
+});
 </script>
 {% endblock %}

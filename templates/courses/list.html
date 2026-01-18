@@ -28,9 +28,8 @@
                 <input type="text"
                        id="courseSearch"
                        class="form-control"
-                       placeholder="Search courses by name, location, holes, par, or trophy owner..."
-                       onkeyup="filterCourses()">
-                <button class="btn btn-outline-secondary" type="button" onclick="clearSearch()">
+                       placeholder="Search courses by name, location, holes, par, or trophy owner...">
+                <button class="btn btn-outline-secondary" type="button" id="clearSearchBtn">
                     <i class="bi bi-x-circle"></i> Clear
                 </button>
             </div>
@@ -54,7 +53,7 @@
                 </thead>
                 <tbody>
                     {% for course in courses %}
-                    <tr {% if not course.active %}class="table-secondary"{% endif %} onclick="window.location='{{ url_for('courses.course_detail', course_id=course.id) }}';" style="cursor: pointer;">
+                    <tr {% if not course.active %}class="table-secondary{% else %}class="{% endif %} clickable-row" data-href="{{ url_for('courses.course_detail', course_id=course.id) }}" style="cursor: pointer;">
                         <td>
                             {% if course.image_url %}
                                 {% if course.image_url.startswith('http') %}
@@ -96,7 +95,7 @@
                             {% if course.trophy_owner %}
                                 <i class="bi bi-trophy-fill text-warning"></i>
                                 <a href="{{ url_for('players.player_detail', player_id=course.trophy_owner.player_id) }}"
-                                   onclick="event.stopPropagation();">
+                                   class="stop-propagation">
                                     {{ course.trophy_owner.player_name }}
                                 </a>
                             {% else %}
@@ -112,8 +111,7 @@
                         </td>
                         <td class="text-end">
                             <a href="{{ url_for('courses.course_detail', course_id=course.id) }}"
-                               class="btn btn-sm btn-outline-primary"
-                               onclick="event.stopPropagation();">
+                               class="btn btn-sm btn-outline-primary stop-propagation">
                                 View
                             </a>
                         </td>
@@ -176,12 +174,33 @@ function clearSearch() {
     filterCourses();
 }
 
-// Auto-focus search on page load
+// Set up event listeners on page load
 document.addEventListener('DOMContentLoaded', function() {
     const searchInput = document.getElementById('courseSearch');
+    const clearBtn = document.getElementById('clearSearchBtn');
+
     if (searchInput) {
         searchInput.focus();
+        searchInput.addEventListener('keyup', filterCourses);
     }
+
+    if (clearBtn) {
+        clearBtn.addEventListener('click', clearSearch);
+    }
+
+    // Clickable rows
+    document.querySelectorAll('.clickable-row').forEach(function(row) {
+        row.addEventListener('click', function() {
+            window.location = this.dataset.href;
+        });
+    });
+
+    // Stop propagation on links inside rows
+    document.querySelectorAll('.stop-propagation').forEach(function(el) {
+        el.addEventListener('click', function(e) {
+            e.stopPropagation();
+        });
+    });
 });
 </script>
 {% endblock %}
