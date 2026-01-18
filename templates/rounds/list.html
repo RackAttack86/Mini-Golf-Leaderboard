@@ -96,7 +96,7 @@
                     {% set is_solo = round.scores|length == 1 %}
                     {% set winner_color = round.winner_player.favorite_color if round.winner_player and round.winner_player.favorite_color else '#2e7d32' %}
                     {% set bg_color = '' if is_solo else winner_color + '33' %}
-                    <tr class="winner-color-row" onclick="window.location='{{ url_for('rounds.round_detail', round_id=round.id) }}';" style="cursor: pointer;">
+                    <tr class="winner-color-row clickable-row" data-href="{{ url_for('rounds.round_detail', round_id=round.id) }}" style="cursor: pointer;">
                         <td {% if not is_solo %}style="background-color: {{ bg_color }} !important;"{% endif %}>{{ round.date_played }}</td>
                         <td {% if not is_solo %}style="background-color: {{ bg_color }} !important;"{% endif %}>
                             {% if round.course_image_url %}
@@ -138,8 +138,7 @@
                         {% endif %}
                         <td class="text-end" {% if not is_solo %}style="background-color: {{ bg_color }} !important;"{% endif %}>
                             <a href="{{ url_for('rounds.round_detail', round_id=round.id) }}"
-                               class="btn btn-sm btn-outline-primary"
-                               onclick="event.stopPropagation();">
+                               class="btn btn-sm btn-outline-primary no-row-click">
                                 View
                             </a>
                         </td>
@@ -155,4 +154,24 @@
     <i class="bi bi-info-circle"></i> No rounds found.{% if current_user.is_authenticated %} <a href="{{ url_for('rounds.add_round') }}">Add your first round!</a>{% endif %}
 </div>
 {% endif %}
+{% endblock %}
+
+{% block extra_scripts %}
+<script nonce="{{ csp_nonce() }}">
+document.addEventListener('DOMContentLoaded', function() {
+    // Handle clickable rows
+    document.querySelectorAll('.clickable-row').forEach(function(row) {
+        row.addEventListener('click', function(e) {
+            // Don't navigate if clicking on a link/button
+            if (e.target.closest('.no-row-click') || e.target.closest('a') || e.target.closest('button')) {
+                return;
+            }
+            const href = this.dataset.href;
+            if (href) {
+                window.location = href;
+            }
+        });
+    });
+});
+</script>
 {% endblock %}

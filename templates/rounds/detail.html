@@ -328,7 +328,7 @@
                 <div class="modal-body">
                     <div class="mb-3">
                         <label for="edit_course_id" class="form-label">Course *</label>
-                        <select class="form-select" id="edit_course_id" name="course_id" required onchange="updateEditCoursePreview(this)">
+                        <select class="form-select" id="edit_course_id" name="course_id" required>
                             <option value="">Select a course...</option>
                             {% for course in courses %}
                             <option value="{{ course.id }}"
@@ -376,7 +376,7 @@
                                            placeholder="Score">
                                 </div>
                                 <div class="col-md-2">
-                                    <button type="button" class="btn btn-outline-danger w-100" onclick="removeExistingPlayer('existingPlayer{{ loop.index0 }}')" title="Remove player from round">
+                                    <button type="button" class="btn btn-outline-danger w-100 remove-existing-player-btn" data-player-row="existingPlayer{{ loop.index0 }}" title="Remove player from round">
                                         <i class="bi bi-x-circle"></i>
                                     </button>
                                 </div>
@@ -389,7 +389,7 @@
 
                         <!-- Add Player Button -->
                         {% if available_players %}
-                        <button type="button" class="btn btn-sm btn-outline-success mt-2" onclick="addNewPlayer()">
+                        <button type="button" class="btn btn-sm btn-outline-success mt-2" id="addNewPlayerBtn">
                             <i class="bi bi-plus-circle"></i> Add Player to Round
                         </button>
                         {% else %}
@@ -485,7 +485,7 @@ function addNewPlayer() {
 
     newRow.innerHTML = `
         <div class="col-md-5">
-            <select class="form-control" name="player_ids[]" required onchange="updatePlayerSelection(this)">
+            <select class="form-control player-select" name="player_ids[]" required>
                 <option value="">-- Select Player --</option>
                 ${availablePlayers.map(p => `<option value="${p.id}">${p.name}</option>`).join('')}
             </select>
@@ -500,7 +500,7 @@ function addNewPlayer() {
                    placeholder="Score">
         </div>
         <div class="col-md-2">
-            <button type="button" class="btn btn-outline-danger w-100" onclick="removeNewPlayer('newPlayer${newPlayerCounter}')" title="Remove player">
+            <button type="button" class="btn btn-outline-danger w-100 remove-new-player-btn" data-player-row="newPlayer${newPlayerCounter}" title="Remove player">
                 <i class="bi bi-x-circle"></i>
             </button>
         </div>
