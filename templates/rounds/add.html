@@ -68,18 +68,13 @@
                         <small class="text-muted">Enable this to enter individual scores for all 18 holes. Total score will be calculated automatically.</small>
                     </div>
 
-                    <!-- Trophy Contest Checkbox -->
+                    <!-- Trophy Contest Info -->
                     <div class="mb-3" id="trophyContestSection" style="display: none;">
-                        <div class="form-check form-switch">
-                            <input class="form-check-input" type="checkbox" id="trophyUpForGrabs" name="trophy_up_for_grabs">
-                            <label class="form-check-label" for="trophyUpForGrabs">
-                                <i class="bi bi-trophy-fill text-warning"></i> <strong>Trophy Up For Grabs</strong>
-                            </label>
+                        <div class="alert alert-warning mb-0">
+                            <i class="bi bi-trophy-fill"></i> <strong>Trophy at Stake!</strong>
+                            <span id="trophyOwnerName"></span> holds this course's trophy and is playing.
+                            The round winner will claim the trophy.
                         </div>
-                        <small class="text-muted">
-                            <span id="trophyOwnerName"></span> currently holds this course's trophy.
-                            Check this box if the trophy is being contested in this round.
-                        </small>
                     </div>
 
                     <div class="mb-3">
@@ -235,7 +230,6 @@ function checkTrophyContest() {
     const courseSelect = document.getElementById('course_id');
     const trophySection = document.getElementById('trophyContestSection');
     const trophyOwnerSpan = document.getElementById('trophyOwnerName');
-    const trophyCheckbox = document.getElementById('trophyUpForGrabs');
 
     if (!courseSelect || !courseSelect.value) {
         trophySection.style.display = 'none';
@@ -256,13 +250,12 @@ function checkTrophyContest() {
     ).map(s => s.value).filter(id => id);
 
     if (selectedPlayers.includes(trophyData.owner_id)) {
-        // Trophy owner is playing - show checkbox
+        // Trophy owner is playing - show info message
         trophyOwnerSpan.textContent = trophyData.owner_name;
         trophySection.style.display = 'block';
     } else {
-        // Trophy owner not playing - hide checkbox
+        // Trophy owner not playing - hide info
         trophySection.style.display = 'none';
-        trophyCheckbox.checked = false;
     }
 }
 

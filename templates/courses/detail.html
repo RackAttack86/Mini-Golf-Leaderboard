@@ -206,10 +206,7 @@
                                 {% for i in range(1, 6) %}
                                 <i class="bi bi-star{{ '-fill' if user_rating and i <= user_rating else '' }} star-btn"
                                    data-rating="{{ i }}"
-                                   style="cursor: pointer; font-size: 2rem; color: #ffc107;"
-                                   onmouseover="highlightStars({{ i }})"
-                                   onmouseout="resetStars()"
-                                   onclick="rateCourse({{ i }})"></i>
+                                   style="cursor: pointer; font-size: 2rem; color: #ffc107;"></i>
                                 {% endfor %}
                             </div>
                             {% if user_rating %}
@@ -249,10 +246,10 @@
                         These notes are private and only visible to you. Max 5000 characters.
                     </small>
                 </div>
-                <button class="btn btn-primary" onclick="saveCourseNotes()">
+                <button class="btn btn-primary" id="saveNotesBtn">
                     <i class="bi bi-save"></i> Save Notes
                 </button>
-                <button class="btn btn-secondary ms-2" onclick="clearCourseNotes()">
+                <button class="btn btn-secondary ms-2" id="clearNotesBtn">
                     <i class="bi bi-x-circle"></i> Clear
                 </button>
                 <span id="notes-save-status" class="ms-3"></span>
@@ -485,8 +482,7 @@
                                class="form-control"
                                id="edit_course_image"
                                name="course_image"
-                               accept="image/png,image/jpeg,image/jpg,image/gif"
-                               onchange="previewEditCourseImage(this)">
+                               accept="image/png,image/jpeg,image/jpg,image/gif">
                         <small class="text-muted">Upload new image or enter URL below</small>
                     </div>
 
@@ -673,7 +669,7 @@ function clearCourseNotes() {
     }
 }
 
-// Character counter for notes
+// Character counter for notes and button event listeners
 {% if current_user.is_authenticated %}
 document.addEventListener('DOMContentLoaded', function() {
     const notesTextarea = document.getElementById('course-notes');
@@ -687,6 +683,39 @@ document.addEventListener('DOMContentLoaded', function() {
             } else {
                 this.style.borderColor = '';
             }
+        });
+    }
+
+    // Save/Clear notes button listeners
+    const saveNotesBtn = document.getElementById('saveNotesBtn');
+    if (saveNotesBtn) {
+        saveNotesBtn.addEventListener('click', saveCourseNotes);
+    }
+    const clearNotesBtn = document.getElementById('clearNotesBtn');
+    if (clearNotesBtn) {
+        clearNotesBtn.addEventListener('click', clearCourseNotes);
+    }
+
+    // Star rating event listeners
+    const stars = document.querySelectorAll('.star-btn');
+    stars.forEach(function(star) {
+        const rating = parseInt(star.getAttribute('data-rating'));
+        star.addEventListener('mouseover', function() {
+            highlightStars(rating);
+        });
+        star.addEventListener('mouseout', function() {
+            resetStars();
+        });
+        star.addEventListener('click', function() {
+            rateCourse(rating);
+        });
+    });
+
+    // Edit course image preview
+    const editCourseImageInput = document.getElementById('edit_course_image');
+    if (editCourseImageInput) {
+        editCourseImageInput.addEventListener('change', function() {
+            previewEditCourseImage(this);
         });
     }
 });

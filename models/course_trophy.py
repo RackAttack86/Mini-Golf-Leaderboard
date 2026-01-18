@@ -3,8 +3,9 @@ Course Trophy model - manages trophy ownership and transfers
 
 Each course can have one trophy that can only be owned by one player at a time.
 Trophy transfers occur when:
-1. Initial assignment (first 4+ player round on a course)
-2. Trophy contested in a round (owner playing, 4+ players, trophy_up_for_grabs=True)
+1. Initial assignment (first 3+ player round on a course)
+2. Trophy contested: when the trophy owner plays in a round, the trophy is
+   automatically up for grabs and the round winner claims it
 """
 
 from typing import List, Optional, Dict, Any, Tuple
@@ -241,7 +242,7 @@ class CourseTrophy:
     def initialize_trophies_from_history() -> Tuple[int, List[str]]:
         """
         Retroactively assign trophies based on historical round data.
-        Finds first 4+ player round for each course and awards trophy to winner.
+        Finds first 3+ player round for each course and awards trophy to winner.
 
         Returns:
             Tuple of (trophies_assigned_count, warnings_list)
@@ -267,7 +268,7 @@ class CourseTrophy:
                     FROM rounds r
                     JOIN round_scores rs ON r.id = rs.round_id
                     GROUP BY r.id
-                    HAVING player_count >= 4
+                    HAVING player_count >= 3
                 ),
                 FirstRoundPerCourse AS (
                     SELECT

@@ -158,16 +158,14 @@ def add_round():
 
         if success:
             # Handle trophy award/transfer if applicable
-            trophy_up_for_grabs = request.form.get('trophy_up_for_grabs') == 'on'
-
-            # Check if course has a trophy owner
             current_trophy_owner = CourseTrophy.get_trophy_owner(course_id)
 
-            # Award trophy if:
-            # 1. Trophy was marked "up for grabs" (contested), OR
-            # 2. Course has no trophy owner yet (first trophy)
-            # AND round has 4+ players
-            should_award_trophy = (trophy_up_for_grabs or not current_trophy_owner) and len(player_ids) >= 4
+            # Determine if trophy should be awarded:
+            # 1. First trophy assignment: 3+ players and no current owner
+            # 2. Trophy contested: owner is playing in the round
+            owner_is_playing = current_trophy_owner and current_trophy_owner['player_id'] in player_ids
+            is_first_trophy = not current_trophy_owner and len(player_ids) >= 3
+            should_award_trophy = is_first_trophy or owner_is_playing
 
             if should_award_trophy:
                 # Build scores list for winner determination
@@ -182,10 +180,12 @@ def add_round():
                     )
 
                     # Different message for first trophy vs transfer
-                    if not current_trophy_owner:
+                    if is_first_trophy:
                         flash('Trophy awarded for first time!', 'success')
-                    else:
+                    elif winner_id != current_trophy_owner['player_id']:
                         flash('Trophy transferred!', 'success')
+                    else:
+                        flash('Trophy defended!', 'success')
                 else:
                     # Tie scenario
                     if current_trophy_owner:
