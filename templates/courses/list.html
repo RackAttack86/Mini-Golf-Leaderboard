@@ -28,7 +28,7 @@
                 <input type="text"
                        id="courseSearch"
                        class="form-control"
-                       placeholder="Search courses by name, location, par, or trophy owner...">
+                       placeholder="Search courses by name, par, or trophy owner...">
                 <button class="btn btn-outline-secondary" type="button" id="clearSearchBtn">
                     <i class="bi bi-x-circle"></i> Clear
                 </button>
@@ -42,7 +42,6 @@
                     <tr>
                         <th style="width: 80px;"></th>
                         <th>Name</th>
-                        <th>Location</th>
                         <th>Par</th>
                         <th>Best Score</th>
                         <th>Worst Score</th>
@@ -72,7 +71,6 @@
                                 {{ course.name | format_course_name | safe }}
                             </a>
                         </td>
-                        <td>{{ course.location or '-' }}</td>
                         <td>{{ course.par or '-' }}</td>
                         <td>
                             {% if course.best_score %}
@@ -158,13 +156,12 @@ function filterCourses() {
         const row = rows[i];
         const cells = row.getElementsByTagName('td');
 
-        // Search in: name (cell 1), location (cell 2), par (cell 3), trophy owner (cell 7)
+        // Search in: name (cell 1), par (cell 2), trophy owner (cell 6)
         const name = cells[1] ? cells[1].textContent.toLowerCase() : '';
-        const location = cells[2] ? cells[2].textContent.toLowerCase() : '';
-        const par = cells[3] ? cells[3].textContent.toLowerCase() : '';
-        const trophyOwner = cells[7] ? cells[7].textContent.toLowerCase() : '';
+        const par = cells[2] ? cells[2].textContent.toLowerCase() : '';
+        const trophyOwner = cells[6] ? cells[6].textContent.toLowerCase() : '';
 
-        const searchableText = name + ' ' + location + ' ' + par + ' ' + trophyOwner;
+        const searchableText = name + ' ' + par + ' ' + trophyOwner;
 
         if (searchableText.indexOf(filter) > -1) {
             row.style.display = '';
