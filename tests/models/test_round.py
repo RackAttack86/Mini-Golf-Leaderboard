@@ -612,3 +612,172 @@ class TestRoundEdgeCases:
             player_ids = [s['player_id'] for s in round_data['scores']]
             assert 'test-player-1' in player_ids
             assert '2024-01-01' <= round_data['date_played'] <= '2024-12-31'
+
+
+@pytest.mark.unit
+@pytest.mark.models
+class TestRoundDuplicateDetection:
+    """Tests for duplicate round detection"""
+
+    def test_reject_exact_duplicate_round(self, populated_data_store, dates_helper):
+        """Test that exact duplicate round is rejected"""
+        date = dates_helper['yesterday']()
+        scores = [
+            {'player_id': 'test-player-1', 'score': 45},
+            {'player_id': 'test-player-2', 'score': 50}
+        ]
+
+        # First round succeeds
+        success1, msg1, round1 = Round.create('test-course-1', date, scores)
+        assert success1 is True
+
+        # Same round again should fail
+        success2, msg2, round2 = Round.create('test-course-1', date, scores)
+        assert success2 is False
+        assert "duplicate" in msg2.lower()
+        assert round2 is None
+
+    def test_reject_duplicate_with_different_player_order(self, populated_data_store, dates_helper):
+        """Test that duplicate with players in different order is rejected"""
+        date = dates_helper['yesterday']()
+
+        # First round: player-1 first
+        scores1 = [
+            {'player_id': 'test-player-1', 'score': 45},
+            {'player_id': 'test-player-2', 'score': 50}
+        ]
+        success1, _, _ = Round.create('test-course-1', date, scores1)
+        assert success1 is True
+
+        # Second round: player-2 first (same data, different order)
+        scores2 = [
+            {'player_id': 'test-player-2', 'score': 50},
+            {'player_id': 'test-player-1', 'score': 45}
+        ]
+        success2, msg2, _ = Round.create('test-course-1', date, scores2)
+        assert success2 is False
+        assert "duplicate" in msg2.lower()
+
+    def test_allow_same_players_different_scores(self, populated_data_store, dates_helper):
+        """Test that same players with different scores is allowed"""
+        date = dates_helper['yesterday']()
+
+        scores1 = [
+            {'player_id': 'test-player-1', 'score': 45},
+            {'player_id': 'test-player-2', 'score': 50}
+        ]
+        success1, _, _ = Round.create('test-course-1', date, scores1)
+        assert success1 is True
+
+        # Same players, different scores
+        scores2 = [
+            {'player_id': 'test-player-1', 'score': 48},
+            {'player_id': 'test-player-2', 'score': 52}
+        ]
+        success2, _, round2 = Round.create('test-course-1', date, scores2)
+        assert success2 is True
+        assert round2 is not None
+
+    def test_allow_same_scores_different_date(self, populated_data_store, dates_helper):
+        """Test that same round on different date is allowed"""
+        scores = [
+            {'player_id': 'test-player-1', 'score': 45},
+            {'player_id': 'test-player-2', 'score': 50}
+        ]
+
+        # Day 1
+        success1, _, _ = Round.create('test-course-1', dates_helper['days_ago'](2), scores)
+        assert success1 is True
+
+        # Day 2 (different date, same everything else)
+        success2, _, round2 = Round.create('test-course-1', dates_helper['yesterday'](), scores)
+        assert success2 is True
+        assert round2 is not None
+
+    def test_allow_same_scores_different_course(self, populated_data_store, dates_helper):
+        """Test that same round on different course is allowed"""
+        date = dates_helper['yesterday']()
+        scores = [
+            {'player_id': 'test-player-1', 'score': 45},
+            {'player_id': 'test-player-2', 'score': 50}
+        ]
+
+        # Course 1
+        success1, _, _ = Round.create('test-course-1', date, scores)
+        assert success1 is True
+
+        # Course 2 (different course, same everything else)
+        success2, _, round2 = Round.create('test-course-2', date, scores)
+        assert success2 is True
+        assert round2 is not None
+
+    def test_allow_partial_player_overlap(self, data_store, dates_helper):
+        """Test that rounds with overlapping but not identical players allowed"""
+        # Create players and course
+        Player.create(name='Player A')
+        Player.create(name='Player B')
+        Player.create(name='Player C')
+        Course.create(name='Test Course')
+
+        players = Player.get_all()
+        course = Course.get_all()[0]
+        date = dates_helper['yesterday']()
+
+        # Round with 2 players
+        scores1 = [
+            {'player_id': players[0]['id'], 'score': 45},
+            {'player_id': players[1]['id'], 'score': 50}
+        ]
+        success1, _, _ = Round.create(course['id'], date, scores1)
+        assert success1 is True
+
+        # Round with 3 players (superset of first round)
+        scores2 = [
+            {'player_id': players[0]['id'], 'score': 45},
+            {'player_id': players[1]['id'], 'score': 50},
+            {'player_id': players[2]['id'], 'score': 55}
+        ]
+        success2, _, round2 = Round.create(course['id'], date, scores2)
+        assert success2 is True
+        assert round2 is not None
+
+    def test_single_player_duplicate(self, populated_data_store, dates_helper):
+        """Test duplicate detection works with single player rounds"""
+        date = dates_helper['yesterday']()
+        scores = [{'player_id': 'test-player-1', 'score': 45}]
+
+        success1, _, _ = Round.create('test-course-1', date, scores)
+        assert success1 is True
+
+        success2, msg2, _ = Round.create('test-course-1', date, scores)
+        assert success2 is False
+        assert "duplicate" in msg2.lower()
+
+    def test_allow_same_scores_different_players(self, data_store, dates_helper):
+        """Test that same scores with different players is allowed"""
+        # Create test players
+        Player.create(name='Player A')
+        Player.create(name='Player B')
+        Player.create(name='Player C')
+        Course.create(name='Test Course')
+
+        players = Player.get_all()
+        course = Course.get_all()[0]
+        date = dates_helper['yesterday']()
+
+        # Round with players A and B
+        scores1 = [
+            {'player_id': players[0]['id'], 'score': 45},
+            {'player_id': players[1]['id'], 'score': 50}
+        ]
+        success1, _, _ = Round.create(course['id'], date, scores1)
+        assert success1 is True
+
+        # Round with players A and C (different player set, same scores)
+        scores2 = [
+            {'player_id': players[0]['id'], 'score': 45},
+            {'player_id': players[2]['id'], 'score': 50}
+        ]
+        success2, _, round2 = Round.create(course['id'], date, scores2)
+        assert success2 is True
+        assert round2 is not None

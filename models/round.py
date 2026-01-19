@@ -93,6 +93,54 @@ class Round:
         return True, "", validated_scores
 
     @staticmethod
+    def _check_duplicate_round(course_id: str, date_played: str,
+                               validated_scores: List[Dict[str, Any]]) -> Tuple[bool, str]:
+        """
+        Check if a round with identical course, date, players, and scores already exists.
+
+        Args:
+            course_id: Course ID
+            date_played: Date in YYYY-MM-DD format
+            validated_scores: List of validated score dicts with player_id and score
+
+        Returns:
+            Tuple of (is_duplicate, error_message)
+        """
+        db = get_db()
+        conn = db.get_connection()
+
+        # Create order-independent fingerprint for the new round
+        new_fingerprint = frozenset(
+            (s['player_id'], s['score']) for s in validated_scores
+        )
+
+        # Query existing rounds on same course and date
+        cursor = conn.execute("""
+            SELECT r.id, rs.player_id, rs.score
+            FROM rounds r
+            JOIN round_scores rs ON r.id = rs.round_id
+            WHERE r.course_id = ? AND r.date_played = ?
+        """, (course_id, date_played))
+
+        rows = cursor.fetchall()
+
+        # Group scores by round_id
+        existing_rounds: Dict[str, List[Tuple[str, int]]] = {}
+        for row in rows:
+            round_id = row['id']
+            if round_id not in existing_rounds:
+                existing_rounds[round_id] = []
+            existing_rounds[round_id].append((row['player_id'], row['score']))
+
+        # Check each existing round for duplicate
+        for round_id, scores in existing_rounds.items():
+            existing_fingerprint = frozenset(scores)
+            if existing_fingerprint == new_fingerprint:
+                return True, "Duplicate round: A round with the same course, date, players, and scores already exists"
+
+        return False, ""
+
+    @staticmethod
     def create(course_id: str, date_played: str, scores: List[Dict[str, Any]],
                notes: Optional[str] = None, round_start_time: Optional[str] = None,
                picture_filename: Optional[str] = None) -> Tuple[bool, str, Optional[Dict[str, Any]]]:
@@ -122,6 +170,11 @@ class Round:
         is_valid, error, validated_scores = Round._validate_and_process_scores(scores)
         if not is_valid:
             return False, error, None
+
+        # Check for duplicate round
+        is_duplicate, dup_error = Round._check_duplicate_round(course_id, date_played, validated_scores)
+        if is_duplicate:
+            return False, dup_error, None
 
         # Create round
         round_id = str(uuid.uuid4())
