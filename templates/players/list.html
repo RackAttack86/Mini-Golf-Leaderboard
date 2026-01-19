@@ -25,11 +25,12 @@
                     <tr>
                         <th style="width: 80px;"></th>
                         <th>Name</th>
+                        <th>Best Score</th>
+                        <th>Worst Score</th>
                         {% if current_user.is_authenticated and current_user.is_admin %}
                         <th>Email</th>
                         {% endif %}
                         <th>Status</th>
-                        <th>Created</th>
                         <th></th>
                     </tr>
                 </thead>
@@ -54,6 +55,28 @@
                                 <strong style="font-size: 1.1rem;">{{ player.name }}</strong> <small class="text-muted">({{ player.achievement_score }} pts)</small>
                             </a>
                         </td>
+                        <td>
+                            {% if player.best_score %}
+                                <span class="badge bg-success">{{ player.best_score.score }}</span>
+                                <a href="{{ url_for('courses.course_detail', course_id=player.best_score.course_id) }}"
+                                   class="stop-propagation small">
+                                    {{ player.best_score.course_name | format_course_name | safe }}
+                                </a>
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if player.worst_score %}
+                                <span class="badge bg-danger">{{ player.worst_score.score }}</span>
+                                <a href="{{ url_for('courses.course_detail', course_id=player.worst_score.course_id) }}"
+                                   class="stop-propagation small">
+                                    {{ player.worst_score.course_name | format_course_name | safe }}
+                                </a>
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
                         {% if current_user.is_authenticated and current_user.is_admin %}
                         <td>{{ player.email or '-' }}</td>
                         {% endif %}
@@ -64,7 +87,6 @@
                                 <span class="badge bg-secondary">Inactive</span>
                             {% endif %}
                         </td>
-                        <td>{{ player.created_at[:10] }}</td>
                         <td class="text-end">
                             <a href="{{ url_for('players.player_detail', player_id=player.id) }}"
                                class="btn btn-sm btn-outline-primary stop-propagation">

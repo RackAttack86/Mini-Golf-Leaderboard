@@ -67,6 +67,37 @@ def list_players():
     for player in players:
         player['achievement_score'] = AchievementService.get_achievement_score(player['id'])
 
+    # Get best and worst scores for each player
+    from models.database import get_db
+    db = get_db()
+    conn = db.get_connection()
+
+    best_scores = {}
+    worst_scores = {}
+    cursor = conn.execute("""
+        SELECT rs.player_id, rs.score, c.id as course_id, c.name as course_name
+        FROM round_scores rs
+        JOIN rounds r ON rs.round_id = r.id
+        JOIN courses c ON r.course_id = c.id
+        ORDER BY rs.score ASC
+    """)
+    for row in cursor.fetchall():
+        player_id = row['player_id']
+        score_data = {
+            'score': row['score'],
+            'course_id': row['course_id'],
+            'course_name': row['course_name']
+        }
+        # First occurrence is best (lowest), track worst (highest) as we go
+        if player_id not in best_scores:
+            best_scores[player_id] = score_data
+        worst_scores[player_id] = score_data  # Last one will be highest
+
+    for player in players:
+        player_id = player['id']
+        player['best_score'] = best_scores.get(player_id)
+        player['worst_score'] = worst_scores.get(player_id)
+
     # Filter emails based on user permissions
     players = filter_email_from_players(players)
 
