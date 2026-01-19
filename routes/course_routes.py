@@ -82,6 +82,28 @@ def list_courses():
             'player_name': row['player_name']
         }
 
+    # Get best and worst scores for each course
+    best_scores = {}
+    worst_scores = {}
+    cursor = conn.execute("""
+        SELECT r.course_id, rs.score, p.id as player_id, p.name as player_name
+        FROM round_scores rs
+        JOIN rounds r ON rs.round_id = r.id
+        JOIN players p ON rs.player_id = p.id
+        ORDER BY rs.score ASC
+    """)
+    for row in cursor.fetchall():
+        course_id = row['course_id']
+        score_data = {
+            'score': row['score'],
+            'player_id': row['player_id'],
+            'player_name': row['player_name']
+        }
+        # First occurrence is best (lowest), track worst (highest) as we go
+        if course_id not in best_scores:
+            best_scores[course_id] = score_data
+        worst_scores[course_id] = score_data  # Last one will be highest
+
     # Add rating info and trophy owner to each course
     for course in courses:
         course_id = course['id']
@@ -98,6 +120,10 @@ def list_courses():
             course['trophy_owner'] = all_trophy_owners[course_id]
         else:
             course['trophy_owner'] = None
+
+        # Add best/worst scores
+        course['best_score'] = best_scores.get(course_id)
+        course['worst_score'] = worst_scores.get(course_id)
 
     return render_template('courses/list.html', courses=courses)
 

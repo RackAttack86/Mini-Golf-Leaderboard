@@ -28,7 +28,7 @@
                 <input type="text"
                        id="courseSearch"
                        class="form-control"
-                       placeholder="Search courses by name, location, holes, par, or trophy owner...">
+                       placeholder="Search courses by name, location, par, or trophy owner...">
                 <button class="btn btn-outline-secondary" type="button" id="clearSearchBtn">
                     <i class="bi bi-x-circle"></i> Clear
                 </button>
@@ -43,11 +43,11 @@
                         <th style="width: 80px;"></th>
                         <th>Name</th>
                         <th>Location</th>
-                        <th>Holes</th>
                         <th>Par</th>
+                        <th>Best Score</th>
+                        <th>Worst Score</th>
                         <th>Rating</th>
                         <th>Trophy Owner</th>
-                        <th>Status</th>
                         <th></th>
                     </tr>
                 </thead>
@@ -73,8 +73,29 @@
                             </a>
                         </td>
                         <td>{{ course.location or '-' }}</td>
-                        <td>{{ course.holes or '-' }}</td>
                         <td>{{ course.par or '-' }}</td>
+                        <td>
+                            {% if course.best_score %}
+                                <span class="badge bg-success">{{ course.best_score.score }}</span>
+                                <a href="{{ url_for('players.player_detail', player_id=course.best_score.player_id) }}"
+                                   class="stop-propagation small">
+                                    {{ course.best_score.player_name }}
+                                </a>
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if course.worst_score %}
+                                <span class="badge bg-danger">{{ course.worst_score.score }}</span>
+                                <a href="{{ url_for('players.player_detail', player_id=course.worst_score.player_id) }}"
+                                   class="stop-propagation small">
+                                    {{ course.worst_score.player_name }}
+                                </a>
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
                         <td>
                             {% if course.avg_rating %}
                                 <span class="text-warning">
@@ -100,13 +121,6 @@
                                 </a>
                             {% else %}
                                 <span class="text-muted">-</span>
-                            {% endif %}
-                        </td>
-                        <td>
-                            {% if course.active %}
-                                <span class="badge bg-success">Active</span>
-                            {% else %}
-                                <span class="badge bg-secondary">Inactive</span>
                             {% endif %}
                         </td>
                         <td class="text-end">
@@ -144,14 +158,13 @@ function filterCourses() {
         const row = rows[i];
         const cells = row.getElementsByTagName('td');
 
-        // Search in: name (cell 1), location (cell 2), holes (cell 3), par (cell 4), trophy owner (cell 6)
+        // Search in: name (cell 1), location (cell 2), par (cell 3), trophy owner (cell 7)
         const name = cells[1] ? cells[1].textContent.toLowerCase() : '';
         const location = cells[2] ? cells[2].textContent.toLowerCase() : '';
-        const holes = cells[3] ? cells[3].textContent.toLowerCase() : '';
-        const par = cells[4] ? cells[4].textContent.toLowerCase() : '';
-        const trophyOwner = cells[6] ? cells[6].textContent.toLowerCase() : '';
+        const par = cells[3] ? cells[3].textContent.toLowerCase() : '';
+        const trophyOwner = cells[7] ? cells[7].textContent.toLowerCase() : '';
 
-        const searchableText = name + ' ' + location + ' ' + holes + ' ' + par + ' ' + trophyOwner;
+        const searchableText = name + ' ' + location + ' ' + par + ' ' + trophyOwner;
 
         if (searchableText.indexOf(filter) > -1) {
             row.style.display = '';
