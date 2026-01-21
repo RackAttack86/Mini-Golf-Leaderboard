@@ -198,6 +198,14 @@ def create_app():
             'is_logged_in': current_user.is_authenticated
         }
 
+    # Provide mock csp_nonce for debug mode (Talisman provides it in production)
+    if app.debug:
+        @app.context_processor
+        def inject_csp_nonce():
+            def csp_nonce():
+                return ''
+            return {'csp_nonce': csp_nonce}
+
     # Setup logging
     setup_logging(app)
 

@@ -234,3 +234,36 @@ function setFormLoading(formId, loadingText, isLoading = true) {
         submitButton.innerHTML = submitButton.dataset.originalText || 'Submit';
     }
 }
+
+/**
+ * Initialize collapsible sections with state persistence
+ * @param {string} storageKey - LocalStorage key prefix for state persistence
+ */
+function initCollapsibleSections(storageKey = 'collapsible') {
+    const collapsibles = document.querySelectorAll('[data-collapsible-section]');
+
+    collapsibles.forEach(element => {
+        const sectionId = element.getAttribute('data-collapsible-section');
+        const savedState = localStorage.getItem(`${storageKey}_${sectionId}`);
+        const collapseElement = document.getElementById(sectionId);
+
+        if (!collapseElement) return;
+
+        // Apply saved state (collapsed = 'false')
+        if (savedState === 'false') {
+            collapseElement.classList.remove('show');
+            element.setAttribute('aria-expanded', 'false');
+        }
+
+        // Save state on toggle using Bootstrap events
+        collapseElement.addEventListener('shown.bs.collapse', function() {
+            localStorage.setItem(`${storageKey}_${sectionId}`, 'true');
+            element.setAttribute('aria-expanded', 'true');
+        });
+
+        collapseElement.addEventListener('hidden.bs.collapse', function() {
+            localStorage.setItem(`${storageKey}_${sectionId}`, 'false');
+            element.setAttribute('aria-expanded', 'false');
+        });
+    });
+}

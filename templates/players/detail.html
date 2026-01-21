@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from 'macros.html' import collapsible_card_header %}
 
 {% block title %}{{ player.name }} - {{ app_name }}{% endblock %}
 
@@ -116,36 +117,103 @@
 <div class="row mb-4">
     <div class="col-12">
         <div class="card">
-            <div class="card-header bg-success text-white">
-                <h5 class="mb-0"><i class="bi bi-star-fill"></i> Personal Bests by Course</h5>
+            {{ collapsible_card_header('Personal Bests by Course', 'bi-star-fill', 'personalBestsCollapse', 'success', true, personal_bests|length) }}
+            <div class="collapse show" id="personalBestsCollapse">
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Course</th>
+                                    <th>Best Score</th>
+                                    <th>Date Achieved</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for pb in personal_bests %}
+                                <tr class="clickable-row" data-href="{{ url_for('rounds.round_detail', round_id=pb.round_id) }}" style="cursor: pointer;">
+                                    <td>{{ pb.course_name | format_course_name | safe }}</td>
+                                    <td><span class="badge bg-success" style="font-size: 1rem;">{{ pb.score }}</span></td>
+                                    <td>{{ pb.date }}</td>
+                                    <td class="text-end">
+                                        <a href="{{ url_for('rounds.round_detail', round_id=pb.round_id) }}"
+                                           class="btn btn-sm btn-outline-primary stop-propagation">
+                                            View Round
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
-            <div class="card-body">
-                <div class="table-responsive">
-                    <table class="table table-hover">
-                        <thead>
-                            <tr>
-                                <th>Course</th>
-                                <th>Best Score</th>
-                                <th>Date Achieved</th>
-                                <th></th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for pb in personal_bests %}
-                            <tr class="clickable-row" data-href="{{ url_for('rounds.round_detail', round_id=pb.round_id) }}" style="cursor: pointer;">
-                                <td>{{ pb.course_name | format_course_name | safe }}</td>
-                                <td><span class="badge bg-success" style="font-size: 1rem;">{{ pb.score }}</span></td>
-                                <td>{{ pb.date }}</td>
-                                <td class="text-end">
-                                    <a href="{{ url_for('rounds.round_detail', round_id=pb.round_id) }}"
-                                       class="btn btn-sm btn-outline-primary stop-propagation">
-                                        View Round
-                                    </a>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Course Performance -->
+{% if course_performance %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            {{ collapsible_card_header('Course Performance', 'bi-bar-chart-fill', 'coursePerformanceCollapse', 'info', true, course_performance|length) }}
+            <div class="collapse show" id="coursePerformanceCollapse">
+                <div class="card-body">
+                    <p class="text-muted mb-3">
+                        <small>Courses ranked by average score (best performance first)</small>
+                    </p>
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Rank</th>
+                                    <th>Course</th>
+                                    <th>Rounds</th>
+                                    <th>Avg Score</th>
+                                    <th>Best</th>
+                                    <th>Worst</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for perf in course_performance %}
+                                <tr>
+                                    <td>
+                                        {% if loop.index == 1 %}
+                                            <span class="badge bg-warning text-dark">
+                                                <i class="bi bi-trophy-fill"></i> #1
+                                            </span>
+                                        {% elif loop.index == 2 %}
+                                            <span class="badge bg-secondary">
+                                                <i class="bi bi-trophy-fill"></i> #2
+                                            </span>
+                                        {% elif loop.index == 3 %}
+                                            <span class="badge" style="background-color: #cd7f32; color: white;">
+                                                <i class="bi bi-trophy-fill"></i> #3
+                                            </span>
+                                        {% else %}
+                                            <span class="text-muted">#{{ loop.index }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ perf.course_name | format_course_name | safe }}</td>
+                                    <td>{{ perf.rounds_played }}</td>
+                                    <td><strong>{{ "%.2f"|format(perf.average_score) }}</strong></td>
+                                    <td><span class="badge bg-success">{{ perf.best_score }}</span></td>
+                                    <td><span class="badge bg-secondary">{{ perf.worst_score }}</span></td>
+                                    <td class="text-end">
+                                        <a href="{{ url_for('courses.course_detail', course_id=perf.course_id) }}"
+                                           class="btn btn-sm btn-outline-primary">
+                                            View Course
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
@@ -158,40 +226,38 @@
 <div class="row mb-4">
     <div class="col-12">
         <div class="card">
-            <div class="card-header bg-warning text-dark">
-                <h5 class="mb-0">
-                    <i class="bi bi-trophy-fill"></i> Course Trophy Case ({{ owned_course_trophies|length }})
-                </h5>
-            </div>
-            <div class="card-body">
-                <div class="row g-3">
-                    {% for trophy in owned_course_trophies %}
-                    <div class="col-md-3 col-sm-4 col-6">
-                        <div class="card h-100 border-warning">
-                            <div class="card-body text-center p-2">
-                                <img src="{{ url_for('static', filename='uploads/trophies/' + trophy.difficulty + '/' + trophy.trophy_image) }}"
-                                     alt="{{ trophy.course_name }} Trophy"
-                                     class="img-fluid mb-2"
-                                     style="max-height: 150px; object-fit: contain;"
-                                     onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-                                <div class="text-muted mb-2" style="height: 150px; display: none; align-items: center; justify-content: center;">
-                                    <i class="bi bi-trophy" style="font-size: 4rem;"></i>
+            {{ collapsible_card_header('Course Trophy Case', 'bi-trophy-fill', 'courseTrophyCollapse', 'warning text-dark', true, owned_course_trophies|length) }}
+            <div class="collapse show" id="courseTrophyCollapse">
+                <div class="card-body">
+                    <div class="row g-3">
+                        {% for trophy in owned_course_trophies %}
+                        <div class="col-md-3 col-sm-4 col-6">
+                            <div class="card h-100 border-warning">
+                                <div class="card-body text-center p-2">
+                                    <img src="{{ url_for('static', filename='uploads/trophies/' + trophy.difficulty + '/' + trophy.trophy_image) }}"
+                                         alt="{{ trophy.course_name }} Trophy"
+                                         class="img-fluid mb-2"
+                                         style="max-height: 150px; object-fit: contain;"
+                                         onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                    <div class="text-muted mb-2" style="height: 150px; display: none; align-items: center; justify-content: center;">
+                                        <i class="bi bi-trophy" style="font-size: 4rem;"></i>
+                                    </div>
+                                    <h6 class="mb-1" style="font-size: 0.85rem;">
+                                        {{ trophy.course_name }}
+                                    </h6>
+                                    <small class="text-muted d-block">
+                                        Won: {{ trophy.date_acquired }}
+                                    </small>
+                                    <small class="text-muted d-block">
+                                        <a href="{{ url_for('rounds.round_detail', round_id=trophy.acquired_round_id) }}" class="text-decoration-none">
+                                            View Round <i class="bi bi-arrow-right"></i>
+                                        </a>
+                                    </small>
                                 </div>
-                                <h6 class="mb-1" style="font-size: 0.85rem;">
-                                    {{ trophy.course_name }}
-                                </h6>
-                                <small class="text-muted d-block">
-                                    Won: {{ trophy.date_acquired }}
-                                </small>
-                                <small class="text-muted d-block">
-                                    <a href="{{ url_for('rounds.round_detail', round_id=trophy.acquired_round_id) }}" class="text-decoration-none">
-                                        View Round <i class="bi bi-arrow-right"></i>
-                                    </a>
-                                </small>
                             </div>
                         </div>
+                        {% endfor %}
                     </div>
-                    {% endfor %}
                 </div>
             </div>
         </div>
@@ -203,10 +269,9 @@
 <div class="row mb-4">
     <div class="col-12">
         <div class="card">
-            <div class="card-header bg-warning text-dark">
-                <h5 class="mb-0"><i class="bi bi-trophy-fill"></i> Achievements ({{ achievements.earned|length }}) - {{ achievements.total_points }} Points</h5>
-            </div>
-            <div class="card-body">
+            {{ collapsible_card_header('Achievements - ' ~ achievements.total_points ~ ' Points', 'bi-award-fill', 'achievementsCollapse', 'warning text-dark', true, achievements.earned|length) }}
+            <div class="collapse show" id="achievementsCollapse">
+                <div class="card-body">
                 {% if achievements.earned %}
                 <div class="row g-3 mb-4">
                     {% for achievement in achievements.earned %}
@@ -279,6 +344,7 @@
                     {% endfor %}
                 </div>
                 {% endif %}
+                </div>
             </div>
         </div>
     </div>
@@ -289,24 +355,24 @@
 <div class="row mb-4">
     <div class="col-12">
         <div class="card">
-            <div class="card-header bg-warning text-dark">
-                <h5 class="mb-0"><i class="bi bi-graph-up"></i> Performance Trends</h5>
-            </div>
-            <div class="card-body">
-                <div class="row">
-                    <div class="col-lg-6 mb-4">
-                        <h6 class="text-center mb-3">Score Progression Over Time</h6>
-                        <canvas id="scoreProgressionChart"></canvas>
+            {{ collapsible_card_header('Performance Trends', 'bi-graph-up', 'performanceTrendsCollapse', 'warning text-dark', true) }}
+            <div class="collapse show" id="performanceTrendsCollapse">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-lg-6 mb-4">
+                            <h6 class="text-center mb-3">Score Progression Over Time</h6>
+                            <canvas id="scoreProgressionChart"></canvas>
+                        </div>
+                        <div class="col-lg-6 mb-4">
+                            <h6 class="text-center mb-3">Average Score by Course</h6>
+                            <canvas id="avgScoreByCourseChart"></canvas>
+                        </div>
                     </div>
-                    <div class="col-lg-6 mb-4">
-                        <h6 class="text-center mb-3">Average Score by Course</h6>
-                        <canvas id="avgScoreByCourseChart"></canvas>
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="col-lg-6 mx-auto mb-4">
-                        <h6 class="text-center mb-3">Finishing Position Distribution</h6>
-                        <canvas id="positionDistributionChart"></canvas>
+                    <div class="row">
+                        <div class="col-lg-6 mx-auto mb-4">
+                            <h6 class="text-center mb-3">Finishing Position Distribution</h6>
+                            <canvas id="positionDistributionChart"></canvas>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -319,69 +385,69 @@
 <div class="row">
     <div class="col-12">
         <div class="card">
-            <div class="card-header bg-primary text-white">
-                <h5 class="mb-0"><i class="bi bi-list-ol"></i> Round History</h5>
-            </div>
-            <div class="card-body">
-                {% if rounds %}
-                <div class="table-responsive">
-                    <table class="table table-hover">
-                        <thead>
-                            <tr>
-                                <th>Date</th>
-                                <th>Course</th>
-                                <th>Score</th>
-                                <th>Result</th>
-                                <th></th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for round in rounds %}
-                            <tr>
-                                <td>{{ round.date_played }}</td>
-                                <td>{{ round.course_name }}</td>
-                                <td>
-                                    {% for score in round.scores %}
-                                        {% if score.player_id == player.id %}
-                                            {{ score.score }}
-                                        {% endif %}
-                                    {% endfor %}
-                                </td>
-                                <td>
-                                    {% set player_score = namespace(value=0) %}
-                                    {% for score in round.scores %}
-                                        {% if score.player_id == player.id %}
-                                            {% set player_score.value = score.score %}
-                                        {% endif %}
-                                    {% endfor %}
-                                    {% set min_score = round.scores|map(attribute='score')|min %}
-                                    {% if player_score.value == min_score %}
-                                        <span class="badge bg-success">Won</span>
-                                    {% else %}
-                                        {# Calculate player's position #}
-                                        {% set position = namespace(value=1) %}
+            {{ collapsible_card_header('Round History', 'bi-list-ol', 'roundHistoryCollapse', 'primary', true, rounds|length if rounds else 0) }}
+            <div class="collapse show" id="roundHistoryCollapse">
+                <div class="card-body">
+                    {% if rounds %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Course</th>
+                                    <th>Score</th>
+                                    <th>Result</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for round in rounds %}
+                                <tr>
+                                    <td>{{ round.date_played }}</td>
+                                    <td>{{ round.course_name }}</td>
+                                    <td>
                                         {% for score in round.scores %}
-                                            {% if score.score < player_score.value %}
-                                                {% set position.value = position.value + 1 %}
+                                            {% if score.player_id == player.id %}
+                                                {{ score.score }}
                                             {% endif %}
                                         {% endfor %}
-                                        <span class="badge bg-secondary">{{ position.value }}/{{ round.scores|length }}</span>
-                                    {% endif %}
-                                </td>
-                                <td class="text-end">
-                                    <a href="{{ url_for('rounds.round_detail', round_id=round.id) }}"
-                                       class="btn btn-sm btn-outline-primary">
-                                        View
-                                    </a>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+                                    </td>
+                                    <td>
+                                        {% set player_score = namespace(value=0) %}
+                                        {% for score in round.scores %}
+                                            {% if score.player_id == player.id %}
+                                                {% set player_score.value = score.score %}
+                                            {% endif %}
+                                        {% endfor %}
+                                        {% set min_score = round.scores|map(attribute='score')|min %}
+                                        {% if player_score.value == min_score %}
+                                            <span class="badge bg-success">Won</span>
+                                        {% else %}
+                                            {# Calculate player's position #}
+                                            {% set position = namespace(value=1) %}
+                                            {% for score in round.scores %}
+                                                {% if score.score < player_score.value %}
+                                                    {% set position.value = position.value + 1 %}
+                                                {% endif %}
+                                            {% endfor %}
+                                            <span class="badge bg-secondary">{{ position.value }}/{{ round.scores|length }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-end">
+                                        <a href="{{ url_for('rounds.round_detail', round_id=round.id) }}"
+                                           class="btn btn-sm btn-outline-primary">
+                                            View
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="text-muted">No rounds played yet.</p>
+                    {% endif %}
                 </div>
-                {% else %}
-                <p class="text-muted">No rounds played yet.</p>
-                {% endif %}
             </div>
         </div>
     </div>
@@ -508,6 +574,9 @@
 {% block extra_scripts %}
 <script nonce="{{ csp_nonce() }}">
 document.addEventListener('DOMContentLoaded', function() {
+    // Initialize collapsible sections with state persistence
+    initCollapsibleSections('player_profile');
+
     // Clickable rows
     document.querySelectorAll('.clickable-row').forEach(function(row) {
         row.addEventListener('click', function() {

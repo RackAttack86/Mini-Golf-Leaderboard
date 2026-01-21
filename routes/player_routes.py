@@ -231,6 +231,38 @@ def player_detail(player_id):
         key=lambda x: x['course_name']
     )
 
+    # Calculate course performance stats (average score per course)
+    course_stats = {}  # {course_id: {course_name: '', scores: []}}
+
+    for round_data in rounds:
+        course_id = round_data['course_id']
+        score = Round.get_player_score_in_round(round_data, player_id)
+
+        if score is not None:
+            if course_id not in course_stats:
+                course_stats[course_id] = {
+                    'course_id': course_id,
+                    'course_name': round_data['course_name'],
+                    'scores': []
+                }
+            course_stats[course_id]['scores'].append(score)
+
+    # Convert to performance list with calculated averages
+    course_performance = []
+    for course_id, data in course_stats.items():
+        scores = data['scores']
+        course_performance.append({
+            'course_id': data['course_id'],
+            'course_name': data['course_name'],
+            'rounds_played': len(scores),
+            'average_score': round(sum(scores) / len(scores), 2),
+            'best_score': min(scores),
+            'worst_score': max(scores)
+        })
+
+    # Sort by average score (best performance first - lowest score)
+    course_performance.sort(key=lambda x: x['average_score'])
+
     # Get player achievements
     achievements = AchievementService.get_player_achievements(player_id)
 
@@ -242,7 +274,7 @@ def player_detail(player_id):
 
     return render_template('players/detail.html', player=player, rounds=rounds, stats=stats,
                          achievements=achievements, personal_bests=personal_bests_list, trophies=trophies,
-                         owned_course_trophies=owned_course_trophies)
+                         owned_course_trophies=owned_course_trophies, course_performance=course_performance)
 
 
 @bp.route('/<player_id>/edit', methods=['POST'])

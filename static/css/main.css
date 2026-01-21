@@ -572,3 +572,34 @@ a:hover {
 .table thead th {
     padding: 0;
 }
+
+/* Collapsible Card Headers */
+.card-header-collapsible {
+    cursor: pointer;
+    user-select: none;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.card-header-collapsible:hover {
+    filter: brightness(0.95);
+}
+
+.card-header-collapsible .collapse-icon {
+    transition: transform 0.3s ease;
+}
+
+.card-header-collapsible[aria-expanded="false"] .collapse-icon {
+    transform: rotate(-90deg);
+}
+
+.card-header-collapsible:focus {
+    outline: 2px solid rgba(255, 255, 255, 0.5);
+    outline-offset: -2px;
+}
+
+/* Smooth collapse animation */
+.collapse.collapsing {
+    transition: height 0.35s ease;
+}

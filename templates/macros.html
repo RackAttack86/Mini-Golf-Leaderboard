@@ -130,6 +130,35 @@
     warning_message: Optional custom warning message
     modal_id: Optional custom modal ID - default 'deleteModal'
 #}
+{#
+  Collapsible Card Header Macro
+  Creates a clickable header that toggles a collapse section
+
+  Args:
+    title: Header title text
+    icon: Bootstrap icon class (e.g., 'bi-trophy-fill')
+    collapse_id: Unique ID for the collapse target
+    color: Bootstrap color class - default 'primary'
+    expanded: Whether section starts expanded - default true
+    count: Optional count to display in parentheses
+#}
+{% macro collapsible_card_header(title, icon, collapse_id, color='primary', expanded=true, count=none) %}
+<div class="card-header bg-{{ color }} text-white card-header-collapsible"
+     data-bs-toggle="collapse"
+     data-bs-target="#{{ collapse_id }}"
+     data-collapsible-section="{{ collapse_id }}"
+     aria-expanded="{{ 'true' if expanded else 'false' }}"
+     aria-controls="{{ collapse_id }}"
+     role="button"
+     tabindex="0">
+    <h5 class="mb-0">
+        <i class="bi {{ icon }}"></i> {{ title }}{% if count is not none %} ({{ count }}){% endif %}
+    </h5>
+    <i class="bi bi-chevron-down collapse-icon"></i>
+</div>
+{% endmacro %}
+
+
 {% macro delete_modal(item_name, item_type, delete_url, warning_message='', modal_id='deleteModal') %}
 <div class="modal fade" id="{{ modal_id }}" tabindex="-1" aria-labelledby="{{ modal_id }}Label" aria-hidden="true">
     <div class="modal-dialog">
