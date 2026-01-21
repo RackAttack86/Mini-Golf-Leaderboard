@@ -5,7 +5,7 @@ from services.auth_service import AuthService
 from urllib.parse import urlparse, urljoin
 from extensions import limiter
 import secrets
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, UTC
 import traceback
 
 
@@ -45,7 +45,7 @@ def google_login():
     # Generate secure state token for CSRF protection
     state = secrets.token_urlsafe(32)
     session['oauth_state'] = state
-    session['oauth_state_expires'] = datetime.utcnow() + timedelta(minutes=10)
+    session['oauth_state_expires'] = datetime.now(UTC) + timedelta(minutes=10)
 
     current_app.logger.info(f"Generated OAuth state token for new login attempt")
 
@@ -79,7 +79,7 @@ def google_callback():
         # Check state hasn't expired
         if state_expires:
             try:
-                if datetime.utcnow() > state_expires:
+                if datetime.now(UTC) > state_expires:
                     current_app.logger.warning("OAuth state token expired")
                     flash("Authentication session expired. Please try again.", "danger")
                     return redirect(url_for('auth.login'))
