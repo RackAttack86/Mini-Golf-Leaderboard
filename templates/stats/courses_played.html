@@ -88,9 +88,9 @@
                         <td>
                             {% if data.play_count > 0 %}
                             <div class="progress" style="height: 30px;">
-                                <div class="progress-bar bg-success"
+                                <div class="progress-bar"
                                      role="progressbar"
-                                     style="width: {{ data.percentage }}%;"
+                                     style="width: {{ data.percentage }}%; background-color: {{ data.top_winner_color }};"
                                      aria-valuenow="{{ data.play_count }}"
                                      aria-valuemin="0"
                                      aria-valuemax="100">

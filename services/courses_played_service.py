@@ -1,5 +1,6 @@
 from models.round import Round
 from models.course import Course
+from models.player import Player
 from typing import List, Dict, Any
 
 
@@ -69,6 +70,7 @@ class CoursesPlayedService:
                     # Initialize player wins dict if needed
                     if winner_id not in course_play_counts[course_id]['player_wins']:
                         course_play_counts[course_id]['player_wins'][winner_id] = {
+                            'id': winner_id,
                             'name': winner_name,
                             'wins': 0
                         }
@@ -101,6 +103,10 @@ class CoursesPlayedService:
                 result['top_winner_name'] = top_winner['name']
                 result['top_winner_wins'] = top_winner['wins']
 
+                # Get the winner's favorite color
+                winner_player = Player.get_by_id(top_winner['id'])
+                result['top_winner_color'] = winner_player['favorite_color'] if winner_player else '#2e7d32'
+
                 # Abbreviate name if longer than 15 characters
                 if len(result['top_winner_name']) > 15:
                     # Take first name and last initial
@@ -113,6 +119,7 @@ class CoursesPlayedService:
             else:
                 result['top_winner_name'] = None
                 result['top_winner_wins'] = 0
+                result['top_winner_color'] = '#2e7d32'
 
         # Return all courses including those with 0 plays
         return results
