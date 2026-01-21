@@ -80,14 +80,6 @@ class CoursesPlayedService:
         # Convert to list
         results = list(course_play_counts.values())
 
-        # Sort based on sort_order
-        if sort_order == 'asc':
-            results.sort(key=lambda x: x['play_count'])
-        elif sort_order == 'name':
-            results.sort(key=lambda x: x['course']['name'])
-        else:  # desc
-            results.sort(key=lambda x: x['play_count'], reverse=True)
-
         # Calculate max for percentage bars
         max_plays = max([r['play_count'] for r in results]) if results else 1
         if max_plays == 0:
@@ -120,6 +112,16 @@ class CoursesPlayedService:
                 result['top_winner_name'] = None
                 result['top_winner_wins'] = 0
                 result['top_winner_color'] = '#2e7d32'
+
+        # Sort based on sort_order (after calculating top_winner_wins)
+        if sort_order == 'asc':
+            results.sort(key=lambda x: x['play_count'])
+        elif sort_order == 'name':
+            results.sort(key=lambda x: x['course']['name'])
+        elif sort_order == 'wins':
+            results.sort(key=lambda x: x['top_winner_wins'], reverse=True)
+        else:  # desc
+            results.sort(key=lambda x: x['play_count'], reverse=True)
 
         # Return all courses including those with 0 plays
         return results

@@ -43,6 +43,7 @@
                     <select name="sort" class="form-select" id="sortSelect">
                         <option value="desc" {% if sort_order == 'desc' %}selected{% endif %}>Most Played First</option>
                         <option value="asc" {% if sort_order == 'asc' %}selected{% endif %}>Least Played First</option>
+                        <option value="wins" {% if sort_order == 'wins' %}selected{% endif %}>Most Wins First</option>
                         <option value="name" {% if sort_order == 'name' %}selected{% endif %}>Course Name (A-Z)</option>
                     </select>
                 </div>
@@ -73,7 +74,7 @@
                 <thead>
                     <tr>
                         <th style="width: 30%;">Course</th>
-                        <th style="width: 60%;">Times Played Together</th>
+                        <th style="width: 60%;">Most Wins</th>
                         <th style="width: 10%;" class="text-end">Count</th>
                     </tr>
                 </thead>
