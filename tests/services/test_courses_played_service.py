@@ -78,20 +78,20 @@ class TestGetCoursesPlayedByPlayers:
         success, msg, course2 = Course.create('Rare Course', 'Test Location', 18, 54)
         success, msg, course3 = Course.create('Medium Course', 'Test Location', 18, 54)
 
-        # Create different numbers of rounds
-        for _ in range(5):
+        # Create different numbers of rounds (use different dates to avoid duplicate detection)
+        for i in range(5):
             Round.create(course_id=course1['id'], scores=[
                 {'player_id': player['id'], 'player_name': player['name'], 'score': 35}
-            ], date_played='2024-01-01')
+            ], date_played=f'2024-01-{i+1:02d}')
 
-        for _ in range(2):
+        for i in range(2):
             Round.create(course_id=course3['id'], scores=[
                 {'player_id': player['id'], 'player_name': player['name'], 'score': 35}
-            ], date_played='2024-01-01')
+            ], date_played=f'2024-02-{i+1:02d}')
 
         Round.create(course_id=course2['id'], scores=[
             {'player_id': player['id'], 'player_name': player['name'], 'score': 35}
-        ], date_played='2024-01-01')
+        ], date_played='2024-03-01')
 
         result = CoursesPlayedService.get_courses_played_by_players([player['id']], sort_order='desc')
 
@@ -108,14 +108,15 @@ class TestGetCoursesPlayedByPlayers:
         success, msg, course1 = Course.create('Most Played', 'Test Location', 18, 54)
         success, msg, course2 = Course.create('Least Played', 'Test Location', 18, 54)
 
-        for _ in range(3):
+        # Use different dates to avoid duplicate detection
+        for i in range(3):
             Round.create(course_id=course1['id'], scores=[
                 {'player_id': player['id'], 'player_name': player['name'], 'score': 35}
-            ], date_played='2024-01-01')
+            ], date_played=f'2024-01-{i+1:02d}')
 
         Round.create(course_id=course2['id'], scores=[
             {'player_id': player['id'], 'player_name': player['name'], 'score': 35}
-        ], date_played='2024-01-01')
+        ], date_played='2024-02-01')
 
         result = CoursesPlayedService.get_courses_played_by_players([player['id']], sort_order='asc')
 
@@ -192,15 +193,16 @@ class TestGetCoursesPlayedByPlayers:
         success, msg, course1 = Course.create('Most Played', 'Test Location', 18, 54)
         success, msg, course2 = Course.create('Half Played', 'Test Location', 18, 54)
 
-        for _ in range(10):
+        # Use different dates to avoid duplicate detection
+        for i in range(10):
             Round.create(course_id=course1['id'], scores=[
                 {'player_id': player['id'], 'player_name': player['name'], 'score': 35}
-            ], date_played='2024-01-01')
+            ], date_played=f'2024-01-{i+1:02d}')
 
-        for _ in range(5):
+        for i in range(5):
             Round.create(course_id=course2['id'], scores=[
                 {'player_id': player['id'], 'player_name': player['name'], 'score': 35}
-            ], date_played='2024-01-01')
+            ], date_played=f'2024-02-{i+1:02d}')
 
         result = CoursesPlayedService.get_courses_played_by_players([player['id']])
 
@@ -216,18 +218,18 @@ class TestGetCoursesPlayedByPlayers:
         _, _, player2 = Player.create('Loser', 'player2@test.com')
         success, msg, course = Course.create('Test Course', 'Test Location', 18, 54)
 
-        # Player1 wins 3 times
-        for _ in range(3):
+        # Player1 wins 3 times (use different dates to avoid duplicate detection)
+        for i in range(3):
             Round.create(course_id=course['id'], scores=[
                 {'player_id': player1['id'], 'player_name': player1['name'], 'score': 30},
                 {'player_id': player2['id'], 'player_name': player2['name'], 'score': 40}
-            ], date_played='2024-01-01')
+            ], date_played=f'2024-01-{i+1:02d}')
 
         # Player2 wins 1 time
         Round.create(course_id=course['id'], scores=[
             {'player_id': player1['id'], 'player_name': player1['name'], 'score': 45},
             {'player_id': player2['id'], 'player_name': player2['name'], 'score': 35}
-        ], date_played='2024-01-01')
+        ], date_played='2024-02-01')
 
         result = CoursesPlayedService.get_courses_played_by_players([player1['id'], player2['id']])
 

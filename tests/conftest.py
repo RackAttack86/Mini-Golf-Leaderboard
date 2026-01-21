@@ -53,8 +53,8 @@ def database(test_data_dir):
     # Reset any existing database singleton
     Database.reset()
 
-    # Initialize new database with schema
-    db = init_database(db_file)
+    # Initialize new database with schema (skip seed data for clean tests)
+    db = init_database(db_file, skip_seed_data=True)
 
     yield db
 
@@ -103,6 +103,13 @@ def app(database):
     app.config['TESTING'] = True
     app.config['WTF_CSRF_ENABLED'] = False
     app.config['RATELIMIT_ENABLED'] = False  # Disable rate limiting in tests
+
+    # Provide mock csp_nonce for templates (Talisman is disabled in debug/test mode)
+    @app.context_processor
+    def inject_csp_nonce():
+        def csp_nonce():
+            return 'test-nonce'
+        return {'csp_nonce': csp_nonce}
 
     yield app
 

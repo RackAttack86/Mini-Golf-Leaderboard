@@ -29,12 +29,13 @@ class Database:
         self._local = threading.local()
 
     @classmethod
-    def initialize(cls, db_path: Path) -> 'Database':
+    def initialize(cls, db_path: Path, skip_seed_data: bool = False) -> 'Database':
         """
         Initialize database singleton
 
         Args:
             db_path: Path to SQLite database file
+            skip_seed_data: If True, skip loading seed data (for testing)
 
         Returns:
             Database instance
@@ -42,11 +43,15 @@ class Database:
         with cls._lock:
             if cls._instance is None:
                 cls._instance = cls(db_path)
-                cls._instance._create_schema()
+                cls._instance._create_schema(skip_seed_data=skip_seed_data)
         return cls._instance
 
-    def _create_schema(self):
-        """Create database schema if it doesn't exist"""
+    def _create_schema(self, skip_seed_data: bool = False):
+        """Create database schema if it doesn't exist
+
+        Args:
+            skip_seed_data: If True, skip loading seed data (for testing)
+        """
         schema_file = Path(__file__).parent.parent / 'migrations' / 'schema.sql'
 
         if not schema_file.exists():
@@ -58,6 +63,10 @@ class Database:
         conn = self.get_connection()
         conn.executescript(schema_sql)
         conn.commit()
+
+        # Skip seed data for testing
+        if skip_seed_data:
+            return
 
         # Load seed data if tables are empty
         cursor = conn.execute("SELECT COUNT(*) as count FROM players")
@@ -159,17 +168,18 @@ def get_db() -> Database:
     return Database._instance
 
 
-def init_database(db_path: Path) -> Database:
+def init_database(db_path: Path, skip_seed_data: bool = False) -> Database:
     """
     Initialize database singleton
 
     Args:
         db_path: Path to SQLite database file
+        skip_seed_data: If True, skip loading seed data (for testing)
 
     Returns:
         Database instance
     """
-    return Database.initialize(db_path)
+    return Database.initialize(db_path, skip_seed_data=skip_seed_data)
 
 
 def set_database(database: Database):
