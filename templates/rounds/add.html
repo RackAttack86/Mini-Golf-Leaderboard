@@ -464,11 +464,12 @@ document.addEventListener('DOMContentLoaded', function() {
         // Restore form data if present
         setDateFromValue(hiddenDateInput.value);
     } else {
-        // Set to today's date
-        const today = new Date();
-        document.getElementById('date_year').value = today.getFullYear();
-        document.getElementById('date_month').value = String(today.getMonth() + 1).padStart(2, '0');
-        document.getElementById('date_day').value = String(today.getDate()).padStart(2, '0');
+        // Set to today's date in Eastern time
+        const now = new Date();
+        const easternDate = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }));
+        document.getElementById('date_year').value = easternDate.getFullYear();
+        document.getElementById('date_month').value = String(easternDate.getMonth() + 1).padStart(2, '0');
+        document.getElementById('date_day').value = String(easternDate.getDate()).padStart(2, '0');
         updateHiddenDateInput();
     }
 
