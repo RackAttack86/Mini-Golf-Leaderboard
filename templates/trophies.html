@@ -21,7 +21,6 @@
                         <img src="{{ url_for('static', filename='uploads/trophies/' ~ group.normal.subdir ~ '/' ~ group.normal.filename) }}"
                              alt="{{ group.base_name }} Trophy"
                              class="trophy-img">
-                        <div class="trophy-label">Normal</div>
                     </div>
                     {% endif %}
                     {% if group.hard %}
@@ -29,7 +28,6 @@
                         <img src="{{ url_for('static', filename='uploads/trophies/' ~ group.hard.subdir ~ '/' ~ group.hard.filename) }}"
                              alt="{{ group.base_name }} (HARD) Trophy"
                              class="trophy-img">
-                        <div class="trophy-label trophy-label-hard">Hard</div>
                     </div>
                     {% endif %}
                 </div>
@@ -85,20 +83,6 @@
         display: block;
         max-height: 650px;
         width: auto;
-    }
-
-    .trophy-label {
-        margin-top: 10px;
-        padding: 4px 12px;
-        background: rgba(255, 255, 255, 0.9);
-        border-radius: 4px;
-        font-weight: 600;
-        font-size: 0.85rem;
-        color: #2e7d32;
-    }
-
-    .trophy-label-hard {
-        color: #c62828;
     }
 
     .trophy-title {
