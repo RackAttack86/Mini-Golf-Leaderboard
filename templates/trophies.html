@@ -12,25 +12,36 @@
     </div>
 
     <div class="row g-4">
-        {% for trophy in course_trophies %}
-        {% if trophy.has_trophy %}
-        <div class="col-12 col-sm-6">
+        {% for group in course_trophies %}
+        <div class="col-12">
             <div class="trophy-display-card">
-                <div class="trophy-img-wrapper" style="background: {{ trophy.background }};">
-                    <img src="{{ url_for('static', filename='uploads/trophies/' ~ trophy.trophy_subdir ~ '/' ~ trophy.trophy_filename) }}"
-                         alt="{{ trophy.course_name }} Trophy"
-                         class="trophy-img">
+                <div class="trophy-img-wrapper" style="background: {{ group.background }};">
+                    {% if group.normal %}
+                    <div class="trophy-item">
+                        <img src="{{ url_for('static', filename='uploads/trophies/' ~ group.normal.subdir ~ '/' ~ group.normal.filename) }}"
+                             alt="{{ group.base_name }} Trophy"
+                             class="trophy-img">
+                        <div class="trophy-label">Normal</div>
+                    </div>
+                    {% endif %}
+                    {% if group.hard %}
+                    <div class="trophy-item">
+                        <img src="{{ url_for('static', filename='uploads/trophies/' ~ group.hard.subdir ~ '/' ~ group.hard.filename) }}"
+                             alt="{{ group.base_name }} (HARD) Trophy"
+                             class="trophy-img">
+                        <div class="trophy-label trophy-label-hard">Hard</div>
+                    </div>
+                    {% endif %}
                 </div>
                 <div class="trophy-title">
-                    {{ trophy.course_name | format_course_name | safe }}
+                    {{ group.base_name }}
                 </div>
             </div>
         </div>
-        {% endif %}
         {% endfor %}
     </div>
 
-    {% if course_trophies|selectattr('has_trophy')|list|length == 0 %}
+    {% if course_trophies|length == 0 %}
     <div class="row">
         <div class="col-12 text-center py-5">
             <i class="bi bi-trophy" style="font-size: 5rem; color: #dee2e6;"></i>
@@ -54,13 +65,20 @@
     }
 
     .trophy-img-wrapper {
-        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
         border-radius: 8px;
-        padding: 20px;
-        display: inline-flex;
-        align-items: center;
+        padding: 30px;
+        display: flex;
+        align-items: flex-end;
         justify-content: center;
-        margin-bottom: 10px;
+        gap: 40px;
+        margin-bottom: 15px;
+        width: 100%;
+    }
+
+    .trophy-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
     }
 
     .trophy-img {
@@ -69,10 +87,24 @@
         width: auto;
     }
 
+    .trophy-label {
+        margin-top: 10px;
+        padding: 4px 12px;
+        background: rgba(255, 255, 255, 0.9);
+        border-radius: 4px;
+        font-weight: 600;
+        font-size: 0.85rem;
+        color: #2e7d32;
+    }
+
+    .trophy-label-hard {
+        color: #c62828;
+    }
+
     .trophy-title {
         text-align: center;
         font-weight: 600;
-        font-size: 1rem;
+        font-size: 1.25rem;
         color: #333;
         line-height: 1.3;
     }
