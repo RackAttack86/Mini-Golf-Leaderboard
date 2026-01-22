@@ -27,6 +27,35 @@
         </div>
     </div>
     <div class="col-md-4 text-end">
+        {% if current_user.is_authenticated and current_user.id != player.id %}
+        <!-- Friend status/actions -->
+        {% if friendship_status == 'accepted' %}
+            <span class="badge bg-success me-2"><i class="bi bi-people-fill"></i> Friends</span>
+            <form action="{{ url_for('friends.remove_friend', player_id=player.id) }}" method="POST" class="d-inline remove-friend-form" data-name="{{ player.name }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-outline-danger btn-sm">
+                    <i class="bi bi-person-x"></i> Remove Friend
+                </button>
+            </form>
+        {% elif friendship_status == 'pending_sent' %}
+            <span class="badge bg-warning text-dark"><i class="bi bi-clock"></i> Friend Request Sent</span>
+        {% elif friendship_status == 'pending_received' %}
+            <form action="{{ url_for('friends.accept_request', friendship_id=pending_request_id) }}" method="POST" class="d-inline">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-success btn-sm">
+                    <i class="bi bi-check-lg"></i> Accept Friend Request
+                </button>
+            </form>
+        {% else %}
+            <form action="{{ url_for('friends.send_request', player_id=player.id) }}" method="POST" class="d-inline">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-primary btn-sm">
+                    <i class="bi bi-person-plus"></i> Add Friend
+                </button>
+            </form>
+        {% endif %}
+        {% endif %}
+
         {% if current_user.is_authenticated and (current_user.is_admin or current_user.id == player.id) %}
         <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#editModal">
             <i class="bi bi-pencil"></i> Edit
@@ -588,6 +617,16 @@ document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll('.stop-propagation').forEach(function(el) {
         el.addEventListener('click', function(e) {
             e.stopPropagation();
+        });
+    });
+
+    // Confirm remove friend forms
+    document.querySelectorAll('.remove-friend-form').forEach(function(form) {
+        form.addEventListener('submit', function(e) {
+            var friendName = this.dataset.name;
+            if (!confirm('Remove ' + friendName + ' from friends?')) {
+                e.preventDefault();
+            }
         });
     });
 });

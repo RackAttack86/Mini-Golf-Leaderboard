@@ -93,6 +93,24 @@
                     </li>
                 </ul>
                 <ul class="navbar-nav">
+                    {% if current_user.is_authenticated %}
+                    <li class="nav-item me-3">
+                        <div class="btn-group" role="group" id="viewModeToggle">
+                            <button type="button"
+                                    class="btn btn-sm {% if view_mode == 'friends' %}btn-light{% else %}btn-outline-light{% endif %}"
+                                    data-mode="friends"
+                                    title="Show friends only">
+                                <i class="bi bi-people-fill"></i> Friends
+                            </button>
+                            <button type="button"
+                                    class="btn btn-sm {% if view_mode == 'everyone' %}btn-light{% else %}btn-outline-light{% endif %}"
+                                    data-mode="everyone"
+                                    title="Show everyone">
+                                <i class="bi bi-globe"></i> Everyone
+                            </button>
+                        </div>
+                    </li>
+                    {% endif %}
                     <li class="nav-item me-2">
                         <a class="btn btn-light btn-sm" href="{{ url_for('rounds.add_round') }}">
                             <i class="bi bi-plus-circle"></i> Add Round
@@ -110,6 +128,14 @@
                             <li>
                                 <a class="dropdown-item" href="{{ url_for('players.player_detail', player_id=current_user.id) }}">
                                     <i class="bi bi-person"></i> My Profile
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="{{ url_for('friends.friends_list') }}">
+                                    <i class="bi bi-people"></i> Friends
+                                    {% if pending_friend_count %}
+                                    <span class="badge bg-danger">{{ pending_friend_count }}</span>
+                                    {% endif %}
                                 </a>
                             </li>
                             {% if current_user.is_admin %}

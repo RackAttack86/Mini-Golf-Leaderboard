@@ -1,8 +1,9 @@
-from flask import Blueprint, render_template, request, jsonify
+from flask import Blueprint, render_template, request, jsonify, session
 from flask_login import current_user
 from models.player import Player
 from models.course import Course
 from models.round import Round
+from models.friendship import Friendship
 
 bp = Blueprint('stats', __name__)
 
@@ -39,6 +40,14 @@ def leaderboard():
 
     sort_by = request.args.get('sort_by', 'average')
     rankings = LeaderboardService.get_player_rankings(sort_by)
+
+    # Apply friends filter if logged in and view mode is 'friends'
+    view_mode = 'everyone'
+    if current_user.is_authenticated:
+        view_mode = session.get('view_mode', 'everyone')
+        if view_mode == 'friends':
+            friend_ids = Friendship.get_friends_and_self(current_user.id)
+            rankings = [r for r in rankings if r['player']['id'] in friend_ids]
 
     return render_template('stats/leaderboard.html', rankings=rankings, sort_by=sort_by)
 
@@ -88,6 +97,15 @@ def trends():
     end_date = request.args.get('end_date')
 
     players = Player.get_all()
+
+    # Apply friends filter if logged in and view mode is 'friends'
+    view_mode = 'everyone'
+    if current_user.is_authenticated:
+        view_mode = session.get('view_mode', 'everyone')
+        if view_mode == 'friends':
+            friend_ids = Friendship.get_friends_and_self(current_user.id)
+            players = [p for p in players if p['id'] in friend_ids]
+
     players = filter_email_from_players(players)
 
     # If player selected, get their trends
@@ -126,6 +144,15 @@ def comparison():
     player2_id = request.args.get('player2_id')
 
     players = Player.get_all()
+
+    # Apply friends filter if logged in and view mode is 'friends'
+    view_mode = 'everyone'
+    if current_user.is_authenticated:
+        view_mode = session.get('view_mode', 'everyone')
+        if view_mode == 'friends':
+            friend_ids = Friendship.get_friends_and_self(current_user.id)
+            players = [p for p in players if p['id'] in friend_ids]
+
     players = filter_email_from_players(players)
 
     # If both players selected, get comparison
@@ -161,6 +188,15 @@ def courses_played():
     sort_order = request.args.get('sort', 'desc')
 
     players = Player.get_all()
+
+    # Apply friends filter if logged in and view mode is 'friends'
+    view_mode = 'everyone'
+    if current_user.is_authenticated:
+        view_mode = session.get('view_mode', 'everyone')
+        if view_mode == 'friends':
+            friend_ids = Friendship.get_friends_and_self(current_user.id)
+            players = [p for p in players if p['id'] in friend_ids]
+
     players = filter_email_from_players(players)
 
     # Get courses played data if players selected
