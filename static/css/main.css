@@ -512,6 +512,8 @@ a:hover {
 
 .trophy-img {
     display: block;
+    max-height: 650px;
+    width: auto;
 }
 
 .trophy-title {
