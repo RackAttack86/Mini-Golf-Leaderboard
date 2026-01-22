@@ -228,35 +228,43 @@ def trophies():
     normal_trophy_files = set(os.listdir(normal_trophy_dir)) if os.path.exists(normal_trophy_dir) else set()
     hard_trophy_files = set(os.listdir(hard_trophy_dir)) if os.path.exists(hard_trophy_dir) else set()
 
-    # Build list of courses with trophy info
-    course_trophies = []
+    # Group trophies by base course name (normal + hard together)
+    trophy_groups = {}
     for course in courses:
         is_hard = '(HARD)' in course['name']
         base_name = course['name'].replace(' (HARD)', '')
         trophy_filename = course_to_trophy_name(base_name) + '.png'
 
-        # Check appropriate directory based on course difficulty
+        # Initialize group if not exists
+        if base_name not in trophy_groups:
+            trophy_groups[base_name] = {
+                'base_name': base_name,
+                'background': trophy_backgrounds.get(base_name, default_background),
+                'normal': None,
+                'hard': None
+            }
+
+        # Check if trophy exists and add to appropriate slot
         if is_hard:
             has_trophy = trophy_filename in hard_trophy_files
-            trophy_subdir = 'hard'
+            if has_trophy:
+                trophy_groups[base_name]['hard'] = {
+                    'filename': trophy_filename,
+                    'subdir': 'hard'
+                }
         else:
             has_trophy = trophy_filename in normal_trophy_files
-            trophy_subdir = 'normal'
+            if has_trophy:
+                trophy_groups[base_name]['normal'] = {
+                    'filename': trophy_filename,
+                    'subdir': 'normal'
+                }
 
-        # Get background for this trophy (use base name without HARD)
-        background = trophy_backgrounds.get(base_name, default_background)
-
-        course_trophies.append({
-            'course_id': course['id'],
-            'course_name': course['name'],  # Keep HARD in name for display
-            'trophy_filename': trophy_filename,
-            'trophy_subdir': trophy_subdir,
-            'has_trophy': has_trophy,
-            'background': background
-        })
-
-    # Sort by course name
-    course_trophies.sort(key=lambda x: x['course_name'])
+    # Convert to sorted list, only include groups with at least one trophy
+    course_trophies = [
+        group for group in sorted(trophy_groups.values(), key=lambda x: x['base_name'])
+        if group['normal'] or group['hard']
+    ]
 
     return render_template('trophies.html', course_trophies=course_trophies)
 
