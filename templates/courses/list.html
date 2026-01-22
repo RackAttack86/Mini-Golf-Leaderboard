@@ -228,13 +228,20 @@ function sortTable(sortKey, sortType, defaultDirection) {
         let aVal = (a.dataset[camelKey] || '').trim();
         let bVal = (b.dataset[camelKey] || '').trim();
 
-        // Handle null/empty values - always sort to bottom regardless of direction
+        // Handle null/empty values - treat as smallest value
+        // Ascending: empty at top, Descending: empty at bottom
         const aEmpty = !aVal;
         const bEmpty = !bVal;
 
         if (aEmpty && bEmpty) return 0;
-        if (aEmpty) return 1;  // a goes to bottom
-        if (bEmpty) return -1; // b goes to bottom
+        if (aEmpty) {
+            // a is empty, treat as smallest
+            return currentSortDirection === 'asc' ? -1 : 1;
+        }
+        if (bEmpty) {
+            // b is empty, treat as smallest
+            return currentSortDirection === 'asc' ? 1 : -1;
+        }
 
         // Compare based on type
         let comparison;
