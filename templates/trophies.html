@@ -16,7 +16,7 @@
         {% if trophy.has_trophy %}
         <div class="col-12 col-sm-6">
             <div class="trophy-display-card">
-                <div class="trophy-img-wrapper">
+                <div class="trophy-img-wrapper" style="background: {{ trophy.background }};">
                     <img src="{{ url_for('static', filename='uploads/trophies/' ~ trophy.trophy_subdir ~ '/' ~ trophy.trophy_filename) }}"
                          alt="{{ trophy.course_name }} Trophy"
                          class="trophy-img">

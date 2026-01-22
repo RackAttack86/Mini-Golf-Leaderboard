@@ -179,6 +179,49 @@ def trophies():
     def course_to_trophy_name(course_name):
         return course_name.replace("'", "").replace(",", "").replace(" ", "_")
 
+    # Trophy background gradients based on course themes
+    trophy_backgrounds = {
+        "20000 Leagues Under the Sea": "linear-gradient(135deg, #0c2340 0%, #1a5276 50%, #21618c 100%)",
+        "8-bit Lair": "linear-gradient(135deg, #2d1b4e 0%, #6b2d5b 50%, #9b4dca 100%)",
+        "Alfheim": "linear-gradient(135deg, #1e3c2f 0%, #2d5a3f 50%, #4a7c59 100%)",
+        "Alice's Adventures in Wonderland": "linear-gradient(135deg, #4a1259 0%, #7b2d8e 50%, #d4a5d9 100%)",
+        "Arizona Modern": "linear-gradient(135deg, #8b4513 0%, #cd5c5c 50%, #f4a460 100%)",
+        "Around the World in 80 Days": "linear-gradient(135deg, #1a365d 0%, #2c5282 50%, #d4af37 100%)",
+        "Atlantis": "linear-gradient(135deg, #005577 0%, #008b8b 50%, #40e0d0 100%)",
+        "Bogey's Bonanza": "linear-gradient(135deg, #1e4d2b 0%, #2e7d32 50%, #4caf50 100%)",
+        "Cherry Blossom": "linear-gradient(135deg, #8b4557 0%, #d87093 50%, #ffb7c5 100%)",
+        "Crystal Lair": "linear-gradient(135deg, #1a1a2e 0%, #4a69bd 50%, #a8d8ea 100%)",
+        "El Dorado": "linear-gradient(135deg, #8b6914 0%, #d4af37 50%, #ffd700 100%)",
+        "Forgotten Fairyland": "linear-gradient(135deg, #2d4a3e 0%, #6b4984 50%, #9370db 100%)",
+        "Gardens of Babylon": "linear-gradient(135deg, #2e4a1e 0%, #4a7023 50%, #8fbc8f 100%)",
+        "Holiday Hideaway": "linear-gradient(135deg, #8b0000 0%, #228b22 50%, #ff6347 100%)",
+        "Ice Lair": "linear-gradient(135deg, #1c3f5f 0%, #5dade2 50%, #e8f4f8 100%)",
+        "Journey to the Center of the Earth": "linear-gradient(135deg, #4a2511 0%, #8b4513 50%, #cd5c5c 100%)",
+        "Labyrinth": "linear-gradient(135deg, #3d3d3d 0%, #6b6b6b 50%, #d4af37 100%)",
+        "Laser Lair": "linear-gradient(135deg, #1a0a2e 0%, #00ff00 50%, #ff00ff 100%)",
+        "Mars Garden": "linear-gradient(135deg, #4a1a0a 0%, #8b3a2f 50%, #cd5c5c 100%)",
+        "Meow Wolf": "linear-gradient(135deg, #ff006e 0%, #8338ec 50%, #3a86ff 100%)",
+        "Mount Olympus": "linear-gradient(135deg, #2c3e50 0%, #f5f5dc 50%, #d4af37 100%)",
+        "Myst": "linear-gradient(135deg, #1a2a3a 0%, #34495e 50%, #5d6d7e 100%)",
+        "Original Gothic": "linear-gradient(135deg, #1a1a2e 0%, #2d2d44 50%, #4a3f5c 100%)",
+        "Quixote Valley": "linear-gradient(135deg, #8b4513 0%, #d2691e 50%, #f4a460 100%)",
+        "Raptor Cliffs": "linear-gradient(135deg, #3d2914 0%, #5d4e37 50%, #8fbc8f 100%)",
+        "Seagull Stacks": "linear-gradient(135deg, #1e3a5f 0%, #4682b4 50%, #f5deb3 100%)",
+        "Shangri-La": "linear-gradient(135deg, #4a0e0e 0%, #8b0000 50%, #d4af37 100%)",
+        "Sweetopia": "linear-gradient(135deg, #ff69b4 0%, #da70d6 50%, #ffb6c1 100%)",
+        "Temple at Zerzura": "linear-gradient(135deg, #8b7355 0%, #d4a574 50%, #f4e4c1 100%)",
+        "Tethys Station": "linear-gradient(135deg, #0a0a1a 0%, #1a1a4a 50%, #4169e1 100%)",
+        "Tiki-a-Coco": "linear-gradient(135deg, #d2691e 0%, #ff8c00 50%, #20b2aa 100%)",
+        "Tokyo": "linear-gradient(135deg, #1a1a2e 0%, #ff1493 50%, #ff6b6b 100%)",
+        "Tourist Trap": "linear-gradient(135deg, #006400 0%, #228b22 50%, #00ced1 100%)",
+        "Upside Town": "linear-gradient(135deg, #4a0080 0%, #8000ff 50%, #00ffff 100%)",
+        "Venice": "linear-gradient(135deg, #1e3d59 0%, #4682b4 50%, #d2691e 100%)",
+        "Viva Las Elvis": "linear-gradient(135deg, #4a0e0e 0%, #d4af37 50%, #ff4500 100%)",
+        "Wallace & Gromit": "linear-gradient(135deg, #3d2b1f 0%, #228b22 50%, #daa520 100%)",
+        "Widow's Walkabout": "linear-gradient(135deg, #1a0a1a 0%, #4a0e4a 50%, #800080 100%)",
+    }
+    default_background = "linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)"
+
     # Check which courses have trophy images (normal and hard)
     normal_trophy_dir = os.path.join('static', 'uploads', 'trophies', 'normal')
     hard_trophy_dir = os.path.join('static', 'uploads', 'trophies', 'hard')
@@ -200,12 +243,16 @@ def trophies():
             has_trophy = trophy_filename in normal_trophy_files
             trophy_subdir = 'normal'
 
+        # Get background for this trophy (use base name without HARD)
+        background = trophy_backgrounds.get(base_name, default_background)
+
         course_trophies.append({
             'course_id': course['id'],
             'course_name': course['name'],  # Keep HARD in name for display
             'trophy_filename': trophy_filename,
             'trophy_subdir': trophy_subdir,
-            'has_trophy': has_trophy
+            'has_trophy': has_trophy,
+            'background': background
         })
 
     # Sort by course name
