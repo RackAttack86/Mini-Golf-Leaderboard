@@ -181,7 +181,7 @@ def trophies():
 
     # Trophy background gradients based on course themes
     trophy_backgrounds = {
-        "20000 Leagues Under the Sea": "linear-gradient(135deg, #0c2340 0%, #1a5276 50%, #21618c 100%)",
+        "20,000 Leagues Under the Sea": "linear-gradient(135deg, #0c2340 0%, #1a5276 50%, #21618c 100%)",
         "8-bit Lair": "linear-gradient(135deg, #2d1b4e 0%, #6b2d5b 50%, #9b4dca 100%)",
         "Alfheim": "linear-gradient(135deg, #1e3c2f 0%, #2d5a3f 50%, #4a7c59 100%)",
         "Alice's Adventures in Wonderland": "linear-gradient(135deg, #4a1259 0%, #7b2d8e 50%, #d4a5d9 100%)",
@@ -205,13 +205,13 @@ def trophies():
         "Myst": "linear-gradient(135deg, #1a2a3a 0%, #34495e 50%, #5d6d7e 100%)",
         "Original Gothic": "linear-gradient(135deg, #1a1a2e 0%, #2d2d44 50%, #4a3f5c 100%)",
         "Quixote Valley": "linear-gradient(135deg, #8b4513 0%, #d2691e 50%, #f4a460 100%)",
-        "Raptor Cliffs": "linear-gradient(135deg, #3d2914 0%, #5d4e37 50%, #8fbc8f 100%)",
+        "Raptor Cliff's": "linear-gradient(135deg, #3d2914 0%, #5d4e37 50%, #8fbc8f 100%)",
         "Seagull Stacks": "linear-gradient(135deg, #1e3a5f 0%, #4682b4 50%, #f5deb3 100%)",
         "Shangri-La": "linear-gradient(135deg, #4a0e0e 0%, #8b0000 50%, #d4af37 100%)",
         "Sweetopia": "linear-gradient(135deg, #ff69b4 0%, #da70d6 50%, #ffb6c1 100%)",
         "Temple at Zerzura": "linear-gradient(135deg, #8b7355 0%, #d4a574 50%, #f4e4c1 100%)",
         "Tethys Station": "linear-gradient(135deg, #0a0a1a 0%, #1a1a4a 50%, #4169e1 100%)",
-        "Tiki-a-Coco": "linear-gradient(135deg, #d2691e 0%, #ff8c00 50%, #20b2aa 100%)",
+        "Tiki a Coco": "linear-gradient(135deg, #d2691e 0%, #ff8c00 50%, #20b2aa 100%)",
         "Tokyo": "linear-gradient(135deg, #1a1a2e 0%, #ff1493 50%, #ff6b6b 100%)",
         "Tourist Trap": "linear-gradient(135deg, #006400 0%, #228b22 50%, #00ced1 100%)",
         "Upside Town": "linear-gradient(135deg, #4a0080 0%, #8000ff 50%, #00ffff 100%)",
