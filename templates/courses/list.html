@@ -43,16 +43,30 @@
                         <th style="width: 80px;"></th>
                         <th>Name</th>
                         <th>Par</th>
-                        <th>Best Score</th>
-                        <th>Worst Score</th>
-                        <th>Rating</th>
-                        <th>Trophy Owner</th>
+                        <th class="sortable" data-sort-key="best-score" data-sort-type="number" data-sort-default="asc">
+                            Best Score <i class="bi bi-arrow-down-up sort-icon"></i>
+                        </th>
+                        <th class="sortable" data-sort-key="worst-score" data-sort-type="number" data-sort-default="asc">
+                            Worst Score <i class="bi bi-arrow-down-up sort-icon"></i>
+                        </th>
+                        <th class="sortable" data-sort-key="rating" data-sort-type="number" data-sort-default="desc">
+                            Rating <i class="bi bi-arrow-down-up sort-icon"></i>
+                        </th>
+                        <th class="sortable" data-sort-key="trophy-owner" data-sort-type="string" data-sort-default="asc">
+                            Trophy Owner <i class="bi bi-arrow-down-up sort-icon"></i>
+                        </th>
                         <th></th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for course in courses %}
-                    <tr {% if not course.active %}class="table-secondary{% else %}class="{% endif %} clickable-row" data-href="{{ url_for('courses.course_detail', course_id=course.id) }}" style="cursor: pointer;">
+                    <tr {% if not course.active %}class="table-secondary{% else %}class="{% endif %} clickable-row"
+                        data-href="{{ url_for('courses.course_detail', course_id=course.id) }}"
+                        data-best-score="{{ course.best_score.score if course.best_score else '' }}"
+                        data-worst-score="{{ course.worst_score.score if course.worst_score else '' }}"
+                        data-rating="{{ course.avg_rating if course.avg_rating else '' }}"
+                        data-trophy-owner="{{ course.trophy_owner.player_name|lower if course.trophy_owner else '' }}"
+                        style="cursor: pointer;">
                         <td>
                             {% if course.image_url %}
                                 {% if course.image_url.startswith('http') %}
@@ -184,6 +198,87 @@ function clearSearch() {
     filterCourses();
 }
 
+// ===== Table Sorting Functionality =====
+let currentSortKey = null;
+let currentSortDirection = null;
+
+function toCamelCase(str) {
+    // Convert 'best-score' to 'bestScore' for dataset access
+    return str.replace(/-([a-z])/g, function(g) { return g[1].toUpperCase(); });
+}
+
+function sortTable(sortKey, sortType, defaultDirection) {
+    const table = document.getElementById('coursesTable');
+    const tbody = table.querySelector('tbody');
+    const rows = Array.from(tbody.querySelectorAll('tr'));
+
+    // Determine sort direction
+    if (currentSortKey === sortKey) {
+        // Toggle direction if clicking same column
+        currentSortDirection = currentSortDirection === 'asc' ? 'desc' : 'asc';
+    } else {
+        // Use default direction for new column
+        currentSortKey = sortKey;
+        currentSortDirection = defaultDirection || 'asc';
+    }
+
+    // Sort rows
+    rows.sort(function(a, b) {
+        const camelKey = toCamelCase(sortKey);
+        let aVal = a.dataset[camelKey];
+        let bVal = b.dataset[camelKey];
+
+        // Handle null/empty values - always sort last
+        const aEmpty = aVal === '' || aVal === undefined;
+        const bEmpty = bVal === '' || bVal === undefined;
+
+        if (aEmpty && bEmpty) return 0;
+        if (aEmpty) return 1;  // a goes last
+        if (bEmpty) return -1; // b goes last
+
+        // Compare based on type
+        let comparison;
+        if (sortType === 'number') {
+            comparison = parseFloat(aVal) - parseFloat(bVal);
+        } else {
+            // String comparison (case-insensitive)
+            comparison = aVal.localeCompare(bVal);
+        }
+
+        // Apply direction
+        return currentSortDirection === 'asc' ? comparison : -comparison;
+    });
+
+    // Re-append rows in sorted order
+    rows.forEach(function(row) { tbody.appendChild(row); });
+
+    // Update header indicators
+    updateSortIndicators(sortKey);
+}
+
+function updateSortIndicators(activeKey) {
+    const headers = document.querySelectorAll('.sortable');
+
+    headers.forEach(function(header) {
+        const key = header.dataset.sortKey;
+        const icon = header.querySelector('.sort-icon');
+
+        // Remove all sort classes
+        header.classList.remove('sort-active', 'sort-asc', 'sort-desc');
+
+        if (key === activeKey) {
+            header.classList.add('sort-active');
+            header.classList.add(currentSortDirection === 'asc' ? 'sort-asc' : 'sort-desc');
+            // Update icon
+            icon.className = 'bi sort-icon ' +
+                (currentSortDirection === 'asc' ? 'bi-arrow-up' : 'bi-arrow-down');
+        } else {
+            // Reset to neutral icon
+            icon.className = 'bi bi-arrow-down-up sort-icon';
+        }
+    });
+}
+
 // Set up event listeners on page load
 document.addEventListener('DOMContentLoaded', function() {
     const searchInput = document.getElementById('courseSearch');
@@ -209,6 +304,17 @@ document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll('.stop-propagation').forEach(function(el) {
         el.addEventListener('click', function(e) {
             e.stopPropagation();
+        });
+    });
+
+    // Sortable headers
+    document.querySelectorAll('.sortable').forEach(function(header) {
+        header.addEventListener('click', function(e) {
+            e.stopPropagation();
+            const sortKey = this.dataset.sortKey;
+            const sortType = this.dataset.sortType;
+            const defaultDirection = this.dataset.sortDefault || 'asc';
+            sortTable(sortKey, sortType, defaultDirection);
         });
     });
 });
