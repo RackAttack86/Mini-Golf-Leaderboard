@@ -267,3 +267,45 @@ function initCollapsibleSections(storageKey = 'collapsible') {
         });
     });
 }
+
+// ===== View Mode Toggle (Friends/Everyone) =====
+
+/**
+ * Toggle between friends-only and everyone view mode
+ * @param {string} mode - 'friends' or 'everyone'
+ */
+function toggleViewMode(mode) {
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+
+    fetch('/friends/toggle-view', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken || ''
+        },
+        body: JSON.stringify({ mode: mode })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Reload page to apply the new filter
+            window.location.reload();
+        }
+    })
+    .catch(error => {
+        console.error('Error toggling view mode:', error);
+    });
+}
+
+// Initialize view mode toggle buttons
+document.addEventListener('DOMContentLoaded', function() {
+    const viewModeToggle = document.getElementById('viewModeToggle');
+    if (viewModeToggle) {
+        viewModeToggle.querySelectorAll('button').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const mode = this.dataset.mode;
+                toggleViewMode(mode);
+            });
+        });
+    }
+});

@@ -19,7 +19,7 @@ from flask_talisman import Talisman
 # Local
 from config import Config
 from extensions import limiter, csrf, login_manager
-from routes import main_routes, player_routes, course_routes, round_routes, stats_routes, auth_routes
+from routes import main_routes, player_routes, course_routes, round_routes, stats_routes, auth_routes, friends_routes
 from services.auth_service import AuthService
 
 # Load environment variables from .env file
@@ -179,6 +179,7 @@ def create_app():
     app.register_blueprint(round_routes.bp, url_prefix='/rounds')
     app.register_blueprint(stats_routes.bp, url_prefix='/stats')
     app.register_blueprint(auth_routes.auth_bp)
+    app.register_blueprint(friends_routes.bp, url_prefix='/friends')
 
     # Custom Jinja2 filter to format course names with bold "(HARD)"
     @app.template_filter('format_course_name')
@@ -191,11 +192,22 @@ def create_app():
     # Context processor for global template variables
     @app.context_processor
     def inject_globals():
+        from flask import session
+        pending_friend_count = 0
+        view_mode = 'everyone'
+
+        if current_user.is_authenticated:
+            from models.friendship import Friendship
+            pending_friend_count = Friendship.get_pending_request_count(current_user.id)
+            view_mode = session.get('view_mode', 'everyone')
+
         return {
             'app_name': 'Mini Golf Leaderboard',
             'current_year': datetime.now().year,
             'is_admin': current_user.is_authenticated and current_user.is_admin,
-            'is_logged_in': current_user.is_authenticated
+            'is_logged_in': current_user.is_authenticated,
+            'pending_friend_count': pending_friend_count,
+            'view_mode': view_mode
         }
 
     # Provide mock csp_nonce for debug mode (Talisman provides it in production)

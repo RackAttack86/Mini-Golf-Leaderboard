@@ -93,6 +93,36 @@ class Database:
                 conn.commit()
                 print(f"Loaded course seed data from {course_seed_file}")
 
+        # Run additional migrations
+        self._run_migrations(conn)
+
+    def _run_migrations(self, conn: sqlite3.Connection):
+        """Run additional migration files that haven't been applied yet"""
+        migrations_dir = Path(__file__).parent.parent / 'migrations'
+
+        # Get current schema version
+        cursor = conn.execute("SELECT MAX(version) FROM schema_version")
+        row = cursor.fetchone()
+        current_version = row[0] if row and row[0] else 0
+
+        # Find and run migration files with version > current_version
+        migration_files = sorted(migrations_dir.glob('0*.sql'))
+
+        for migration_file in migration_files:
+            # Extract version number from filename (e.g., 003_add_friendships.sql -> 3)
+            try:
+                version = int(migration_file.stem.split('_')[0])
+            except (ValueError, IndexError):
+                continue
+
+            if version > current_version:
+                print(f"Running migration: {migration_file.name}")
+                with open(migration_file, 'r', encoding='utf-8') as f:
+                    migration_sql = f.read()
+                conn.executescript(migration_sql)
+                conn.commit()
+                print(f"Migration {migration_file.name} applied successfully")
+
     def get_connection(self) -> sqlite3.Connection:
         """
         Get thread-local database connection

@@ -139,11 +139,28 @@ CREATE TABLE IF NOT EXISTS tournament_rounds (
 CREATE INDEX IF NOT EXISTS idx_tournament_rounds_tournament ON tournament_rounds(tournament_id);
 CREATE INDEX IF NOT EXISTS idx_tournament_rounds_round ON tournament_rounds(round_id);
 
+-- Friendships table for mutual friend relationships
+CREATE TABLE IF NOT EXISTS friendships (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    requester_id TEXT NOT NULL,
+    addressee_id TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending', 'accepted', 'rejected')),
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    FOREIGN KEY (requester_id) REFERENCES players(id) ON DELETE CASCADE,
+    FOREIGN KEY (addressee_id) REFERENCES players(id) ON DELETE CASCADE,
+    UNIQUE(requester_id, addressee_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_friendships_requester ON friendships(requester_id);
+CREATE INDEX IF NOT EXISTS idx_friendships_addressee ON friendships(addressee_id);
+CREATE INDEX IF NOT EXISTS idx_friendships_status ON friendships(status);
+
 -- Schema version tracking
 CREATE TABLE IF NOT EXISTS schema_version (
     version INTEGER PRIMARY KEY,
     applied_at TEXT NOT NULL
 );
 
--- Version 2: Added course_trophies, course_notes tables and trophy_up_for_grabs column
-INSERT OR IGNORE INTO schema_version (version, applied_at) VALUES (2, datetime('now'));
+-- Version 3: Added friendships table
+INSERT OR IGNORE INTO schema_version (version, applied_at) VALUES (3, datetime('now'));

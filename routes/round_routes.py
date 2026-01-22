@@ -1,9 +1,10 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash
+from flask import Blueprint, render_template, request, redirect, url_for, flash, session
 from flask_login import current_user
 from models.round import Round
 from models.player import Player
 from models.course import Course
 from models.course_trophy import CourseTrophy
+from models.friendship import Friendship
 from models.database import get_db
 from utils.auth_decorators import login_required, admin_required
 from config import Config
@@ -59,6 +60,17 @@ def list_rounds():
         filters['end_date'] = end_date
 
     rounds = Round.get_all(filters if filters else None)
+
+    # Apply friends filter if logged in and view mode is 'friends'
+    view_mode = 'everyone'
+    if current_user.is_authenticated:
+        view_mode = session.get('view_mode', 'everyone')
+        if view_mode == 'friends':
+            friend_ids = Friendship.get_friends_and_self(current_user.id)
+            # Filter rounds to only those involving friends
+            rounds = [r for r in rounds if any(
+                score['player_id'] in friend_ids for score in r.get('scores', [])
+            )]
 
     # Add winner player data and course image to each round
     for round_data in rounds:

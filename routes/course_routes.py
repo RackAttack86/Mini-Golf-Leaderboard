@@ -5,6 +5,7 @@ from models.round import Round
 from models.course_rating import CourseRating
 from models.course_notes import CourseNotes
 from models.course_trophy import CourseTrophy
+from models.friendship import Friendship
 from utils.auth_decorators import admin_required
 from utils.file_validators import validate_image_file, sanitize_filename
 import os
@@ -193,6 +194,17 @@ def course_detail(course_id):
 
     # Get course rounds
     rounds = Round.get_by_course(course_id)
+
+    # Apply friends filter if logged in and view mode is 'friends'
+    view_mode = 'everyone'
+    if current_user.is_authenticated:
+        view_mode = session.get('view_mode', 'everyone')
+        if view_mode == 'friends':
+            friend_ids = Friendship.get_friends_and_self(current_user.id)
+            # Filter rounds to only those involving friends
+            rounds = [r for r in rounds if any(
+                score['player_id'] in friend_ids for score in r.get('scores', [])
+            )]
 
     # Calculate statistics
     stats = {

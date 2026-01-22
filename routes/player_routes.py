@@ -1,10 +1,11 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app
+from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app, session
 from flask_login import current_user
 import os
 import uuid
 from models.player import Player
 from models.round import Round
 from models.course_trophy import CourseTrophy
+from models.friendship import Friendship
 from services.achievement_service import AchievementService
 from utils.auth_decorators import admin_required, player_or_admin_required
 from utils.file_validators import validate_image_file, sanitize_filename
@@ -62,6 +63,14 @@ def save_profile_picture(file, upload_folder):
 def list_players():
     """List all players"""
     players = Player.get_all(active_only=False)
+
+    # Apply friends filter if logged in and view mode is 'friends'
+    view_mode = 'everyone'
+    if current_user.is_authenticated:
+        view_mode = session.get('view_mode', 'everyone')
+        if view_mode == 'friends':
+            friend_ids = Friendship.get_friends_and_self(current_user.id)
+            players = [p for p in players if p['id'] in friend_ids]
 
     # Add achievement scores to each player
     for player in players:
@@ -272,9 +281,25 @@ def player_detail(player_id):
     # Get owned course trophies
     owned_course_trophies = CourseTrophy.get_trophies_owned_by_player(player_id)
 
+    # Get friendship status if logged in and viewing another player
+    friendship_status = None
+    pending_request_id = None
+    if current_user.is_authenticated and current_user.id != player_id:
+        status_info = Friendship.get_friendship_status(current_user.id, player_id)
+        if status_info:
+            if status_info['status'] == Friendship.STATUS_ACCEPTED:
+                friendship_status = 'accepted'
+            elif status_info['status'] == Friendship.STATUS_PENDING:
+                if status_info['is_requester']:
+                    friendship_status = 'pending_sent'
+                else:
+                    friendship_status = 'pending_received'
+                    pending_request_id = status_info['id']
+
     return render_template('players/detail.html', player=player, rounds=rounds, stats=stats,
                          achievements=achievements, personal_bests=personal_bests_list, trophies=trophies,
-                         owned_course_trophies=owned_course_trophies, course_performance=course_performance)
+                         owned_course_trophies=owned_course_trophies, course_performance=course_performance,
+                         friendship_status=friendship_status, pending_request_id=pending_request_id)
 
 
 @bp.route('/<player_id>/edit', methods=['POST'])

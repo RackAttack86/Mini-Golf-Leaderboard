@@ -1,0 +1,160 @@
+{% extends "base.html" %}
+
+{% block title %}Friends - {{ app_name }}{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-8">
+        <h1><i class="bi bi-people"></i> Friends</h1>
+    </div>
+</div>
+
+<!-- Pending Requests Section -->
+{% if pending_requests %}
+<div class="card mb-4">
+    <div class="card-header bg-warning text-dark">
+        <h5 class="mb-0"><i class="bi bi-bell"></i> Pending Friend Requests ({{ pending_requests|length }})</h5>
+    </div>
+    <div class="card-body">
+        {% for req in pending_requests %}
+        <div class="d-flex justify-content-between align-items-center {% if not loop.last %}mb-3 pb-3 border-bottom{% endif %}">
+            <div class="d-flex align-items-center">
+                {% if req.requester_profile_picture %}
+                <img src="{{ url_for('main.serve_profile_picture', filename=req.requester_profile_picture) }}"
+                     alt="{{ req.requester_name }}"
+                     class="profile-picture-sm me-3"
+                     style="border-color: {{ req.requester_favorite_color or '#2e7d32' }};">
+                {% else %}
+                <div class="profile-picture-placeholder me-3"
+                     style="border-color: {{ req.requester_favorite_color or '#2e7d32' }};">
+                    <i class="bi bi-person-fill"></i>
+                </div>
+                {% endif %}
+                <div>
+                    <a href="{{ url_for('players.player_detail', player_id=req.requester_id) }}" class="fw-bold">
+                        {{ req.requester_name }}
+                    </a>
+                    <span class="text-muted"> wants to be your friend</span>
+                    <br>
+                    <small class="text-muted">{{ req.created_at[:10] }}</small>
+                </div>
+            </div>
+            <div>
+                <form action="{{ url_for('friends.accept_request', friendship_id=req.id) }}" method="POST" class="d-inline">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-sm btn-success">
+                        <i class="bi bi-check-lg"></i> Accept
+                    </button>
+                </form>
+                <form action="{{ url_for('friends.reject_request', friendship_id=req.id) }}" method="POST" class="d-inline">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-sm btn-outline-danger">
+                        <i class="bi bi-x-lg"></i> Reject
+                    </button>
+                </form>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+<!-- Friends List -->
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0"><i class="bi bi-people-fill"></i> My Friends ({{ friends|length }})</h5>
+    </div>
+    <div class="card-body">
+        {% if friends %}
+        <div class="row">
+            {% for friend in friends %}
+            <div class="col-md-4 col-lg-3 mb-3">
+                <div class="card h-100">
+                    <div class="card-body d-flex flex-column">
+                        <div class="d-flex align-items-center mb-2">
+                            {% if friend.profile_picture %}
+                            <img src="{{ url_for('main.serve_profile_picture', filename=friend.profile_picture) }}"
+                                 alt="{{ friend.name }}"
+                                 class="profile-picture-sm me-2"
+                                 style="border-color: {{ friend.favorite_color or '#2e7d32' }};">
+                            {% else %}
+                            <div class="profile-picture-placeholder me-2"
+                                 style="border-color: {{ friend.favorite_color or '#2e7d32' }};">
+                                <i class="bi bi-person-fill"></i>
+                            </div>
+                            {% endif %}
+                            <a href="{{ url_for('players.player_detail', player_id=friend.id) }}" class="fw-bold text-truncate">
+                                {{ friend.name }}
+                            </a>
+                        </div>
+                        <div class="mt-auto">
+                            <form action="{{ url_for('friends.remove_friend', player_id=friend.id) }}" method="POST" class="remove-friend-form" data-name="{{ friend.name }}">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="btn btn-sm btn-outline-danger w-100">
+                                    <i class="bi bi-person-x"></i> Remove
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="text-center text-muted py-4">
+            <i class="bi bi-people" style="font-size: 3rem;"></i>
+            <p class="mt-3">You haven't added any friends yet.</p>
+            <p>Visit a <a href="{{ url_for('players.list_players') }}">player's profile</a> to send a friend request!</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Sent Requests (pending) -->
+{% if sent_requests %}
+<div class="card mt-4">
+    <div class="card-header">
+        <h5 class="mb-0"><i class="bi bi-send"></i> Sent Requests (Pending)</h5>
+    </div>
+    <div class="card-body">
+        <div class="d-flex flex-wrap gap-2">
+            {% for req in sent_requests %}
+            <div class="d-flex align-items-center border rounded px-3 py-2">
+                {% if req.addressee_profile_picture %}
+                <img src="{{ url_for('main.serve_profile_picture', filename=req.addressee_profile_picture) }}"
+                     alt="{{ req.addressee_name }}"
+                     class="profile-picture-xs me-2"
+                     style="border-color: {{ req.addressee_favorite_color or '#2e7d32' }};">
+                {% else %}
+                <div class="profile-picture-placeholder-xs me-2"
+                     style="border-color: {{ req.addressee_favorite_color or '#2e7d32' }};">
+                    <i class="bi bi-person-fill"></i>
+                </div>
+                {% endif %}
+                <a href="{{ url_for('players.player_detail', player_id=req.addressee_id) }}">
+                    {{ req.addressee_name }}
+                </a>
+                <span class="badge bg-secondary ms-2">Pending</span>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_scripts %}
+<script nonce="{{ csp_nonce() }}">
+document.addEventListener('DOMContentLoaded', function() {
+    // Confirm remove friend forms
+    document.querySelectorAll('.remove-friend-form').forEach(function(form) {
+        form.addEventListener('submit', function(e) {
+            var friendName = this.dataset.name;
+            if (!confirm('Remove ' + friendName + ' from friends?')) {
+                e.preventDefault();
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

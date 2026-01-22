@@ -3,7 +3,7 @@ import os
 from datetime import datetime, timedelta
 
 # Third-party
-from flask import Blueprint, render_template, send_from_directory
+from flask import Blueprint, render_template, send_from_directory, session
 from flask_login import current_user
 
 # Local
@@ -11,6 +11,7 @@ from models.player import Player
 from models.course import Course
 from models.round import Round
 from models.course_trophy import CourseTrophy
+from models.friendship import Friendship
 from services.achievement_service import AchievementService
 from extensions import limiter, csrf
 from config import Config
@@ -293,8 +294,21 @@ def trophy_leaderboard():
     """)
 
     leaderboard = []
+
+    # Get friend IDs for filtering if needed
+    view_mode = 'everyone'
+    friend_ids = None
+    if current_user.is_authenticated:
+        view_mode = session.get('view_mode', 'everyone')
+        if view_mode == 'friends':
+            friend_ids = Friendship.get_friends_and_self(current_user.id)
+
     for row in cursor.fetchall():
         player_id = row['player_id']
+
+        # Filter by friends if view mode is 'friends'
+        if friend_ids and player_id not in friend_ids:
+            continue
 
         # Get the specific trophies this player owns
         trophies = CourseTrophy.get_trophies_owned_by_player(player_id)
