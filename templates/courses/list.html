@@ -108,21 +108,34 @@
                                 <span class="text-muted">-</span>
                             {% endif %}
                         </td>
-                        <td>
-                            {% if course.avg_rating %}
-                                <span class="text-warning">
-                                    {% for i in range(1, 6) %}
-                                        {% if i <= course.avg_rating|round %}
-                                            <i class="bi bi-star-fill"></i>
-                                        {% else %}
-                                            <i class="bi bi-star"></i>
-                                        {% endif %}
-                                    {% endfor %}
-                                </span>
-                                <small class="text-muted">({{ course.avg_rating }}) {{ course.rating_count }}</small>
+                        <td class="rating-cell stop-propagation" data-course-id="{{ course.id }}">
+                            {% if current_user.is_authenticated %}
+                            <span class="star-rating-interactive" data-course-id="{{ course.id }}" data-user-rating="{{ course.user_rating or 0 }}">
+                                {% for i in range(1, 6) %}
+                                    <i class="bi bi-star{{ '-fill' if course.user_rating and i <= course.user_rating else '' }} star-btn"
+                                       data-rating="{{ i }}"
+                                       data-course-id="{{ course.id }}"
+                                       style="cursor: pointer; color: #ffc107;"></i>
+                                {% endfor %}
+                            </span>
                             {% else %}
-                                <span class="text-muted">Not rated</span>
+                            <span class="text-warning">
+                                {% for i in range(1, 6) %}
+                                    {% if course.avg_rating and i <= course.avg_rating|round %}
+                                        <i class="bi bi-star-fill"></i>
+                                    {% else %}
+                                        <i class="bi bi-star"></i>
+                                    {% endif %}
+                                {% endfor %}
+                            </span>
                             {% endif %}
+                            <small class="text-muted rating-info" data-course-id="{{ course.id }}">
+                                {% if course.avg_rating %}
+                                (<span class="avg-rating">{{ course.avg_rating }}</span>) <span class="rating-count">{{ course.rating_count }}</span>
+                                {% else %}
+                                <span class="no-rating">Not rated</span>
+                                {% endif %}
+                            </small>
                         </td>
                         <td>
                             {% if course.trophy_owner %}
@@ -324,6 +337,109 @@ document.addEventListener('DOMContentLoaded', function() {
             sortTable(sortKey, sortType, defaultDirection);
         });
     });
+
+    // ===== Interactive Star Rating Functionality =====
+    {% if current_user.is_authenticated %}
+    // Store current ratings per course
+    const courseRatings = {};
+    document.querySelectorAll('.star-rating-interactive').forEach(function(container) {
+        const courseId = container.dataset.courseId;
+        courseRatings[courseId] = parseInt(container.dataset.userRating) || 0;
+    });
+
+    function highlightStarsForCourse(courseId, rating) {
+        const container = document.querySelector('.star-rating-interactive[data-course-id="' + courseId + '"]');
+        if (!container) return;
+
+        const stars = container.querySelectorAll('.star-btn');
+        stars.forEach(function(star, index) {
+            if (index < rating) {
+                star.classList.remove('bi-star');
+                star.classList.add('bi-star-fill');
+            } else {
+                star.classList.remove('bi-star-fill');
+                star.classList.add('bi-star');
+            }
+        });
+    }
+
+    function resetStarsForCourse(courseId) {
+        highlightStarsForCourse(courseId, courseRatings[courseId] || 0);
+    }
+
+    function rateCourse(courseId, rating) {
+        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+        const formData = new FormData();
+        formData.append('rating', rating);
+
+        fetch('/courses/' + courseId + '/rate', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': csrfToken
+            },
+            body: formData
+        })
+        .then(function(response) { return response.json(); })
+        .then(function(data) {
+            if (data.success) {
+                // Update stored rating
+                courseRatings[courseId] = rating;
+                highlightStarsForCourse(courseId, rating);
+
+                // Update the displayed average and count
+                const infoEl = document.querySelector('.rating-info[data-course-id="' + courseId + '"]');
+                if (infoEl) {
+                    const avgEl = infoEl.querySelector('.avg-rating');
+                    const countEl = infoEl.querySelector('.rating-count');
+                    const noRatingEl = infoEl.querySelector('.no-rating');
+
+                    if (avgEl && countEl) {
+                        avgEl.textContent = data.avg_rating;
+                        countEl.textContent = data.rating_count;
+                    } else if (noRatingEl) {
+                        // Replace "Not rated" with actual values
+                        infoEl.innerHTML = '(<span class="avg-rating">' + data.avg_rating + '</span>) <span class="rating-count">' + data.rating_count + '</span>';
+                    }
+                }
+
+                // Update the data-rating attribute on the row for sorting
+                const row = infoEl.closest('tr');
+                if (row) {
+                    row.dataset.rating = data.avg_rating;
+                }
+            } else {
+                alert(data.message || 'Error rating course');
+                resetStarsForCourse(courseId);
+            }
+        })
+        .catch(function(error) {
+            console.error('Error:', error);
+            alert('Error rating course');
+            resetStarsForCourse(courseId);
+        });
+    }
+
+    // Attach event listeners to all star buttons
+    document.querySelectorAll('.star-rating-interactive .star-btn').forEach(function(star) {
+        const courseId = star.dataset.courseId;
+        const rating = parseInt(star.dataset.rating);
+
+        star.addEventListener('mouseover', function(e) {
+            e.stopPropagation();
+            highlightStarsForCourse(courseId, rating);
+        });
+
+        star.addEventListener('mouseout', function(e) {
+            e.stopPropagation();
+            resetStarsForCourse(courseId);
+        });
+
+        star.addEventListener('click', function(e) {
+            e.stopPropagation();
+            rateCourse(courseId, rating);
+        });
+    });
+    {% endif %}
 });
 </script>
 {% endblock %}

@@ -67,6 +67,11 @@ def list_courses():
     # Get all course ratings
     all_ratings = CourseRating.get_all()
 
+    # Get current user's ratings for all courses (for interactive rating)
+    user_ratings = {}
+    if current_user.is_authenticated:
+        user_ratings = CourseRating.get_all_player_ratings(current_user.id)
+
     # Get all trophy owners
     all_trophy_owners = {}
     from models.database import get_db
@@ -125,6 +130,9 @@ def list_courses():
         # Add best/worst scores
         course['best_score'] = best_scores.get(course_id)
         course['worst_score'] = worst_scores.get(course_id)
+
+        # Add user's rating for this course (for interactive rating)
+        course['user_rating'] = user_ratings.get(course_id)
 
     return render_template('courses/list.html', courses=courses)
 

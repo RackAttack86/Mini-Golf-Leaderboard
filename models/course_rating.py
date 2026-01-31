@@ -123,6 +123,27 @@ class CourseRating:
         return result
 
     @staticmethod
+    def get_all_player_ratings(player_id: str) -> Dict[str, int]:
+        """
+        Get all ratings by a specific player
+
+        Args:
+            player_id: Player ID
+
+        Returns:
+            Dictionary of {course_id: rating}
+        """
+        db = get_db()
+        conn = db.get_connection()
+
+        cursor = conn.execute(
+            "SELECT course_id, rating FROM course_ratings WHERE player_id = ?",
+            (player_id,)
+        )
+
+        return {row['course_id']: row['rating'] for row in cursor.fetchall()}
+
+    @staticmethod
     def delete_rating(player_id: str, course_id: str) -> Tuple[bool, str]:
         """
         Delete a player's rating for a course
