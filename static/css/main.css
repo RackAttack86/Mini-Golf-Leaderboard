@@ -633,3 +633,21 @@ a:hover {
     opacity: 1;
     color: var(--golf-green);
 }
+
+/* Interactive Star Rating */
+.star-rating-interactive {
+    display: inline-block;
+}
+
+.star-rating-interactive .star-btn {
+    transition: transform 0.1s ease;
+    font-size: 1rem;
+}
+
+.star-rating-interactive .star-btn:hover {
+    transform: scale(1.2);
+}
+
+.rating-cell {
+    position: relative;
+}
