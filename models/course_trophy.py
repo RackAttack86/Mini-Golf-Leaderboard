@@ -8,8 +8,74 @@ Trophy transfers occur when:
    automatically up for grabs and the round winner claims it
 """
 
+import os
+import re
+from glob import glob
 from typing import List, Optional, Dict, Any, Tuple
 from models.database import get_db
+
+# Cache for trophy filename lookups (cleared on app restart)
+_trophy_filename_cache: Dict[str, str] = {}
+
+# Base path for trophy images (relative to static folder)
+TROPHY_BASE_PATH = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+    'static', 'uploads', 'trophies'
+)
+
+
+def _find_latest_trophy_version(difficulty: str, base_name: str) -> str:
+    """
+    Find the latest version of a trophy image file.
+
+    Looks for files matching the pattern:
+    - {base_name}.png (treated as v1)
+    - {base_name}_v2.png, {base_name}_v3.png, etc.
+
+    Args:
+        difficulty: 'hard' or 'normal'
+        base_name: Base filename without extension (e.g., 'Alfheim')
+
+    Returns:
+        The filename of the latest version (e.g., 'Alfheim_v3.png')
+    """
+    cache_key = f"{difficulty}/{base_name}"
+    if cache_key in _trophy_filename_cache:
+        return _trophy_filename_cache[cache_key]
+
+    trophy_dir = os.path.join(TROPHY_BASE_PATH, difficulty)
+    base_file = f"{base_name}.png"
+
+    # Look for versioned files: {base_name}_v{N}.png
+    pattern = os.path.join(trophy_dir, f"{base_name}_v*.png")
+    versioned_files = glob(pattern)
+
+    if not versioned_files:
+        # No versioned files, use base file
+        _trophy_filename_cache[cache_key] = base_file
+        return base_file
+
+    # Extract version numbers and find the highest
+    version_pattern = re.compile(rf"{re.escape(base_name)}_v(\d+)\.png$")
+    max_version = 0
+    latest_file = base_file
+
+    for filepath in versioned_files:
+        filename = os.path.basename(filepath)
+        match = version_pattern.match(filename)
+        if match:
+            version = int(match.group(1))
+            if version > max_version:
+                max_version = version
+                latest_file = filename
+
+    _trophy_filename_cache[cache_key] = latest_file
+    return latest_file
+
+
+def clear_trophy_cache():
+    """Clear the trophy filename cache. Call this after adding new trophy images."""
+    _trophy_filename_cache.clear()
 
 
 class CourseTrophy:
@@ -27,6 +93,9 @@ class CourseTrophy:
         - Remove apostrophes and commas
         - Replace spaces with underscores
         - Add .png extension
+
+        Supports versioning: if Alfheim_v2.png exists, it will be used
+        instead of Alfheim.png. The highest version number wins.
 
         Args:
             course_name: Full course name (e.g., "Alice's Adventures in Wonderland (HARD)")
@@ -46,7 +115,10 @@ class CourseTrophy:
         clean_name = clean_name.replace(",", "")  # Remove commas
 
         # Replace spaces with underscores
-        filename = clean_name.replace(' ', '_') + '.png'
+        base_name = clean_name.replace(' ', '_')
+
+        # Find the latest version of this trophy
+        filename = _find_latest_trophy_version(difficulty, base_name)
 
         return difficulty, filename
 

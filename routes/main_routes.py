@@ -10,7 +10,7 @@ from flask_login import current_user
 from models.player import Player
 from models.course import Course
 from models.round import Round
-from models.course_trophy import CourseTrophy
+from models.course_trophy import CourseTrophy, _find_latest_trophy_version
 from models.friendship import Friendship
 from services.achievement_service import AchievementService
 from extensions import limiter, csrf
@@ -234,8 +234,6 @@ def trophies():
     for course in courses:
         is_hard = '(HARD)' in course['name']
         base_name = course['name'].replace(' (HARD)', '')
-        trophy_filename = course_to_trophy_name(base_name) + '.png'
-
         # Initialize group if not exists
         if base_name not in trophy_groups:
             trophy_groups[base_name] = {
@@ -245,19 +243,20 @@ def trophies():
                 'hard': None
             }
 
-        # Check if trophy exists and add to appropriate slot
+        # Check if trophy exists and add to appropriate slot (with version support)
+        trophy_base_name = course_to_trophy_name(base_name)
         if is_hard:
-            has_trophy = trophy_filename in hard_trophy_files
-            if has_trophy:
+            versioned_filename = _find_latest_trophy_version('hard', trophy_base_name)
+            if versioned_filename in hard_trophy_files:
                 trophy_groups[base_name]['hard'] = {
-                    'filename': trophy_filename,
+                    'filename': versioned_filename,
                     'subdir': 'hard'
                 }
         else:
-            has_trophy = trophy_filename in normal_trophy_files
-            if has_trophy:
+            versioned_filename = _find_latest_trophy_version('normal', trophy_base_name)
+            if versioned_filename in normal_trophy_files:
                 trophy_groups[base_name]['normal'] = {
-                    'filename': trophy_filename,
+                    'filename': versioned_filename,
                     'subdir': 'normal'
                 }
 
