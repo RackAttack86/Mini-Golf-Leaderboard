@@ -72,16 +72,32 @@ def index():
     non_solo_rounds = [r for r in rounds if len(r['scores']) > 1]
     last_10_rounds = non_solo_rounds[:10] if len(non_solo_rounds) > 10 else non_solo_rounds
 
-    # Add winner player data and course image to rounds (for both lists)
-    for round_data in recent_rounds + last_10_rounds:
+    # Batch load players and courses to avoid N+1 queries
+    all_display_rounds = recent_rounds + last_10_rounds
+    winner_player_ids = set()
+    course_ids = set()
+
+    for round_data in all_display_rounds:
         if round_data['scores']:
             winner_score = min(round_data['scores'], key=lambda x: x['score'])
-            winner_player = Player.get_by_id(winner_score['player_id'])
-            winner_player = filter_email_from_players(winner_player)
+            winner_player_ids.add(winner_score['player_id'])
+        course_ids.add(round_data['course_id'])
+
+    # Fetch all needed players and courses in 2 queries instead of N*2
+    players_map = Player.get_by_ids(list(winner_player_ids))
+    courses_map = Course.get_by_ids(list(course_ids))
+
+    # Add winner player data and course image to rounds (for both lists)
+    for round_data in all_display_rounds:
+        if round_data['scores']:
+            winner_score = min(round_data['scores'], key=lambda x: x['score'])
+            winner_player = players_map.get(winner_score['player_id'])
+            if winner_player:
+                winner_player = filter_email_from_players(winner_player.copy())
             round_data['winner_player'] = winner_player
 
         # Add course image data
-        course = Course.get_by_id(round_data['course_id'])
+        course = courses_map.get(round_data['course_id'])
         round_data['course_image_url'] = course.get('image_url', '') if course else ''
 
     # Calculate top 3 players (by average finishing position)

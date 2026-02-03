@@ -9,6 +9,7 @@ from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from flask_wtf.csrf import CSRFProtect
 from flask_login import LoginManager
+from flask_caching import Cache
 
 # Initialize rate limiter
 limiter = Limiter(
@@ -23,3 +24,9 @@ csrf = CSRFProtect()
 
 # Initialize login manager
 login_manager = LoginManager()
+
+# Initialize cache
+cache = Cache(config={
+    'CACHE_TYPE': 'SimpleCache',  # In-memory cache (good for single server)
+    'CACHE_DEFAULT_TIMEOUT': 300  # 5 minutes default
+})

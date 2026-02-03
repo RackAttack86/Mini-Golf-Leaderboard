@@ -6,6 +6,7 @@ from typing import List, Optional, Dict, Any, Tuple
 # Local
 from models.database import get_db
 from utils.validators import validate_player_name, validate_email, sanitize_html
+from extensions import cache
 
 
 class Player:
@@ -84,6 +85,9 @@ class Player:
                 None  # meta_quest_username
             ))
 
+            # Invalidate cache after successful creation
+            Player.invalidate_cache()
+
             # Return the created player
             player = Player.get_by_id(player_id)
             return True, "Player created successfully", player
@@ -94,7 +98,7 @@ class Player:
     @staticmethod
     def get_all(active_only: bool = True) -> List[Dict[str, Any]]:
         """
-        Get all players
+        Get all players (cached for 10 minutes)
 
         Args:
             active_only: If True, return only active players
@@ -102,6 +106,12 @@ class Player:
         Returns:
             List of player dictionaries
         """
+        cache_key = f"players_all_{active_only}"
+        result = cache.get(cache_key)
+
+        if result is not None:
+            return result
+
         db = get_db()
         conn = db.get_connection()
 
@@ -112,7 +122,15 @@ class Player:
         else:
             cursor = conn.execute("SELECT * FROM players ORDER BY name")
 
-        return [Player._row_to_dict(row) for row in cursor.fetchall()]
+        result = [Player._row_to_dict(row) for row in cursor.fetchall()]
+        cache.set(cache_key, result, timeout=600)  # 10 minutes
+        return result
+
+    @staticmethod
+    def invalidate_cache():
+        """Invalidate all player list caches"""
+        cache.delete("players_all_True")
+        cache.delete("players_all_False")
 
     @staticmethod
     def get_by_id(player_id: str) -> Optional[Dict[str, Any]]:
@@ -132,6 +150,34 @@ class Player:
         row = cursor.fetchone()
 
         return Player._row_to_dict(row) if row else None
+
+    @staticmethod
+    def get_by_ids(player_ids: List[str]) -> Dict[str, Dict[str, Any]]:
+        """
+        Get multiple players by IDs in a single query (batch loading)
+
+        Args:
+            player_ids: List of player IDs
+
+        Returns:
+            Dictionary mapping player_id to player dictionary
+        """
+        if not player_ids:
+            return {}
+
+        db = get_db()
+        conn = db.get_connection()
+
+        # Remove duplicates while preserving order
+        unique_ids = list(dict.fromkeys(player_ids))
+        placeholders = ','.join(['?'] * len(unique_ids))
+
+        cursor = conn.execute(
+            f"SELECT * FROM players WHERE id IN ({placeholders})",
+            unique_ids
+        )
+
+        return {row['id']: Player._row_to_dict(row) for row in cursor.fetchall()}
 
     @staticmethod
     def update(player_id: str, name: Optional[str] = None, email: Optional[str] = None,
@@ -194,6 +240,9 @@ class Player:
         if role is not None and role in ['admin', 'player']:
             conn.execute("UPDATE players SET role = ? WHERE id = ?", (role, player_id))
 
+        # Invalidate cache after successful update
+        Player.invalidate_cache()
+
         return True, "Player updated successfully"
 
     @staticmethod
@@ -222,6 +271,8 @@ class Player:
         if has_rounds and not force:
             # Soft delete
             conn.execute("UPDATE players SET active = 0 WHERE id = ?", (player_id,))
+            # Invalidate cache after successful update
+            Player.invalidate_cache()
             return True, "Player deactivated (has existing rounds)"
         else:
             # Hard delete
@@ -230,6 +281,8 @@ class Player:
                 conn.execute("DELETE FROM round_scores WHERE player_id = ?", (player_id,))
 
             conn.execute("DELETE FROM players WHERE id = ?", (player_id,))
+            # Invalidate cache after successful deletion
+            Player.invalidate_cache()
             return True, "Player deleted successfully"
 
     @staticmethod

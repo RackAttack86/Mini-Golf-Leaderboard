@@ -177,6 +177,8 @@ def add_course():
         )
 
         if success:
+            # Invalidate course cache
+            Course.invalidate_cache()
             flash(message, 'success')
             return redirect(url_for('courses.list_courses'))
         else:
@@ -345,6 +347,8 @@ def edit_course(course_id):
     )
 
     if success:
+        # Invalidate course cache
+        Course.invalidate_cache()
         flash(message, 'success')
     else:
         flash(message, 'error')
@@ -359,6 +363,8 @@ def delete_course(course_id):
     success, message = Course.delete(course_id)
 
     if success:
+        # Invalidate course cache
+        Course.invalidate_cache()
         flash(message, 'success')
         return redirect(url_for('courses.list_courses'))
     else:

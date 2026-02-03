@@ -17,6 +17,7 @@ from models.database import Database, init_database
 from models.player import Player
 from models.course import Course
 from models.round import Round
+from extensions import cache
 
 
 @pytest.fixture(scope='session')
@@ -53,12 +54,16 @@ def database(test_data_dir):
     # Reset any existing database singleton
     Database.reset()
 
+    # Clear the cache to ensure test isolation
+    cache.clear()
+
     # Initialize new database with schema (skip seed data for clean tests)
     db = init_database(db_file, skip_seed_data=True)
 
     yield db
 
     # Cleanup
+    cache.clear()  # Clear cache again after test
     db.close()
     Database.reset()
     if db_file.exists():

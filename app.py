@@ -18,7 +18,7 @@ from flask_talisman import Talisman
 
 # Local
 from config import Config
-from extensions import limiter, csrf, login_manager
+from extensions import limiter, csrf, login_manager, cache
 from routes import main_routes, player_routes, course_routes, round_routes, stats_routes, auth_routes, friends_routes
 from services.auth_service import AuthService
 
@@ -60,6 +60,9 @@ def create_app():
 
     # Initialize CSRF protection
     csrf.init_app(app)
+
+    # Initialize cache
+    cache.init_app(app)
 
     # Initialize Talisman for security headers (CSP, HSTS, etc.)
     # Note: Fly.io handles HTTPS termination, so we disable force_https and HSTS
@@ -198,7 +201,12 @@ def create_app():
 
         if current_user.is_authenticated:
             from models.friendship import Friendship
-            pending_friend_count = Friendship.get_pending_request_count(current_user.id)
+            # Cache pending friend count per user (2 minute TTL)
+            cache_key = f"pending_friends_{current_user.id}"
+            pending_friend_count = cache.get(cache_key)
+            if pending_friend_count is None:
+                pending_friend_count = Friendship.get_pending_request_count(current_user.id)
+                cache.set(cache_key, pending_friend_count, timeout=120)
             view_mode = session.get('view_mode', 'everyone')
 
         return {
