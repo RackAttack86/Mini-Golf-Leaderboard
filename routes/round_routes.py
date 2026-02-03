@@ -72,16 +72,31 @@ def list_rounds():
                 score['player_id'] in friend_ids for score in r.get('scores', [])
             )]
 
+    # Batch load players and courses to avoid N+1 queries
+    winner_player_ids = set()
+    course_ids = set()
+
+    for round_data in rounds:
+        if round_data['scores']:
+            winner_score = min(round_data['scores'], key=lambda x: x['score'])
+            winner_player_ids.add(winner_score['player_id'])
+        course_ids.add(round_data['course_id'])
+
+    # Fetch all needed players and courses in 2 queries instead of N*2
+    players_map = Player.get_by_ids(list(winner_player_ids))
+    courses_map = Course.get_by_ids(list(course_ids))
+
     # Add winner player data and course image to each round
     for round_data in rounds:
         if round_data['scores']:
             winner_score = min(round_data['scores'], key=lambda x: x['score'])
-            winner_player = Player.get_by_id(winner_score['player_id'])
-            winner_player = filter_email_from_players(winner_player)
+            winner_player = players_map.get(winner_score['player_id'])
+            if winner_player:
+                winner_player = filter_email_from_players(winner_player.copy())
             round_data['winner_player'] = winner_player
 
         # Add course image data
-        course = Course.get_by_id(round_data['course_id'])
+        course = courses_map.get(round_data['course_id'])
         round_data['course_image_url'] = course.get('image_url', '') if course else ''
 
     # Get all players and courses for filter dropdowns

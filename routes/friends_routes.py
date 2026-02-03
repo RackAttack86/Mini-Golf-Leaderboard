@@ -2,7 +2,7 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash,
 from flask_login import login_required, current_user
 from models.friendship import Friendship
 from models.player import Player
-from extensions import limiter
+from extensions import limiter, cache
 
 bp = Blueprint('friends', __name__)
 
@@ -34,6 +34,8 @@ def send_request(player_id):
     success, message = Friendship.send_request(current_user.id, player_id)
 
     if success:
+        # Invalidate pending friend count cache for the receiver
+        cache.delete(f"pending_friends_{player_id}")
         flash(message, 'success')
     else:
         flash(message, 'error')
@@ -49,6 +51,8 @@ def accept_request(friendship_id):
     success, message = Friendship.accept_request(friendship_id, current_user.id)
 
     if success:
+        # Invalidate pending friend count cache for current user
+        cache.delete(f"pending_friends_{current_user.id}")
         flash(message, 'success')
     else:
         flash(message, 'error')
@@ -63,6 +67,8 @@ def reject_request(friendship_id):
     success, message = Friendship.reject_request(friendship_id, current_user.id)
 
     if success:
+        # Invalidate pending friend count cache for current user
+        cache.delete(f"pending_friends_{current_user.id}")
         flash(message, 'success')
     else:
         flash(message, 'error')

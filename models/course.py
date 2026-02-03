@@ -6,6 +6,7 @@ from typing import List, Optional, Dict, Any, Tuple
 # Local
 from models.database import get_db
 from utils.validators import validate_course_name, validate_holes, validate_par, sanitize_html
+from extensions import cache
 
 
 class Course:
@@ -84,6 +85,9 @@ class Course:
                 1  # active
             ))
 
+            # Invalidate cache after successful creation
+            Course.invalidate_cache()
+
             # Return the created course
             course = Course.get_by_id(course_id)
             return True, "Course created successfully", course
@@ -94,7 +98,7 @@ class Course:
     @staticmethod
     def get_all(active_only: bool = True) -> List[Dict[str, Any]]:
         """
-        Get all courses
+        Get all courses (cached for 10 minutes)
 
         Args:
             active_only: If True, return only active courses
@@ -102,6 +106,12 @@ class Course:
         Returns:
             List of course dictionaries
         """
+        cache_key = f"courses_all_{active_only}"
+        result = cache.get(cache_key)
+
+        if result is not None:
+            return result
+
         db = get_db()
         conn = db.get_connection()
 
@@ -112,7 +122,15 @@ class Course:
         else:
             cursor = conn.execute("SELECT * FROM courses ORDER BY name")
 
-        return [Course._row_to_dict(row) for row in cursor.fetchall()]
+        result = [Course._row_to_dict(row) for row in cursor.fetchall()]
+        cache.set(cache_key, result, timeout=600)  # 10 minutes
+        return result
+
+    @staticmethod
+    def invalidate_cache():
+        """Invalidate all course list caches"""
+        cache.delete("courses_all_True")
+        cache.delete("courses_all_False")
 
     @staticmethod
     def get_by_id(course_id: str) -> Optional[Dict[str, Any]]:
@@ -132,6 +150,34 @@ class Course:
         row = cursor.fetchone()
 
         return Course._row_to_dict(row) if row else None
+
+    @staticmethod
+    def get_by_ids(course_ids: List[str]) -> Dict[str, Dict[str, Any]]:
+        """
+        Get multiple courses by IDs in a single query (batch loading)
+
+        Args:
+            course_ids: List of course IDs
+
+        Returns:
+            Dictionary mapping course_id to course dictionary
+        """
+        if not course_ids:
+            return {}
+
+        db = get_db()
+        conn = db.get_connection()
+
+        # Remove duplicates while preserving order
+        unique_ids = list(dict.fromkeys(course_ids))
+        placeholders = ','.join(['?'] * len(unique_ids))
+
+        cursor = conn.execute(
+            f"SELECT * FROM courses WHERE id IN ({placeholders})",
+            unique_ids
+        )
+
+        return {row['id']: Course._row_to_dict(row) for row in cursor.fetchall()}
 
     @staticmethod
     def update(course_id: str, name: Optional[str] = None, location: Optional[str] = None,
@@ -197,6 +243,9 @@ class Course:
         if image_url is not None:
             conn.execute("UPDATE courses SET image_url = ? WHERE id = ?", (image_url, course_id))
 
+        # Invalidate cache after successful update
+        Course.invalidate_cache()
+
         return True, "Course updated successfully"
 
     @staticmethod
@@ -225,6 +274,8 @@ class Course:
         if has_rounds and not force:
             # Soft delete
             conn.execute("UPDATE courses SET active = 0 WHERE id = ?", (course_id,))
+            # Invalidate cache after successful update
+            Course.invalidate_cache()
             return True, "Course deactivated (has existing rounds)"
         else:
             # Hard delete
@@ -233,6 +284,8 @@ class Course:
                 conn.execute("DELETE FROM rounds WHERE course_id = ?", (course_id,))
 
             conn.execute("DELETE FROM courses WHERE id = ?", (course_id,))
+            # Invalidate cache after successful deletion
+            Course.invalidate_cache()
             return True, "Course deleted successfully"
 
     @staticmethod

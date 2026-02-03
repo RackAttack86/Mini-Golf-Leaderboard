@@ -145,6 +145,8 @@ def add_player():
         )
 
         if success:
+            # Invalidate player cache
+            Player.invalidate_cache()
             flash(message, 'success')
             return redirect(url_for('players.list_players'))
         else:
@@ -366,6 +368,8 @@ def edit_player(player_id):
     )
 
     if success:
+        # Invalidate player cache
+        Player.invalidate_cache()
         # Update Meta Quest username if changed
         quest_success, quest_message = Player.set_meta_quest_username(
             player_id,
@@ -388,6 +392,8 @@ def delete_player(player_id):
     success, message = Player.delete(player_id)
 
     if success:
+        # Invalidate player cache
+        Player.invalidate_cache()
         flash(message, 'success')
         return redirect(url_for('players.list_players'))
     else:
