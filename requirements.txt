@@ -8,6 +8,7 @@ flask-talisman==1.1.0
 Flask-Session==0.6.0
 blinker==1.7.0
 python-dotenv==1.0.0
+Flask-Caching==2.1.0
 
 # Image handling (for profile pictures, trophy images, etc.)
 Pillow==10.1.0
